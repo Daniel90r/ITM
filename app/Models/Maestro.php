@@ -8,7 +8,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Maestro extends Model
 {
-    protected $fillable = ['user_id', 'nombre', 'apellido', 'codigo', 'activo'];
+    protected $fillable = [
+        'user_id',
+        'nombre',
+        'apellido',
+        'telefono',
+        'dui',
+        'codigo',
+        'activo',
+    ];
 
     public function getNombreCompletoAttribute(): string
     {

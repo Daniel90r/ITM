@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alumno;
+use App\Models\Curso;
 use App\Models\Encargado;
+use App\Models\Inscripcion;
 use App\Models\Maestro;
 use App\Models\Materia;
 use App\Models\Mensualidad;
 use App\Models\Nota;
-use App\Models\Curso;
-use App\Models\Inscripcion;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,14 +26,14 @@ class AdminDashboardController extends Controller
     public function index()
     {
         // ── Tarjetas de estadísticas ─────────────────────────────────────────
-        $totalAlumnos  = Inscripcion::where('activa', 1)->distinct()->count('alumno_id');
+        $totalAlumnos = Inscripcion::where('activa', 1)->distinct()->count('alumno_id');
         $totalMaestros = Maestro::where('activo', 1)->count();
         $totalMaterias = Materia::where('activa', 1)->count();
 
         // ── Mensualidades: pendientes y % al día (solo año actual) ─────────
         $anioActual = (int) now()->year;
         $totalMensualidades = Mensualidad::where('anio', $anioActual)->count();
-        $pagosPendientes    = Mensualidad::where('estado', 'Pendiente')->where('anio', $anioActual)->count();
+        $pagosPendientes = Mensualidad::where('estado', 'Pendiente')->where('anio', $anioActual)->count();
 
         $pagosAlDia = $totalMensualidades > 0
             ? (int) round((($totalMensualidades - $pagosPendientes) / $totalMensualidades) * 100)
@@ -60,7 +61,7 @@ class AdminDashboardController extends Controller
         $estadoMensualidades = Mensualidad::all()
             ->groupBy('nombre_mes')
             ->map(function ($grupo, $nombreMes) {
-                $total   = $grupo->count();
+                $total = $grupo->count();
                 $pagadas = $grupo->where('estado', 'Pagado')->count();
 
                 $anio = null;
@@ -73,10 +74,10 @@ class AdminDashboardController extends Controller
                 }
 
                 return [
-                    'mes'      => $nombreMes,
-                    'anio'     => $anio ?? now()->year,
-                    'total'    => $total,
-                    'pagadas'  => $pagadas,
+                    'mes' => $nombreMes,
+                    'anio' => $anio ?? now()->year,
+                    'total' => $total,
+                    'pagadas' => $pagadas,
                     'completo' => $total > 0 && $pagadas === $total,
                 ];
             })
@@ -101,14 +102,14 @@ class AdminDashboardController extends Controller
     public function alumnos()
     {
         $alumnos = Alumno::with([
-            'inscripciones' => fn($q) => $q->where('activa', 1)->with('curso'),
-            'user'
+            'inscripciones' => fn ($q) => $q->where('activa', 1)->with('curso'),
+            'user',
         ])->get();
 
-        $cursos       = Curso::where('activo', 1)->orderBy('nombre')->get();
+        $cursos = Curso::where('activo', 1)->orderBy('nombre')->get();
         $totalAlumnos = $alumnos->count();
-        $activos      = $alumnos->where('activo', 1)->count();
-        $inactivos    = $alumnos->where('activo', 0)->count();
+        $activos = $alumnos->where('activo', 1)->count();
+        $inactivos = $alumnos->where('activo', 0)->count();
 
         return view('admin.alumnos', compact('alumnos', 'cursos', 'totalAlumnos', 'activos', 'inactivos'));
     }
@@ -122,13 +123,14 @@ class AdminDashboardController extends Controller
             $texto = trim($texto);
             $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto) ?: $texto;
             $texto = preg_replace('/[^a-zA-Z\s]/', '', $texto);
+
             return $texto;
         };
 
-        $nombreLimpio   = $limpiar($nombre);
+        $nombreLimpio = $limpiar($nombre);
         $apellidoLimpio = $limpiar($apellido);
 
-        $palabrasNombre   = array_values(array_filter(explode(' ', $nombreLimpio)));
+        $palabrasNombre = array_values(array_filter(explode(' ', $nombreLimpio)));
         $palabrasApellido = array_values(array_filter(explode(' ', $apellidoLimpio)));
 
         $iniciales = '';
@@ -139,20 +141,20 @@ class AdminDashboardController extends Controller
             $iniciales .= strtoupper($p[0] ?? '');
         }
 
-        $max = Alumno::where('codigo', 'like', $iniciales . '%')->max('codigo');
+        $max = Alumno::where('codigo', 'like', $iniciales.'%')->max('codigo');
         $numero = 1;
         if ($max) {
             $numStr = preg_replace('/[^0-9]/', '', $max);
             $numero = (int) $numStr + 1;
         }
 
-        return $iniciales . str_pad((string) $numero, 3, '0', STR_PAD_LEFT);
+        return $iniciales.str_pad((string) $numero, 3, '0', STR_PAD_LEFT);
     }
 
     public function siguienteCodigo(Request $request)
     {
         $request->validate([
-            'nombre'   => 'required|string|max:255',
+            'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
         ]);
 
@@ -160,7 +162,7 @@ class AdminDashboardController extends Controller
 
         return response()->json([
             'codigo' => $codigo,
-            'email'  => strtolower($codigo) . '@itm.edu.sv',
+            'email' => strtolower($codigo).'@itm.edu.sv',
         ]);
     }
 
@@ -178,63 +180,63 @@ class AdminDashboardController extends Controller
         }
 
         $request->validate([
-            'nombre'           => 'required|string|max:255',
-            'apellido'         => 'required|string|max:255',
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
             'fecha_nacimiento' => 'required|date|before:today',
-            'sexo'             => 'nullable|in:M,F',
-            'telefono'         => 'nullable|string|max:20',
-            'direccion'        => 'nullable|string|max:255',
-            'password'         => 'required|min:8|confirmed',
+            'sexo' => 'nullable|in:M,F',
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:255',
+            'password' => 'required|min:8|confirmed',
 
-            'dui'              => [
+            'dui' => [
                 $esMayorDeEdad ? 'required' : 'nullable',
                 'string',
                 'regex:/^\d{8}-\d$/',
                 'unique:alumnos,dui',
             ],
 
-            'encargado_nombre'     => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
-            'encargado_apellido'   => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
+            'encargado_nombre' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
+            'encargado_apellido' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
             'encargado_parentesco' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:50'],
-            'encargado_dui'        => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'regex:/^\d{8}-\d$/'],
-            'encargado_telefono'   => 'nullable|string|max:20',
-            'encargado_email'      => 'nullable|email|max:255',
+            'encargado_dui' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'regex:/^\d{8}-\d$/'],
+            'encargado_telefono' => 'nullable|string|max:20',
+            'encargado_email' => 'nullable|email|max:255',
         ], [
-            'fecha_nacimiento.required'     => 'La fecha de nacimiento es obligatoria para determinar si el alumno es mayor o menor de edad.',
-            'fecha_nacimiento.before'       => 'La fecha de nacimiento debe ser anterior a hoy.',
-            'dui.required'                  => 'El DUI del alumno es obligatorio cuando es mayor de edad.',
-            'dui.regex'                     => 'El DUI del alumno debe tener el formato 01234567-8.',
-            'dui.unique'                    => 'Ya existe un alumno registrado con ese DUI.',
-            'encargado_nombre.required'     => 'El nombre del encargado es obligatorio para alumnos menores de edad.',
-            'encargado_apellido.required'   => 'El apellido del encargado es obligatorio para alumnos menores de edad.',
+            'fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria para determinar si el alumno es mayor o menor de edad.',
+            'fecha_nacimiento.before' => 'La fecha de nacimiento debe ser anterior a hoy.',
+            'dui.required' => 'El DUI del alumno es obligatorio cuando es mayor de edad.',
+            'dui.regex' => 'El DUI del alumno debe tener el formato 01234567-8.',
+            'dui.unique' => 'Ya existe un alumno registrado con ese DUI.',
+            'encargado_nombre.required' => 'El nombre del encargado es obligatorio para alumnos menores de edad.',
+            'encargado_apellido.required' => 'El apellido del encargado es obligatorio para alumnos menores de edad.',
             'encargado_parentesco.required' => 'El parentesco del encargado es obligatorio para alumnos menores de edad.',
-            'encargado_dui.required'        => 'El DUI del encargado es obligatorio para alumnos menores de edad.',
-            'encargado_dui.regex'           => 'El DUI del encargado debe tener el formato 01234567-8.',
+            'encargado_dui.required' => 'El DUI del encargado es obligatorio para alumnos menores de edad.',
+            'encargado_dui.regex' => 'El DUI del encargado debe tener el formato 01234567-8.',
         ]);
 
         DB::transaction(function () use ($request, $esMayorDeEdad) {
 
             $codigo = $this->generarCodigoAlumno($request->nombre, $request->apellido);
-            $email  = strtolower($codigo) . '@itm.edu.sv';
+            $email = strtolower($codigo).'@itm.edu.sv';
 
-            $user = \App\Models\User::create([
-                'name'     => $request->nombre . ' ' . $request->apellido,
-                'email'    => $email,
+            $user = User::create([
+                'name' => $request->nombre.' '.$request->apellido,
+                'email' => $email,
                 'password' => Hash::make($request->password),
-                'role'     => 'alumno',
+                'role' => 'alumno',
             ]);
 
             $alumno = Alumno::create([
-                'user_id'          => $user->id,
-                'nombre'           => $request->nombre,
-                'apellido'         => $request->apellido,
-                'codigo'           => $codigo,
+                'user_id' => $user->id,
+                'nombre' => $request->nombre,
+                'apellido' => $request->apellido,
+                'codigo' => $codigo,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'dui'              => $esMayorDeEdad ? $request->dui : null,
-                'genero'           => $request->sexo,
-                'telefono'         => $request->telefono,
-                'direccion'        => $request->direccion,
-                'activo'           => 1,
+                'dui' => $esMayorDeEdad ? $request->dui : null,
+                'genero' => $request->sexo,
+                'telefono' => $request->telefono,
+                'direccion' => $request->direccion,
+                'activo' => 1,
             ]);
 
             // Menor de edad: crear (o reutilizar) encargado y vincularlo
@@ -245,12 +247,12 @@ class AdminDashboardController extends Controller
 
                 if (! $encargado) {
                     $encargado = Encargado::create([
-                        'nombre'   => $request->encargado_nombre,
+                        'nombre' => $request->encargado_nombre,
                         'apellido' => $request->encargado_apellido,
                         'telefono' => $request->encargado_telefono,
-                        'dui'      => $request->encargado_dui,
-                        'email'    => $request->encargado_email,
-                        'activo'   => 1,
+                        'dui' => $request->encargado_dui,
+                        'email' => $request->encargado_email,
+                        'activo' => 1,
                     ]);
                 }
 
@@ -268,21 +270,21 @@ class AdminDashboardController extends Controller
         $alumno = Alumno::findOrFail($id);
 
         $request->validate([
-            'nombre'   => 'required|string|max:255',
+            'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email,' . $alumno->user_id,
+            'email' => 'required|email|unique:users,email,'.$alumno->user_id,
             'password' => 'nullable|min:8|confirmed',
         ]);
 
         // Actualizar datos del alumno
         $alumno->update([
-            'nombre'   => $request->nombre,
+            'nombre' => $request->nombre,
             'apellido' => $request->apellido,
         ]);
 
         // Actualizar email en users
         $alumno->user->update([
-            'name'  => $request->nombre . ' ' . $request->apellido,
+            'name' => $request->nombre.' '.$request->apellido,
             'email' => $request->email,
         ]);
 
@@ -302,11 +304,11 @@ class AdminDashboardController extends Controller
 
             // Crear nueva inscripción
             Inscripcion::create([
-                'alumno_id'         => $alumno->id,
-                'curso_id'          => $request->curso_id,
+                'alumno_id' => $alumno->id,
+                'curso_id' => $request->curso_id,
                 'fecha_inscripcion' => now()->toDateString(),
-                'activa'            => 1,
-                'estado'            => 'aprobada',
+                'activa' => 1,
+                'estado' => 'aprobada',
             ]);
         }
 
@@ -318,7 +320,8 @@ class AdminDashboardController extends Controller
     // ─────────────────────────────────────────────────────────────────────────────────────────
     public function maestros()
     {
-        $maestros = Maestro::with('detalleCursos.materia')->get();
+        $maestros = Maestro::with(['user', 'detalleCursos.materia'])->get();
+
         return view('admin.maestros', compact('maestros'));
     }
 
@@ -328,6 +331,7 @@ class AdminDashboardController extends Controller
     public function materias()
     {
         $materias = Materia::orderBy('nombre')->get();
+
         return view('admin.materias', compact('materias'));
     }
 
@@ -354,6 +358,7 @@ class AdminDashboardController extends Controller
             $texto = trim($texto);
             $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto) ?: $texto;
             $texto = preg_replace('/[^a-zA-Z\s]/', '', $texto);
+
             return $texto;
         };
 
@@ -362,7 +367,9 @@ class AdminDashboardController extends Controller
 
         $codigo = '';
         foreach ($palabras as $p) {
-            if ($p) $codigo .= strtoupper($p[0]);
+            if ($p) {
+                $codigo .= strtoupper($p[0]);
+            }
         }
 
         $base = substr($codigo, 0, 5);
@@ -394,8 +401,8 @@ class AdminDashboardController extends Controller
 
     public function toggleMateria(Materia $materia)
     {
-        $materia->update(['activa' => !$materia->activa]);
+        $materia->update(['activa' => ! $materia->activa]);
+
         return response()->json(['activa' => $materia->activa]);
     }
-
 }

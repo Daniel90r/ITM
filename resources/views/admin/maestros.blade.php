@@ -109,7 +109,7 @@
                                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
                                     Asignar cursos
                                 </a>
-                                <button onclick="abrirModalEditarMaestro({{ $maestro->id }}, '{{ addslashes($maestro->nombre) }}', '{{ addslashes($maestro->apellido) }}', '{{ $maestro->codigo }}', '{{ addslashes($maestro->user->email ?? '') }}')"
+<button onclick='abrirModalEditarMaestro(@js($maestro->id), @js($maestro->nombre), @js($maestro->apellido), @js($maestro->telefono), @js($maestro->dui), @js($maestro->codigo), @js($maestro->user?->email ?? ""))'
                                     style="background:#eff6ff; border:none; color:#3b82f6; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
                                     onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                                     Editar
@@ -136,7 +136,7 @@
 @include('admin.partials.modal-editar-maestro')
 
 @push('scripts')
-@vite('resources/js/admin/maestros.js')
+@vite(['resources/js/admin/maestros.js', 'resources/js/admin/modals.js'])
 @endpush
 <x-logout-modal />
 </x-app-layout>

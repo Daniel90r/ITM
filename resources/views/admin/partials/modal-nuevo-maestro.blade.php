@@ -23,14 +23,48 @@
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre <span style="color:#dc2626;">*</span></label>
                     <input type="text" name="nombre" id="nombreNuevoMaestro" required placeholder="Ej: Carlos"
+                        value="{{ old('nombre') }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('nombre', 'storeMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Apellido <span style="color:#dc2626;">*</span></label>
                     <input type="text" name="apellido" id="apellidoNuevoMaestro" required placeholder="Ej: Mendoza"
+                        value="{{ old('apellido') }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('apellido', 'storeMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Teléfono y DUI --}}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
+                    <input type="text" name="telefono" id="telefonoNuevoMaestro" required maxlength="9"
+                        inputmode="numeric" placeholder="Ej: 7123-4567" value="{{ old('telefono') }}"
+                        pattern="[267][0-9]{3}-[0-9]{4}" autocomplete="tel"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('telefono', 'storeMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">DUI <span style="color:#dc2626;">*</span></label>
+                    <input type="text" name="dui" id="duiNuevoMaestro" required maxlength="10"
+                        inputmode="numeric" placeholder="Ej: 01234567-8" value="{{ old('dui') }}"
+                        pattern="[0-9]{8}-[0-9]" autocomplete="off"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('dui', 'storeMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
                 </div>
             </div>
 
@@ -56,22 +90,29 @@
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Correo electrónico <span style="color:#dc2626;">*</span></label>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="email" name="email" id="emailMaestro" required placeholder="Se genera automáticamente" readonly
+                            value="{{ old('email') }}"
                             style="flex:1; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f0fdf4; color:#111827; outline:none; box-sizing:border-box;">
                         <span id="badgeEmailMaestro" style="display:none; background:#dcfce7; color:#16a34a; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap;">Automático</span>
                     </div>
+                    @error('email', 'storeMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Contraseña --}}
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Contraseña <span style="color:#dc2626;">*</span></label>
-                        <input type="text" class="campo-secreto" name="password" required placeholder="Mínimo 8 caracteres"
+                        <input type="password" class="campo-secreto" name="password" required autocomplete="new-password" placeholder="Mínimo 8 caracteres"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                        @error('password', 'storeMaestro')
+                        <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                        @enderror
                     </div>
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Confirmar contraseña <span style="color:#dc2626;">*</span></label>
-                        <input type="text" class="campo-secreto" name="password_confirmation" required placeholder="Repetir contraseña"
+                        <input type="password" class="campo-secreto" name="password_confirmation" required autocomplete="new-password" placeholder="Repetir contraseña"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
@@ -100,12 +141,20 @@
     </div>
 </div>
 
+@if($errors->storeMaestro->isNotEmpty())
+<script>
+    window.addEventListener('load', function() {
+        abrirModalMaestro();
+    });
+</script>
+@endif
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const nombreInput   = document.getElementById('nombreNuevoMaestro');
             const apellidoInput = document.getElementById('apellidoNuevoMaestro');
             const codigoInput   = document.getElementById('codigoMaestro');
-            const emailInput    = document.getElementById('emailMaestro');
+            const emailInput    = document.getElementById('emailMaistro');
             const badgeCodigo   = document.getElementById('badgeCodigoMaestro');
             const badgeEmail    = document.getElementById('badgeEmailMaestro');
 

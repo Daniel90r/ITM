@@ -15,7 +15,7 @@
         <form id="formEditarMaestro" method="POST" autocomplete="off" style="display:flex; flex-direction:column; gap:16px;">
             @csrf
             @method('PUT')
-            <input type="hidden" id="editIdMaestro">
+            <input type="hidden" id="editIdMaestro" name="maestro_id">
 
             {{-- Nombre y Apellido --}}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
@@ -24,12 +24,44 @@
                     <input type="text" id="editNombre" name="nombre" required
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('nombre', 'updateMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Apellidos <span style="color:#dc2626;">*</span></label>
                     <input type="text" id="editApellido" name="apellido" required
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('apellido', 'updateMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Teléfono y DUI --}}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="editTelefono" name="telefono" required maxlength="9"
+                        inputmode="numeric" placeholder="Ej: 7123-4567"
+                        pattern="[267][0-9]{3}-[0-9]{4}" autocomplete="tel"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('telefono', 'updateMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">DUI <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="editDui" name="dui" required maxlength="10"
+                        inputmode="numeric" placeholder="Ej: 01234567-8"
+                        pattern="[0-9]{8}-[0-9]" autocomplete="off"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('dui', 'updateMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
                 </div>
             </div>
 
@@ -38,6 +70,9 @@
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Código <span style="color:#9ca3af; font-weight:400;">(No editable)</span></label>
                 <input type="text" id="editCodigo" name="codigo" readonly
                     style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f3f4f6; color:#6b7280; outline:none; box-sizing:border-box; font-family:monospace;">
+                @error('codigo', 'updateMaestro')
+                <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                @enderror
             </div>
 
             {{-- Separador cuenta --}}
@@ -53,6 +88,9 @@
                     <input type="email" id="editEmail" name="email" required
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                    @error('email', 'updateMaestro')
+                    <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Nueva contraseña --}}
@@ -62,14 +100,17 @@
                             Nueva contraseña
                             <span style="color:#9ca3af; font-weight:400;">(opcional)</span>
                         </label>
-                        <input type="text" class="campo-secreto" id="editPassword" name="password"
+                        <input type="password" class="campo-secreto" id="editPassword" name="password" autocomplete="new-password"
                             placeholder="Dejar vacío para no cambiar"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#111827'">
+                        @error('password', 'updateMaestro')
+                        <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
+                        @enderror
                     </div>
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Confirmar contraseña</label>
-                        <input type="text" class="campo-secreto" id="editPassword_confirmation" name="password_confirmation"
+                        <input type="password" class="campo-secreto" id="editPasswordConfirmation" name="password_confirmation" autocomplete="new-password"
                             placeholder="Repetir nueva contraseña"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#111827'">
@@ -93,3 +134,19 @@
         </form>
     </div>
 </div>
+
+@if($errors->updateMaestro->isNotEmpty())
+<script>
+    window.addEventListener('load', function() {
+        abrirModalEditarMaestro(
+            @js(old('maestro_id')),
+            @js(old('nombre')),
+            @js(old('apellido')),
+            @js(old('telefono')),
+            @js(old('dui')),
+            @js(old('codigo')),
+            @js(old('email'))
+        );
+    });
+</script>
+@endif

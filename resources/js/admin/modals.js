@@ -21,13 +21,24 @@ function cerrarModalMaestro() {
 }
 
 // Modal functions for Editar Maestro
-function abrirModalEditarMaestro(id, nombre, apellido, codigo, email) {
+function abrirModalEditarMaestro(id, nombre, apellido, telefono, dui, codigo, email) {
     document.getElementById('editIdMaestro').value = id;
     document.getElementById('editNombre').value = nombre;
     document.getElementById('editApellido').value = apellido;
+    document.getElementById('editTelefono').value = telefono || '';
+    document.getElementById('editDui').value = dui || '';
     document.getElementById('editCodigo').value = codigo;
     document.getElementById('editEmail').value = email;
-    document.getElementById('editPassword').value = '';
+    const password = document.getElementById('editPassword');
+    const passwordConfirmation = document.getElementById('editPasswordConfirmation');
+
+    if (password) {
+        password.value = '';
+    }
+
+    if (passwordConfirmation) {
+        passwordConfirmation.value = '';
+    }
     document.getElementById('formEditarMaestro').action = '/admin/maestros/' + id;
     document.getElementById('modalEditarMaestro').style.display = 'flex';
     document.body.style.overflow = 'hidden';

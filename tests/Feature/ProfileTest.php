@@ -61,39 +61,55 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_profile_page_does_not_render_delete_user_form(): void
     {
         $user = User::factory()->create();
 
+        $this->withoutVite();
         $response = $this
             ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
+            ->get('/profile');
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $response->assertOk();
+        $response->assertDontSee('confirm-user-deletion');
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
+    public function test_admin_cannot_delete_account(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         $response = $this
             ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
+            ->delete('/profile');
 
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
+        $response->assertForbidden();
         $this->assertNotNull($user->fresh());
+        $this->assertAuthenticated();
+    }
+
+    public function test_docente_cannot_delete_account(): void
+    {
+        $user = User::factory()->create(['role' => 'docente']);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete('/profile');
+
+        $response->assertForbidden();
+        $this->assertNotNull($user->fresh());
+        $this->assertAuthenticated();
+    }
+
+    public function test_alumno_cannot_delete_account(): void
+    {
+        $user = User::factory()->create(['role' => 'alumno']);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete('/profile');
+
+        $response->assertForbidden();
+        $this->assertNotNull($user->fresh());
+        $this->assertAuthenticated();
     }
 }
