@@ -17,7 +17,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:12px; color:#9ca3af; background:#f3f4f6; padding:6px 12px; border-radius:8px;">{{ now()->isoFormat('MMMM YYYY') }}</span>
-                <button onclick="abrirModalMaestro()"
+                <button type="button" onclick="abrirModalMaestro()"
                     style="background:#111827; border:none; padding:8px 18px; border-radius:8px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;"
                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
                     + Nuevo Maestro
@@ -35,7 +35,7 @@
                     onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
             </div>
             <p id="contadorMaestros" style="font-size:12px; color:#9ca3af; margin:0;"></p>
-            <button onclick="limpiarBusqueda()"
+            <button type="button" onclick="limpiarBusquedaMaestros()"
                 style="background:none; border:1px solid #e5e7eb; color:#6b7280; font-size:12px; padding:8px 14px; border-radius:8px; cursor:pointer;"
                 onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
                 ✕ Limpiar
@@ -104,18 +104,14 @@
                                 @endif
                             </td>
                             <td style="padding:13px 24px; text-align:center; display:flex; gap:6px; justify-content:center;">
-                                <button type="button" onclick="abrirModalAsignar({{ $maestro->id }}, '{{ $maestro->nombre_completo }}')"
-                                    style="background:#111827; border:none; color:#fff; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
+                                <a href="{{ route('admin.maestros.show', $maestro->id) }}"
+                                    style="background:#111827; border:none; color:#fff; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px; text-decoration:none;"
                                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
                                     Asignar cursos
-                                </button>
-                                <button style="background:#f3f4f6; border:none; color:#374151; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
-                                    onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
-                                    Editar
-                                </button>
-                            </td>
-                                <button style="background:#f3f4f6; border:none; color:#374151; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
-                                    onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                                </a>
+                                <button type="button" onclick="abrirModalEditarMaestro(@js($maestro->id), @js($maestro->nombre), @js($maestro->apellido), @js($maestro->telefono), @js($maestro->dui), @js($maestro->codigo), @js($maestro->user?->email ?? ''))"
+                                    style="background:#eff6ff; border:none; color:#3b82f6; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
+                                    onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                                     Editar
                                 </button>
                             </td>
@@ -138,7 +134,7 @@
 
 {{-- Conectar modal desde archivo separado --}}
 @include('admin.partials.modal-nuevo-maestro')
-@include('admin.partials.modal-asignar-curso')
+@include('admin.partials.modal-editar-maestro')
 
 @push('scripts')
 @vite('resources/js/admin/maestros.js')

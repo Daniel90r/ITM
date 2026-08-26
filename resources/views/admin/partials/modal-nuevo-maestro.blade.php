@@ -10,7 +10,7 @@
                 <div style="width:4px; height:16px; background:#111827; border-radius:2px;"></div>
                 <p style="font-size:15px; font-weight:700; color:#111827; margin:0;">Nuevo Maestro</p>
             </div>
-            <button onclick="cerrarModalMaestro()"
+            <button type="button" onclick="cerrarModalMaestro()"
                 style="background:#f3f4f6; border:none; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:14px; color:#6b7280; display:flex; align-items:center; justify-content:center;"
                 onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">✕</button>
         </div>
@@ -70,12 +70,10 @@
 
             {{-- Código --}}
             <div>
-                <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Código <span style="color:#dc2626;">*</span></label>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="text" name="codigo" id="codigoMaestro" required placeholder="Se genera automáticamente" readonly
-                        style="flex:1; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f0fdf4; color:#111827; outline:none; box-sizing:border-box; font-family:monospace;">
-                    <span id="badgeCodigoMaestro" style="display:none; background:#dcfce7; color:#16a34a; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap;">Automático</span>
-                </div>
+                <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Código <span style="color:#9ca3af; font-weight:400;">(No editable)</span></label>
+                <input type="text" id="codigoMaestro" placeholder="Se generará al guardar" readonly
+                    style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f3f4f6; color:#6b7280; outline:none; box-sizing:border-box; font-family:monospace;">
+                <p style="font-size:11px; color:#9ca3af; margin-top:4px;">El código se generará automáticamente al guardar.</p>
             </div>
 
             {{-- Separador cuenta --}}
@@ -88,12 +86,11 @@
                 {{-- Email --}}
                 <div style="margin-bottom:14px;">
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Correo electrónico <span style="color:#dc2626;">*</span></label>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="email" name="email" id="emailMaestro" required placeholder="Se genera automáticamente" readonly
-                            value="{{ old('email') }}"
-                            style="flex:1; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f0fdf4; color:#111827; outline:none; box-sizing:border-box;">
-                        <span id="badgeEmailMaestro" style="display:none; background:#dcfce7; color:#16a34a; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap;">Automático</span>
-                    </div>
+                    <input type="email" name="email" id="emailMaestro" required maxlength="255" autocomplete="email"
+                        value="{{ old('email') }}"
+                        placeholder="Ej: docente@itm.edu.sv"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     @error('email', 'storeMaestro')
                     <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
                     @enderror
@@ -154,9 +151,6 @@
             const nombreInput   = document.getElementById('nombreNuevoMaestro');
             const apellidoInput = document.getElementById('apellidoNuevoMaestro');
             const codigoInput   = document.getElementById('codigoMaestro');
-            const emailInput    = document.getElementById('emailMaistro');
-            const badgeCodigo   = document.getElementById('badgeCodigoMaestro');
-            const badgeEmail    = document.getElementById('badgeEmailMaestro');
 
             function limpiar(texto) {
                 return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ñ/g, 'n').replace(/Ñ/g, 'N');
@@ -180,10 +174,7 @@
                     const ini = iniciales(nom, ape);
 
                     if (ini.length < 2) {
-                        codigoInput.value = '';
-                        emailInput.value = '';
-                        if (badgeCodigo) badgeCodigo.style.display = 'none';
-                        if (badgeEmail) badgeEmail.style.display = 'none';
+                        if (codigoInput) codigoInput.value = '';
                         return;
                     }
 
@@ -197,10 +188,7 @@
                             body: JSON.stringify({ nombre: nom, apellido: ape })
                         });
                         const data = await res.json();
-                        codigoInput.value = data.codigo;
-                        emailInput.value = data.email;
-                        if (badgeCodigo) badgeCodigo.style.display = 'inline-block';
-                        if (badgeEmail) badgeEmail.style.display = 'inline-block';
+                        if (codigoInput) codigoInput.value = data.codigo;
                     } catch (e) {
                         console.error('Error al calcular código:', e);
                     }
@@ -214,9 +202,6 @@
                 const form = document.querySelector('#modalNuevoMaestro form');
                 if (form) form.reset();
                 if (codigoInput) codigoInput.value = '';
-                if (emailInput) emailInput.value = '';
-                if (badgeCodigo) badgeCodigo.style.display = 'none';
-                if (badgeEmail) badgeEmail.style.display = 'none';
             };
         });
     </script>

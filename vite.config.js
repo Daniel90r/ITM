@@ -18,6 +18,7 @@ export default defineConfig({
                 'resources/js/admin/materias.js',
                 'resources/js/admin/pagos.js',
                 'resources/js/admin/boletas.js',
+                'resources/js/admin/maestros.js',
                 'resources/js/admin/modals.js',
                 'resources/js/admin/inscripcion.js',
                 'resources/js/docente/notas.js',

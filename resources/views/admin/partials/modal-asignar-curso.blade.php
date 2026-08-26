@@ -39,7 +39,3 @@
         </form>
     </div>
 </div>
-
-@push('scripts')
-@vite('resources/js/admin/modals.js')
-@endpush

@@ -7,7 +7,7 @@
                 <div style="width:4px; height:16px; background:#111827; border-radius:2px;"></div>
                 <p style="font-size:15px; font-weight:700; color:#111827; margin:0;">Editar Maestro</p>
             </div>
-            <button onclick="cerrarModalEditarMaestro()"
+            <button type="button" onclick="cerrarModalEditarMaestro()"
                 style="background:#f3f4f6; border:none; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:14px; color:#6b7280; display:flex; align-items:center; justify-content:center;"
                 onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">✕</button>
         </div>

@@ -17,7 +17,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:12px; color:#9ca3af; background:#f3f4f6; padding:6px 12px; border-radius:8px;">{{ now()->isoFormat('MMMM YYYY') }}</span>
-                <button onclick="abrirModalMaestro()"
+                <button type="button" onclick="abrirModalMaestro()"
                     style="background:#111827; border:none; padding:8px 18px; border-radius:8px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;"
                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
                     + Nuevo Maestro
@@ -109,7 +109,7 @@
                                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
                                     Asignar cursos
                                 </a>
-<button onclick='abrirModalEditarMaestro(@js($maestro->id), @js($maestro->nombre), @js($maestro->apellido), @js($maestro->telefono), @js($maestro->dui), @js($maestro->codigo), @js($maestro->user?->email ?? ""))'
+                                <button type="button" onclick="abrirModalEditarMaestro(@js($maestro->id), @js($maestro->nombre), @js($maestro->apellido), @js($maestro->telefono), @js($maestro->dui), @js($maestro->codigo), @js($maestro->user?->email ?? ''))"
                                     style="background:#eff6ff; border:none; color:#3b82f6; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
                                     onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                                     Editar
@@ -136,7 +136,7 @@
 @include('admin.partials.modal-editar-maestro')
 
 @push('scripts')
-@vite(['resources/js/admin/maestros.js', 'resources/js/admin/modals.js'])
+@vite('resources/js/admin/maestros.js')
 @endpush
 <x-logout-modal />
 </x-app-layout>

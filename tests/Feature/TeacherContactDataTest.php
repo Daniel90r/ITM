@@ -600,4 +600,155 @@ class TeacherContactDataTest extends TestCase
         $this->assertStringNotContainsString('type="text" class="campo-secreto" id="editPassword"', $html);
         $this->assertStringNotContainsString('type="text" class="campo-secreto" id="editPasswordConfirmation"', $html);
     }
+
+    public function test_new_maestro_email_field_not_readonly(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('id="emailMaestro" readonly', $html);
+    }
+
+    public function test_new_maestro_email_field_not_disabled(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('id="emailMaestro" disabled', $html);
+        $this->assertStringNotContainsString('id="emailMaestro"\n', $html);
+    }
+
+    public function test_new_maestro_email_field_uses_type_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+        $html = $response->getContent();
+        $this->assertStringContainsString('type="email" name="email" id="emailMaestro"', $html);
+    }
+
+    public function test_new_maestro_email_field_uses_name_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+        $html = $response->getContent();
+        $this->assertStringContainsString('name="email"', $html);
+        $this->assertStringContainsString('id="emailMaestro"', $html);
+    }
+
+    public function test_new_maestro_email_field_is_required(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+        $html = $response->getContent();
+        $this->assertStringContainsString('type="email" name="email" id="emailMaestro" required', $html);
+    }
+
+    public function test_creation_form_conserves_old_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->withoutVite()->post(route('admin.maestros.store'), [
+            'nombre' => 'Prueba',
+            'apellido' => 'Docente',
+            'telefono' => '7123-4567',
+            'dui' => '01234567-8',
+            'email' => 'invalid-email',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertSessionHasErrorsIn('storeMaestro', ['email']);
+        $this->assertEquals('invalid-email', session()->getOldInput('email'));
+    }
+
+    public function test_no_javascript_assigns_data_email(): void
+    {
+        $content = file_get_contents(resource_path('views/admin/partials/modal-nuevo-maestro.blade.php'));
+        $this->assertStringNotContainsString('emailInput.value = data.email', $content);
+        $this->assertStringNotContainsString('emailInput.value = \'\'', $content);
+        $this->assertStringNotContainsString('badgeEmailMaestro', $content);
+    }
+
+    public function test_codigo_input_not_submitted(): void
+    {
+        $content = file_get_contents(resource_path('views/admin/partials/modal-nuevo-maestro.blade.php'));
+        $this->assertStringNotContainsString('name="codigo"', $content);
+    }
+
+    public function test_codigo_input_not_required(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('id="codigoMaestro" required', $html);
+        $this->assertStringContainsString('id="codigoMaestro"', $html);
+        $this->assertStringContainsString('readonly', $html);
+    }
+
+    public function test_admin_can_create_maestro_with_manual_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->post(route('admin.maestros.store'), [
+            'nombre' => 'Prueba',
+            'apellido' => 'Docente',
+            'telefono' => '7123-4567',
+            'dui' => '01234567-8',
+            'email' => 'prueba.docente@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertRedirect(route('admin.maestros'));
+        $response->assertSessionHas('success', 'Maestro registrado correctamente.');
+        $this->assertDatabaseHas('users', [
+            'email' => 'prueba.docente@example.com',
+        ]);
+    }
+
+    public function test_store_rejects_empty_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->post(route('admin.maestros.store'), [
+            'nombre' => 'Prueba',
+            'apellido' => 'Docente',
+            'telefono' => '7123-4567',
+            'dui' => '01234567-8',
+            'email' => '',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertSessionHasErrorsIn('storeMaestro', ['email']);
+        $this->assertDatabaseMissing('users', ['email' => '']);
+    }
+
+    public function test_store_rejects_invalid_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->post(route('admin.maestros.store'), [
+            'nombre' => 'Prueba',
+            'apellido' => 'Docente',
+            'telefono' => '7123-4567',
+            'dui' => '01234567-8',
+            'email' => 'not-an-email',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertSessionHasErrorsIn('storeMaestro', ['email']);
+        $this->assertDatabaseMissing('users', ['email' => 'not-an-email']);
+    }
+
+    public function test_store_rejects_duplicate_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        User::factory()->create(['email' => 'duplicate@test.com', 'role' => 'docente']);
+        $response = $this->actingAs($admin)->post(route('admin.maestros.store'), [
+            'nombre' => 'Prueba',
+            'apellido' => 'Docente',
+            'telefono' => '7123-4567',
+            'dui' => '01234567-8',
+            'email' => 'duplicate@test.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertSessionHasErrorsIn('storeMaestro', ['email']);
+    }
 }
