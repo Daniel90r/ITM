@@ -68,16 +68,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ADMINISTRADOR: Notas
     Route::get('/admin/notas', [\App\Http\Controllers\Admin\NotaController::class, 'index'])
-        ->name('admin.notas');
+        ->name('admin.notas')
+        ->middleware('role:admin');
     Route::post('/admin/notas', [\App\Http\Controllers\Admin\NotaController::class, 'store'])
-        ->name('admin.notas.store');
+        ->name('admin.notas.store')
+        ->middleware('role:admin');
 
     // ADMINISTRADOR: Boletas
     Route::get('/admin/boletas', [\App\Http\Controllers\Admin\BoletaController::class, 'index'])
-        ->name('admin.boletas');
+        ->name('admin.boletas')
+        ->middleware('role:admin');
     Route::get('/admin/boletas/{alumno_id}', [\App\Http\Controllers\Admin\BoletaController::class, 'show'])
-        ->name('admin.boletas.show');
-    Route::get('/boletas/{id}/pdf', [\App\Http\Controllers\Admin\BoletaController::class, 'generarPdf'])->name('admin.boletas.pdf');
+        ->name('admin.boletas.show')
+        ->middleware('role:admin');
+    Route::get('/boletas/{id}/pdf', [\App\Http\Controllers\Admin\BoletaController::class, 'generarPdf'])
+        ->name('admin.boletas.pdf')
+        ->middleware('role:admin');
 
     // ADMINISTRADOR: Mensualidades
     Route::get('/admin/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])
@@ -114,6 +120,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ADMINISTRADOR: Asistencias
     Route::get('/admin/asistencias', [App\Http\Controllers\Admin\AsistenciaController::class, 'index'])
-        ->name('admin.asistencias');
+        ->name('admin.asistencias')
+        ->middleware('role:admin');
 
 });
