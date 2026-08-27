@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreMaestroRequest;
 use App\Http\Requests\Admin\UpdateMaestroRequest;
+use App\Models\AsignacionDocente;
 use App\Models\Curso;
 use App\Models\DetalleCurso;
 use App\Models\Maestro;
@@ -13,6 +14,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class MaestroController extends Controller
 {
@@ -113,11 +116,82 @@ class MaestroController extends Controller
 
     public function asignar(Request $request, $id)
     {
-        DetalleCurso::firstOrCreate([
-            'maestro_id' => $id,
-            'curso_id' => $request->curso_id,
-            'materia_id' => $request->materia_id,
+        $request->validate([
+            'curso_id' => ['required', 'integer', Rule::exists('cursos', 'id')->where('activo', 1)],
+            'materia_id' => ['required', 'integer', Rule::exists('materias', 'id')->where('activa', 1)],
         ]);
+
+        DB::transaction(function () use ($request, $id) {
+            $curso = Curso::where('id', $request->curso_id)
+                ->where('activo', 1)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $materia = Materia::where('id', $request->materia_id)
+                ->where('activa', 1)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $maestro = Maestro::where('id', $id)
+                ->where('activo', true)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $detalle = DetalleCurso::where('curso_id', $request->curso_id)
+                ->where('materia_id', $request->materia_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($detalle) {
+                if ($detalle->maestro_id != $maestro->id) {
+                    throw ValidationException::withMessages([
+                        'materia_id' => 'Este programa ya está asignado a otro maestro. Utilice el flujo de cambio de maestro.',
+                    ]);
+                }
+
+                $asignacionesActivas = AsignacionDocente::where('detalle_curso_id', $detalle->id)
+                    ->where('estado', 'activa')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($asignacionesActivas->count() > 1) {
+                    throw ValidationException::withMessages([
+                        'materia_id' => 'Este programa tiene múltiples asignaciones activas. Contacte al administrador.',
+                    ]);
+                }
+
+                if ($asignacionesActivas->count() === 1) {
+                    $asignacionActiva = $asignacionesActivas->first();
+                    if ($asignacionActiva->maestro_id != $maestro->id) {
+                        throw ValidationException::withMessages([
+                            'materia_id' => 'Este programa ya está asignado a otro maestro. Utilice el flujo de cambio de maestro.',
+                        ]);
+                    }
+                }
+
+                if ($asignacionesActivas->isEmpty()) {
+                    AsignacionDocente::create([
+                        'detalle_curso_id' => $detalle->id,
+                        'maestro_id' => $maestro->id,
+                        'estado' => 'activa',
+                        'asignado_por' => auth()->id(),
+                    ]);
+                }
+            } else {
+                $detalle = DetalleCurso::create([
+                    'curso_id' => $request->curso_id,
+                    'materia_id' => $request->materia_id,
+                    'maestro_id' => $maestro->id,
+                ]);
+
+                AsignacionDocente::create([
+                    'detalle_curso_id' => $detalle->id,
+                    'maestro_id' => $maestro->id,
+                    'estado' => 'activa',
+                    'asignado_por' => auth()->id(),
+                ]);
+            }
+        });
 
         return redirect()->route('admin.maestros.show', $id)->with('success', 'Asignación realizada correctamente.');
     }
@@ -133,6 +207,27 @@ class MaestroController extends Controller
             if ($detalle->notas()->exists()) {
                 return redirect()->route('admin.maestros.show', $maestro_id)
                     ->with('error', 'No se puede eliminar la asignación porque contiene notas registradas.');
+            }
+
+            $asignaciones = $detalle->asignacionesDocentes()
+                ->lockForUpdate()
+                ->get();
+
+            if ($asignaciones->contains('estado', 'finalizada') || $asignaciones->count() > 1) {
+                return redirect()->route('admin.maestros.show', $maestro_id)
+                    ->with('error', 'No se puede eliminar el programa porque contiene historial de asignaciones docentes.');
+            }
+
+            if ($asignaciones->count() === 1) {
+                $asignacion = $asignaciones->first();
+                if ($asignacion->maestro_id != $maestro_id) {
+                    return redirect()->route('admin.maestros.show', $maestro_id)
+                        ->with('error', 'No se puede eliminar el programa porque la asignación docente no corresponde al maestro indicado.');
+                }
+            }
+
+            if ($asignaciones->isNotEmpty()) {
+                $asignaciones->each->delete();
             }
 
             $detalle->delete();

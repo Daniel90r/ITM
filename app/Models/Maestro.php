@@ -37,4 +37,9 @@ class Maestro extends Model
     {
         return $this->hasMany(Nota::class, 'registrado_por');
     }
+
+    public function asignacionesDocentes(): HasMany
+    {
+        return $this->hasMany(AsignacionDocente::class);
+    }
 }

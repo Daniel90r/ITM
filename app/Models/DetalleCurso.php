@@ -29,4 +29,9 @@ class DetalleCurso extends Model
     {
         return $this->hasMany(Nota::class);
     }
+
+    public function asignacionesDocentes(): HasMany
+    {
+        return $this->hasMany(AsignacionDocente::class);
+    }
 }
