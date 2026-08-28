@@ -110,6 +110,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.maestros.desasignar')
         ->middleware('role:admin');
 
+    Route::put('/admin/maestros/{maestro_id}/programas/{detalle_id}/cambiar-maestro', [\App\Http\Controllers\Admin\MaestroController::class, 'cambiarMaestro'])
+        ->name('admin.maestros.asignaciones.cambiar')
+        ->middleware('role:admin');
+
     Route::delete('/inscripciones/{id}', [\App\Http\Controllers\Admin\InscripcionController::class, 'desactivar'])->name('admin.inscripciones.desactivar');
 
     Route::get('/admin/solicitudes', [App\Http\Controllers\Admin\InscripcionController::class, 'solicitudes'])->name('admin.solicitudes');

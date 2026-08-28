@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CambiarMaestroAsignacionRequest;
 use App\Http\Requests\Admin\StoreMaestroRequest;
 use App\Http\Requests\Admin\UpdateMaestroRequest;
 use App\Models\AsignacionDocente;
@@ -235,6 +236,115 @@ class MaestroController extends Controller
             return redirect()->route('admin.maestros.show', $maestro_id)
                 ->with('success', 'Asignación eliminada correctamente.');
         });
+    }
+
+    public function cambiarMaestro(
+        CambiarMaestroAsignacionRequest $request,
+        $maestro_id,
+        $detalle_id
+    ) {
+        $datos = $request->validated();
+        $nuevoMaestroId = (int) $datos['nuevo_maestro_id'];
+        $motivoCambio = $datos['motivo_cambio'];
+        $adminId = auth()->id();
+        $fechaEfectiva = today()->toImmutable();
+
+        $detalleInicial = DetalleCurso::where('id', $detalle_id)
+            ->where('maestro_id', $maestro_id)
+            ->firstOrFail();
+
+        $cursoId = $detalleInicial->curso_id;
+        $materiaId = $detalleInicial->materia_id;
+
+        DB::transaction(function () use ($nuevoMaestroId, $motivoCambio, $adminId, $fechaEfectiva, $maestro_id, $detalle_id, $cursoId, $materiaId) {
+            Curso::where('id', $cursoId)
+                ->where('activo', 1)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            Materia::where('id', $materiaId)
+                ->where('activa', 1)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $nuevoMaestro = Maestro::where('id', $nuevoMaestroId)
+                ->where('activo', true)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $detalle = DetalleCurso::where('id', $detalle_id)
+                ->where('maestro_id', $maestro_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($detalle->curso_id != $cursoId || $detalle->materia_id != $materiaId) {
+                throw ValidationException::withMessages([
+                    'nuevo_maestro_id' => 'Los datos del programa han cambiado. Intente nuevamente.',
+                ]);
+            }
+
+            if ($nuevoMaestro->id == $maestro_id) {
+                throw ValidationException::withMessages([
+                    'nuevo_maestro_id' => 'El maestro seleccionado ya es el maestro vigente de este programa.',
+                ]);
+            }
+
+            $asignacionesActivas = AsignacionDocente::where('detalle_curso_id', $detalle_id)
+                ->where('estado', 'activa')
+                ->lockForUpdate()
+                ->get();
+
+            if ($asignacionesActivas->count() === 0) {
+                throw ValidationException::withMessages([
+                    'nuevo_maestro_id' => 'No se puede cambiar el maestro porque no existe una asignación activa para este programa.',
+                ]);
+            }
+
+            if ($asignacionesActivas->count() > 1) {
+                throw ValidationException::withMessages([
+                    'nuevo_maestro_id' => 'Este programa tiene múltiples asignaciones activas. Contacte al administrador.',
+                ]);
+            }
+
+            $asignacionActiva = $asignacionesActivas->first();
+
+            if ($asignacionActiva->maestro_id != $detalle->maestro_id ||
+                $asignacionActiva->maestro_id != $maestro_id) {
+                throw ValidationException::withMessages([
+                    'nuevo_maestro_id' => 'La asignación activa no coincide con el maestro vigente. Contacte al administrador.',
+                ]);
+            }
+
+            if (
+                $asignacionActiva->fecha_inicio !== null
+                && $asignacionActiva->fecha_inicio->greaterThanOrEqualTo($fechaEfectiva)
+            ) {
+                throw ValidationException::withMessages([
+                    'nuevo_maestro_id' => 'Ya se realizó un cambio permanente de maestro para este programa hoy.',
+                ]);
+            }
+
+            $asignacionActiva->update([
+                'estado' => 'finalizada',
+                'fecha_fin' => $fechaEfectiva->subDay(),
+                'motivo_cambio' => $motivoCambio,
+            ]);
+
+            AsignacionDocente::create([
+                'detalle_curso_id' => $detalle_id,
+                'maestro_id' => $nuevoMaestroId,
+                'fecha_inicio' => $fechaEfectiva,
+                'fecha_fin' => null,
+                'estado' => 'activa',
+                'motivo_cambio' => null,
+                'asignado_por' => $adminId,
+            ]);
+
+            $detalle->update(['maestro_id' => $nuevoMaestroId]);
+        }, 3);
+
+        return redirect()->route('admin.maestros.show', $nuevoMaestroId)
+            ->with('success', 'El maestro del programa fue cambiado correctamente.');
     }
 
     public function update(UpdateMaestroRequest $request, $id)
