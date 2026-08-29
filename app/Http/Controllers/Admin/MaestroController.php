@@ -29,13 +29,19 @@ class MaestroController extends Controller
 
     public function show($id)
     {
-        $maestro = Maestro::with('detalleCursos.materia', 'detalleCursos.curso', 'user')->findOrFail($id);
-        $maestros = Maestro::with('detalleCursos.materia', 'user')->get();
-        $cursos = Curso::where('activo', 1)->get();
-        $materias = Materia::orderBy('nombre')->get();
-        $totalMaestros = Maestro::count();
+        $maestro = Maestro::with([
+            'detalleCursos' => function ($q) {
+                $q->orderBy('curso_id')->orderBy('materia_id');
+            },
+            'detalleCursos.curso',
+            'detalleCursos.materia',
+            'user',
+        ])->findOrFail($id);
 
-        return view('admin.maestro-detalle', compact('maestro', 'maestros', 'cursos', 'materias', 'totalMaestros'));
+        $cursos = Curso::where('activo', 1)->orderBy('nombre')->orderBy('nivel')->orderBy('seccion')->get();
+        $materias = Materia::where('activa', 1)->orderBy('nombre')->get();
+
+        return view('admin.maestro-detalle', compact('maestro', 'cursos', 'materias'));
     }
 
     private function generarCodigoMaestro(string $nombre, string $apellido): string

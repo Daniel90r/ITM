@@ -40,7 +40,8 @@ class TeacherManagementViewTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.maestros.show', $maestro->id));
 
         $response->assertStatus(200);
-        $response->assertSee('Listado de Maestros', false);
+        $response->assertSee('Programas asignados', false);
+        $response->assertSee($maestro->nombre_completo, false);
     }
 
     public function test_detail_view_includes_edit_modal(): void
@@ -53,14 +54,17 @@ class TeacherManagementViewTest extends TestCase
         $response->assertSee('id="modalEditarMaestro"', false);
     }
 
-    public function test_detail_view_excludes_asignar_curso_modal(): void
+    public function test_detail_view_includes_asignar_curso_modal(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $maestro = $this->crearMaestroConUsuario();
 
         $response = $this->actingAs($admin)->get(route('admin.maestros.show', $maestro->id));
 
-        $response->assertDontSee('id="modalAsignarCurso"', false);
+        $response->assertSee('id="modalAsignarCurso"', false);
+
+        $content = file_get_contents(resource_path('views/admin/maestro-detalle.blade.php'));
+        $this->assertSame(1, preg_match_all("/@include\s*\(\s*['\"]admin\.partials\.modal-asignar-curso['\"]\s*\)/", $content));
     }
 
     public function test_detail_view_edit_button_has_type_button(): void
@@ -213,7 +217,7 @@ class TeacherManagementViewTest extends TestCase
         $this->assertSame(1, preg_match_all("/@include\s*\(\s*['\"]admin\.partials\.modal-editar-maestro['\"]\s*\)/", $content));
     }
 
-    public function test_detail_view_asignar_cursos_is_link_not_button(): void
+    public function test_detail_view_asignar_programa_button_uses_modal(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $maestro = $this->crearMaestroConUsuario();
@@ -222,17 +226,18 @@ class TeacherManagementViewTest extends TestCase
 
         $html = $response->getContent();
         $this->assertStringNotContainsString('abrirModalAsignar(', $html);
-        $this->assertStringContainsString('Asignar cursos', $html);
+        $this->assertStringContainsString('abrirModalAsignarCurso(', $html);
+        $this->assertStringContainsString('Asignar programa', $html);
     }
 
-    public function test_detail_view_clear_button_calls_correct_function(): void
+    public function test_detail_view_does_not_have_search_clear_button(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $maestro = $this->crearMaestroConUsuario();
 
         $response = $this->actingAs($admin)->get(route('admin.maestros.show', $maestro->id));
 
-        $response->assertSee('limpiarBusquedaMaestros()', false);
+        $response->assertDontSee('limpiarBusquedaMaestros()', false);
     }
 
     public function test_js_files_have_null_safe_listeners(): void
@@ -243,14 +248,14 @@ class TeacherManagementViewTest extends TestCase
         $this->assertStringContainsString('if (modalEditar', $modalsContent);
     }
 
-    public function test_asignar_cursos_link_points_to_correct_route(): void
+    public function test_asignar_form_action_points_to_correct_route(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $maestro = $this->crearMaestroConUsuario();
 
         $response = $this->actingAs($admin)->get(route('admin.maestros.show', $maestro->id));
 
-        $response->assertSee(route('admin.maestros.show', $maestro->id), false);
+        $response->assertSee(route('admin.maestros.asignar', $maestro->id), false);
     }
 
     public function test_detail_view_edit_button_passes_telefono_and_dui(): void
@@ -273,5 +278,30 @@ class TeacherManagementViewTest extends TestCase
         $this->assertStringNotContainsString('onmouseout="this"style', $content, 'El atributo onmouseout no debe estar roto.');
         $this->assertStringContainsString("onmouseover=\"this.style.background='#e5e7eb'\"", $content, 'El atributo onmouseover debe tener la sintaxis correcta.');
         $this->assertStringContainsString("onmouseout=\"this.style.background='#f3f4f6'\"", $content, 'El atributo onmouseout debe tener la sintaxis correcta.');
+    }
+
+    public function test_list_view_has_gestionar_programas_text(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $maestro = $this->crearMaestroConUsuario();
+
+        $response = $this->actingAs($admin)->withoutVite()->get(route('admin.maestros'));
+
+        $response->assertSee('Gestionar programas', false);
+        $response->assertSee(route('admin.maestros.show', $maestro->id), false);
+    }
+
+    public function test_modals_js_exposes_abrir_modal_asignar_curso(): void
+    {
+        $content = file_get_contents(resource_path('js/admin/modals.js'));
+        $this->assertStringContainsString('window.abrirModalAsignarCurso = abrirModalAsignarCurso', $content);
+        $this->assertStringContainsString('window.cerrarModalAsignarCurso = cerrarModalAsignarCurso', $content);
+    }
+
+    public function test_modals_js_has_no_obsolete_asignar_signature(): void
+    {
+        $content = file_get_contents(resource_path('js/admin/modals.js'));
+        $this->assertStringNotContainsString('abrirModalAsignar(maestroId, maestroNombre)', $content);
+        $this->assertStringNotContainsString("'/admin/maestros/' + maestroId + '/asignar'", $content);
     }
 }

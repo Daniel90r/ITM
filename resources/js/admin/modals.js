@@ -72,17 +72,15 @@ function cerrarModalEditarMaestro() {
     document.body.style.overflow = '';
 }
 
-// Modal functions for Asignar Curso
-function abrirModalAsignar(maestroId, maestroNombre) {
-    const form = document.getElementById('formAsignarCurso');
-    const titulo = document.getElementById('tituloModalAsignar');
+// Modal functions for Asignar programa
+function abrirModalAsignarCurso() {
     const modal = document.getElementById('modalAsignarCurso');
 
-    if (form) form.action = '/admin/maestros/' + maestroId + '/asignar';
-    if (titulo) titulo.textContent = 'Asignar curso a ' + maestroNombre;
-    if (modal) {
-        modal.style.display = 'flex';
+    if (!modal) {
+        return;
     }
+
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
@@ -104,7 +102,7 @@ window.abrirModalMaestro = abrirModalMaestro;
 window.cerrarModalMaestro = cerrarModalMaestro;
 window.abrirModalEditarMaestro = abrirModalEditarMaestro;
 window.cerrarModalEditarMaestro = cerrarModalEditarMaestro;
-window.abrirModalAsignar = abrirModalAsignar;
+window.abrirModalAsignarCurso = abrirModalAsignarCurso;
 window.cerrarModalAsignarCurso = cerrarModalAsignarCurso;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -127,5 +125,18 @@ document.addEventListener('DOMContentLoaded', function() {
         modalAsignar.addEventListener('click', function(e) {
             if (e.target === this) cerrarModalAsignarCurso();
         });
+
+        if (modalAsignar.dataset.open === '1') {
+            abrirModalAsignarCurso();
+        }
     }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modalAsignarAbierto = document.getElementById('modalAsignarCurso');
+            if (modalAsignarAbierto && modalAsignarAbierto.style.display === 'flex') {
+                cerrarModalAsignarCurso();
+            }
+        }
+    });
 });

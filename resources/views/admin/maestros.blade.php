@@ -107,7 +107,7 @@
                                 <a href="{{ route('admin.maestros.show', $maestro->id) }}"
                                     style="background:#111827; border:none; color:#fff; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px; text-decoration:none;"
                                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
-                                    Asignar cursos
+                                    Gestionar programas
                                 </a>
                                 <button type="button" onclick="abrirModalEditarMaestro(@js($maestro->id), @js($maestro->nombre), @js($maestro->apellido), @js($maestro->telefono), @js($maestro->dui), @js($maestro->codigo), @js($maestro->user?->email ?? ''))"
                                     style="background:#eff6ff; border:none; color:#3b82f6; cursor:pointer; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px;"
