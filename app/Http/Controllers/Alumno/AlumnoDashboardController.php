@@ -10,8 +10,10 @@ use App\Models\Nota;
 use App\Models\Mensualidad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class AlumnoDashboardController extends Controller
 {
@@ -36,7 +38,7 @@ class AlumnoDashboardController extends Controller
 
         $inscripcion = Inscripcion::with('curso')
             ->where('alumno_id', $alumno->id)
-            ->where('activa', true)
+            ->where('estado', 'aprobada')
             ->first();
 
         $notas = collect();
@@ -51,6 +53,7 @@ class AlumnoDashboardController extends Controller
         if (!$inscripcion) {
             $cursosDisponibles = Curso::where('activo', true)
                 ->where('anio_lectivo', (int) now()->year)
+                ->noFinalizado()
                 ->get();
         }
 
@@ -82,6 +85,7 @@ class AlumnoDashboardController extends Controller
         if (!$inscripcion) {
             $cursosDisponibles = Curso::where('activo', true)
                 ->where('anio_lectivo', (int) now()->year)
+                ->noFinalizado()
                 ->get();
         }
 
@@ -99,7 +103,7 @@ class AlumnoDashboardController extends Controller
 
         $request->validate([
             'curso_id' => 'required|exists:cursos,id',
-
+            'tomara_ingles' => 'sometimes|boolean',
 
             'alumno_dui' => [
                 $esMayorDeEdad ? 'required' : 'nullable',
@@ -158,6 +162,10 @@ class AlumnoDashboardController extends Controller
 
         $curso = Curso::findOrFail($request->curso_id);
 
+        if ($curso->estado_curso === 'FINALIZADO') {
+            return back()->with('error', 'No es posible inscribirse en un curso finalizado.');
+        }
+
         // Generar PDF con datos y firmas digitales
         $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', [
             'alumno'               => $alumno,
@@ -184,6 +192,7 @@ class AlumnoDashboardController extends Controller
             'activa'            => false,
             'estado'            => 'pendiente',
             'documento_path'    => $filename,
+            'tomara_ingles'     => $request->boolean('tomara_ingles'),
             'observacion'       => json_encode([
                 'encargado_nombre'     => $request->encargado_nombre,
                 'encargado_telefono'   => $request->encargado_telefono ?? '—',
@@ -201,7 +210,7 @@ class AlumnoDashboardController extends Controller
 
         $inscripcion = Inscripcion::with('curso')
             ->where('alumno_id', $alumno->id)
-            ->where('activa', true)
+            ->where('estado', 'aprobada')
             ->first();
 
         $notas = collect();
@@ -232,23 +241,46 @@ class AlumnoDashboardController extends Controller
     {
         $alumno = $this->getAlumno();
 
-        $yaInscrito = Inscripcion::where('alumno_id', $alumno->id)
-            ->where('activa', true)
-            ->exists();
-
-        if ($yaInscrito) {
-            return back()->with('error', 'Ya estás inscrito en una sección.');
+        if (Inscripcion::bloqueaNuevaSolicitud($alumno->id)) {
+            return back()->with('error', 'Ya tienes una solicitud pendiente o una inscripción aprobada.');
         }
 
         $request->validate(['curso_id' => 'required|exists:cursos,id']);
 
-        Inscripcion::create([
-            'alumno_id'         => $alumno->id,
-            'curso_id'          => $request->curso_id,
-            'fecha_inscripcion' => now()->toDateString(),
-            'activa'            => true,
-            'estado'            => 'aprobada',
-        ]);
+        try {
+            DB::transaction(function () use ($request, $alumno) {
+                $curso = Curso::query()
+                    ->lockForUpdate()
+                    ->findOrFail($request->curso_id);
+
+                if ($curso->estado_curso === 'FINALIZADO') {
+                    throw ValidationException::withMessages([
+                        'curso_id' => 'No es posible inscribirse en un curso finalizado.',
+                    ]);
+                }
+
+                $inscritosActuales = Inscripcion::query()
+                    ->where('curso_id', $curso->id)
+                    ->where('estado', 'aprobada')
+                    ->count();
+
+                if ($inscritosActuales >= Curso::CUPOS_MAXIMO) {
+                    throw ValidationException::withMessages([
+                        'curso_id' => 'El curso ya alcanzó el límite de 20 alumnos.',
+                    ]);
+                }
+
+                Inscripcion::create([
+                    'alumno_id' => $alumno->id,
+                    'curso_id' => $request->curso_id,
+                    'fecha_inscripcion' => now()->toDateString(),
+                    'activa' => true,
+                    'estado' => 'aprobada',
+                ]);
+            });
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
 
         return back()->with('success', '¡Inscripción realizada correctamente!');
     }
@@ -256,7 +288,7 @@ class AlumnoDashboardController extends Controller
     public function descargarPdf()
     {
         $alumno            = $this->getAlumno();
-        $cursosDisponibles = Curso::where('activo', true)->where('anio_lectivo', 2026)->get();
+        $cursosDisponibles = Curso::where('activo', true)->where('anio_lectivo', 2026)->noFinalizado()->get();
 
         $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', compact('alumno', 'cursosDisponibles'))
             ->setPaper('a4', 'portrait');
@@ -271,7 +303,14 @@ class AlumnoDashboardController extends Controller
         $request->validate([
             'curso_id'  => 'required|exists:cursos,id',
             'documento' => 'required|file|mimes:pdf|max:5120',
+            'tomara_ingles' => 'sometimes|boolean',
         ]);
+
+        $curso = Curso::findOrFail($request->curso_id);
+
+        if ($curso->estado_curso === 'FINALIZADO') {
+            return back()->with('error', 'No es posible inscribirse en un curso finalizado.');
+        }
 
         $existente = Inscripcion::where('alumno_id', $alumno->id)
             ->whereIn('estado', ['pendiente', 'aprobada'])
@@ -290,6 +329,7 @@ class AlumnoDashboardController extends Controller
             'activa'            => false,
             'estado'            => 'pendiente',
             'documento_path'    => $path,
+            'tomara_ingles'     => $request->boolean('tomara_ingles'),
         ]);
 
         return back()->with('success', 'Solicitud enviada correctamente. El administrador la revisará pronto.');

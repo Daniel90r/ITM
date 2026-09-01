@@ -199,10 +199,29 @@
                         <p style="font-size:18px; font-weight:700; color:#111827; margin:0 0 2px;">{{ $curso->seccion }}</p>
                         <p style="font-size:12px; font-weight:500; color:#374151; margin:0 0 2px;">{{ $curso->nombre }}</p>
                         <p style="font-size:11px; color:#6b7280; margin:0;">{{ $curso->nivel }}</p>
+                        <p style="font-size:11px; margin:4px 0 0; {{ $curso->esta_lleno ? 'color:#dc2626;' : 'color:#16a34a;' }}">
+                            @if($curso->esta_lleno)
+                                Cupo lleno
+                            @else
+                                {{ $curso->cupos_disponibles }} cupo(s) disponible(s) de 20
+                            @endif
+                        </p>
                     </div>
                 </label>
                 @endforeach
             </div>
+        </div>
+
+        {{-- SECCIÓN 3.5: Opción de Inglés --}}
+        <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:20px;">
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" name="tomara_ingles" value="1"
+                    style="width:18px; height:18px; margin-top:2px; accent-color:#f59e0b; cursor:pointer;">
+                <div>
+                    <p style="font-size:13px; font-weight:600; color:#374151; margin:0;">Deseo tomar el curso de Inglés</p>
+                    <p style="font-size:11px; color:#6b7280; margin:2px 0 0;">Se agregará la materia de Inglés a tu inscripción al aprobarse tu solicitud.</p>
+                </div>
+            </label>
         </div>
 
         {{-- SECCIÓN 4: Firmas digitales --}}

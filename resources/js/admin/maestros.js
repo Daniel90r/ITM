@@ -33,7 +33,7 @@ function cerrarModalMaestro() {
     document.body.style.overflow = '';
 }
 
-function abrirModalEditarMaestro(id, nombre, apellido, codigo, email) {
+function abrirModalEditarMaestro(id, nombre, apellido, codigo, email, telefono, dui) {
     const modal = document.getElementById('modalEditarMaestro');
     const form = document.getElementById('formEditarMaestro');
 
@@ -42,6 +42,8 @@ function abrirModalEditarMaestro(id, nombre, apellido, codigo, email) {
     document.getElementById('editApellido').value = apellido;
     document.getElementById('editCodigo').value = codigo;
     document.getElementById('editEmail').value = email;
+    document.getElementById('editTelefono').value = telefono ?? '';
+    document.getElementById('editDui').value = dui ?? '';
     document.getElementById('editPassword').value = '';
     document.getElementById('editPassword_confirmation').value = '';
 

@@ -61,7 +61,7 @@ class NotasController extends Controller
 
             $alumnos = Inscripcion::with('alumno')
                 ->where('curso_id', $detalle->curso_id)
-                ->where('activa', true)
+                ->where('estado', 'aprobada')
                 ->get()
                 ->map(fn($i) => $i->alumno)
                 ->sortBy('apellido');

@@ -56,6 +56,9 @@
                             Turno <strong>{{ $inscripcion->curso->nivel }}</strong> ·
                             {{ \Carbon\Carbon::parse($inscripcion->fecha_inscripcion)->isoFormat('D [de] MMMM YYYY') }}
                         </p>
+                        @if($inscripcion->tomara_ingles)
+                            <p style="font-size:12px; color:#1d4ed8; margin:4px 0 0;">🌐 Incluye curso de Inglés</p>
+                        @endif
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px;">
@@ -101,8 +104,8 @@
                     <div>
                         <p style="font-size:14px; font-weight:600; color:#dc2626; margin:0 0 4px;">Solicitud rechazada</p>
                         <p style="font-size:13px; color:#374151; margin:0;">
-                            @if($inscripcion->observacion)
-                                Motivo: {{ $inscripcion->observacion }}
+                            @if($inscripcion->motivo_rechazo)
+                                Motivo: {{ $inscripcion->motivo_rechazo }}
                             @else
                                 Tu solicitud fue rechazada. Puedes enviar una nueva solicitud.
                             @endif

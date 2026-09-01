@@ -17,10 +17,9 @@
             @csrf
             <div style="margin-bottom:16px;">
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Motivo del rechazo
-                    <span style="color:#9ca3af; font-weight:400;">(opcional)</span>
+                    Motivo del rechazo <span style="color:#dc2626;">*</span>
                 </label>
-                <textarea name="observacion" rows="3" placeholder="Ej: Documentación incompleta, datos incorrectos..."
+                <textarea name="motivo_rechazo" rows="3" required placeholder="Ej: Documentación incompleta, datos incorrectos..."
                     style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box; resize:none; font-family:inherit;"
                     onfocus="this.style.borderColor='#dc2626'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
             </div>

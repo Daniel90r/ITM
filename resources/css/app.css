@@ -440,6 +440,24 @@
   transition: background 0.15s;
 }
 
+.btn-finalizar-curso {
+  background: #f59e0b;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.btn-finalizar-curso:hover {
+  background: #d97706;
+}
+
 .btn-link {
   font-size: 12px;
   text-decoration: none;

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 // RUTAS: ADMINISTRADOR
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
     // ADMINISTRADOR: Dashboard
     Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
@@ -55,6 +55,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::put('/admin/cursos/{id}', [\App\Http\Controllers\Admin\SeccionController::class, 'update'])
         ->name('admin.cursos.update');
+
+    Route::patch('/admin/cursos/{curso}/finalizar', [\App\Http\Controllers\Admin\SeccionController::class, 'finalizar'])
+        ->name('admin.cursos.finalizar');
 
     // ADMINISTRADOR: Encargados
     Route::get('/admin/encargados', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'encargados'])
@@ -109,6 +112,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/solicitudes', [App\Http\Controllers\Admin\InscripcionController::class, 'solicitudes'])->name('admin.solicitudes');
     Route::post('/admin/solicitudes/{id}/aprobar', [App\Http\Controllers\Admin\InscripcionController::class, 'aprobar'])->name('admin.solicitudes.aprobar');
     Route::post('/admin/solicitudes/{id}/rechazar', [App\Http\Controllers\Admin\InscripcionController::class, 'rechazar'])->name('admin.solicitudes.rechazar');
+    Route::post('/admin/solicitudes/{id}/reabrir', [App\Http\Controllers\Admin\InscripcionController::class, 'reabrir'])->name('admin.solicitudes.reabrir');
 
     Route::put('/alumnos/{id}', [App\Http\Controllers\Admin\AdminDashboardController::class, 'updateAlumno'])->name('admin.alumnos.update');
 
