@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Docente;
 
 use App\Http\Controllers\Controller;
-use App\Models\Maestro;
-use App\Models\DetalleCurso;
 use Illuminate\Support\Facades\Auth;
 
 class DocenteDashboardController extends Controller
@@ -15,11 +13,19 @@ class DocenteDashboardController extends Controller
 
     public function index()
     {
-        $docente = Maestro::where('user_id', Auth::id())->firstOrFail();
+        $docente = Auth::user()->maestro()->firstOrFail();
 
-        $cursos = DetalleCurso::with('curso', 'materia')
-            ->where('maestro_id', $docente->id)
+        $cursos = $docente->asignacionesDocentes()
+            ->with([
+                'detalleCurso.curso',
+                'detalleCurso.materia',
+            ])
+            ->where('estado', 'activa')
+            ->whereHas('detalleCurso.curso', fn ($q) => $q->where('activo', true))
+            ->whereHas('detalleCurso.materia', fn ($q) => $q->where('activa', true))
             ->get()
+            ->map(fn ($asignacion) => $asignacion->detalleCurso)
+            ->keyBy('id')
             ->groupBy('curso_id');
 
         return view('docente.dashboard', compact('docente', 'cursos'));
