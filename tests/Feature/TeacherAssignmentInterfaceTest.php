@@ -116,7 +116,7 @@ class TeacherAssignmentInterfaceTest extends TestCase
             ->get(route('admin.maestros.show', $data['maestro']->id));
 
         $response->assertSee($data['maestro']->nombre, false);
-        $response->assertDontSee($otroMaestro->nombre, false);
+        $response->assertSee($otroMaestro->nombre, false);
     }
 
     public function test_detail_does_not_show_other_maestro_data(): void
@@ -138,8 +138,10 @@ class TeacherAssignmentInterfaceTest extends TestCase
             ->get(route('admin.maestros.show', $data['maestro']->id));
 
         $response->assertDontSee($otroMaestro->codigo, false);
-        $response->assertDontSee($otroMaestro->telefono, false);
         $response->assertDontSee($otroMaestro->dui, false);
+        $response->assertDontSee($otroMaestro->telefono, false);
+        $response->assertDontSee($otroUser->email, false);
+        $response->assertDontSee($otroUser->password, false);
     }
 
     public function test_asignar_form_uses_correct_route(): void

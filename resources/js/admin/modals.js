@@ -96,6 +96,47 @@ function cerrarModalAsignarCurso() {
     }
 }
 
+// Modal functions for Cambiar Maestro
+function abrirModalCambiarMaestro(ruta, detalleId, cursoNombre, programaNombre) {
+    const modal = document.getElementById('modalCambiarMaestro');
+    const form = document.getElementById('formCambiarMaestro');
+
+    if (!modal || !form) {
+        return;
+    }
+
+    form.action = ruta;
+    const detalleInput = document.getElementById('detalleIdContexto');
+    if (detalleInput) detalleInput.value = detalleId;
+
+    const cursoSpan = document.getElementById('contextoCurso');
+    const programaSpan = document.getElementById('contextoPrograma');
+    if (cursoSpan) cursoSpan.textContent = cursoNombre;
+    if (programaSpan) programaSpan.textContent = programaNombre;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalCambiarMaestro() {
+    const modal = document.getElementById('modalCambiarMaestro');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+    const form = document.getElementById('formCambiarMaestro');
+    if (form) {
+        form.reset();
+        form.action = '';
+    }
+    const detalleInput = document.getElementById('detalleIdContexto');
+    if (detalleInput) detalleInput.value = '';
+    const cursoSpan = document.getElementById('contextoCurso');
+    const programaSpan = document.getElementById('contextoPrograma');
+    if (cursoSpan) cursoSpan.textContent = '';
+    if (programaSpan) programaSpan.textContent = '';
+}
+
 window.abrirModalNuevoAlumno = abrirModalNuevoAlumno;
 window.cerrarModalNuevoAlumno = cerrarModalNuevoAlumno;
 window.abrirModalMaestro = abrirModalMaestro;
@@ -104,6 +145,8 @@ window.abrirModalEditarMaestro = abrirModalEditarMaestro;
 window.cerrarModalEditarMaestro = cerrarModalEditarMaestro;
 window.abrirModalAsignarCurso = abrirModalAsignarCurso;
 window.cerrarModalAsignarCurso = cerrarModalAsignarCurso;
+window.abrirModalCambiarMaestro = abrirModalCambiarMaestro;
+window.cerrarModalCambiarMaestro = cerrarModalCambiarMaestro;
 
 document.addEventListener('DOMContentLoaded', function() {
     const modalNuevo = document.getElementById('modalNuevoMaestro');
@@ -131,11 +174,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    const modalCambiar = document.getElementById('modalCambiarMaestro');
+    if (modalCambiar) {
+        modalCambiar.addEventListener('click', function(e) {
+            if (e.target === this) cerrarModalCambiarMaestro();
+        });
+
+        if (modalCambiar.dataset.open === '1' && modalCambiar.dataset.action) {
+            modalCambiar.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             const modalAsignarAbierto = document.getElementById('modalAsignarCurso');
             if (modalAsignarAbierto && modalAsignarAbierto.style.display === 'flex') {
                 cerrarModalAsignarCurso();
+            }
+            const modalCambiarAbierto = document.getElementById('modalCambiarMaestro');
+            if (modalCambiarAbierto && modalCambiarAbierto.style.display === 'flex') {
+                cerrarModalCambiarMaestro();
             }
         }
     });

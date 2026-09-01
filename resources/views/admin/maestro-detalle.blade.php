@@ -119,6 +119,17 @@
                     </thead>
                     <tbody>
                         @foreach($maestro->detalleCursos as $detalle)
+                        @php
+                            $asignacionesActivas = $detalle->asignacionesDocentes->where('estado', 'activa');
+                            $asignacionesFinalizadas = $detalle->asignacionesDocentes->where('estado', 'finalizada');
+                            $asignacionesTotal = $detalle->asignacionesDocentes->count();
+                            $tieneNotas = $detalle->notas_count > 0;
+
+                            $puedeDesasignar = !$tieneNotas && $asignacionesFinalizadas->isEmpty() && $asignacionesTotal <= 1;
+                            $esCoherente = $asignacionesActivas->count() === 1 && $asignacionesActivas->first()->maestro_id == $maestro->id;
+                            $puedeCambiarMaestro = $esCoherente && $maestrosDisponibles->isNotEmpty();
+                            $historialInconsistente = !$esCoherente;
+                        @endphp
                         <tr style="border-top:1px solid #f1f5f9;">
                             <td style="padding:13px 24px; color:#111827; font-size:13px;">{{ $detalle->curso?->nombre ?? '—' }}</td>
                             <td style="padding:0 24px; color:#6b7280; font-size:13px;">
@@ -130,16 +141,98 @@
                             <td style="padding:0 24px; color:#111827; font-size:13px;">{{ $detalle->materia?->nombre ?? '—' }}</td>
                             <td style="padding:0 24px; color:#6b7280; font-size:13px; font-family:monospace;">{{ $detalle->materia?->codigo ?? '—' }}</td>
                             <td style="padding:13px 24px; text-align:center;">
-                                <form method="POST" action="{{ route('admin.maestros.desasignar', [$maestro->id, $detalle->id]) }}" style="display:inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                        onclick="return confirm('¿Está seguro de desasignar este programa del maestro?')"
-                                        style="background:#fef2f2; border:none; padding:6px 14px; border-radius:6px; color:#dc2626; font-size:12px; font-weight:600; cursor:pointer;"
-                                        onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-                                        Desasignar
+                                @if($historialInconsistente)
+                                    <span style="font-size:11px; color:#dc2626; display:block; margin-bottom:6px;">Historial inconsistente. Revise la asignación.</span>
+                                @elseif($esCoherente && !$maestrosDisponibles->isNotEmpty())
+                                    <span style="font-size:11px; color:#9ca3af; display:block; margin-bottom:6px;">No hay otro maestro activo disponible.</span>
+                                @endif
+
+                                @if($puedeCambiarMaestro)
+                                    <button type="button"
+                                        onclick="abrirModalCambiarMaestro(@js(route('admin.maestros.asignaciones.cambiar', [$maestro->id, $detalle->id])), @js($detalle->id), @js($detalle->curso?->nombre ?? '—'), @js($detalle->materia?->nombre ?? '—'))"
+                                        style="background:#eff6ff; border:none; padding:6px 14px; border-radius:6px; color:#3b82f6; font-size:12px; font-weight:600; cursor:pointer; margin-bottom:6px; display:block; width:100%;">
+                                        Cambiar maestro
                                     </button>
-                                </form>
+                                @endif
+
+                                @if($puedeDesasignar)
+                                    <form method="POST" action="{{ route('admin.maestros.desasignar', [$maestro->id, $detalle->id]) }}" style="display:inline-block;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            onclick="return confirm('¿Está seguro de desasignar este programa del maestro?')"
+                                            style="background:#fef2f2; border:none; padding:6px 14px; border-radius:6px; color:#dc2626; font-size:12px; font-weight:600; cursor:pointer;">
+                                            Desasignar
+                                        </button>
+                                    </form>
+                                @else
+                                    <span style="font-size:11px; color:#dc2626; display:block;">No eliminable</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background:#fafbfc; padding:10px 24px;">
+                                <details style="margin-top:4px;">
+                                    <summary style="cursor:pointer; font-size:12px; color:#374151; font-weight:600;">Ver historial docente</summary>
+                                    @if($detalle->asignacionesDocentes->isNotEmpty())
+                                    <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:11px;">
+                                        <thead>
+                                            <tr style="background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+                                                <th style="padding:6px 10px; text-align:left; color:#6b7280; font-weight:600;">Maestro</th>
+                                                <th style="padding:6px 10px; text-align:left; color:#6b7280; font-weight:600;">Estado</th>
+                                                <th style="padding:6px 10px; text-align:left; color:#9ca3af; font-weight:600;">Fecha inicio</th>
+                                                <th style="padding:6px 10px; text-align:left; color:#9ca3af; font-weight:600;">Fecha fin</th>
+                                                <th style="padding:6px 10px; text-align:left; color:#9ca3af; font-weight:600;">Motivo</th>
+                                                <th style="padding:6px 10px; text-align:left; color:#9ca3af; font-weight:600;">Registrado por</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($detalle->asignacionesDocentes as $asignacion)
+                                            <tr style="border-top:1px solid #f1f5f9;">
+                                                <td style="padding:8px 10px; color:#111827;">{{ $asignacion->maestro?->nombre_completo ?? '—' }}</td>
+                                                <td style="padding:8px 10px; color:#6b7280;">
+                                                    @if($asignacion->estado === 'activa')
+                                                        Activa
+                                                    @elseif($asignacion->estado === 'finalizada')
+                                                        Finalizada
+                                                    @elseif($asignacion->estado === 'programada')
+                                                        Programada
+                                                    @else
+                                                        {{ $asignacion->estado }}
+                                                    @endif
+                                                </td>
+                                                <td style="padding:8px 10px; color:#9ca3af;">
+                                                    @if($asignacion->fecha_inicio)
+                                                        {{ $asignacion->fecha_inicio->format('d/m/Y') }}
+                                                    @else
+                                                        No registrada
+                                                    @endif
+                                                </td>
+                                                <td style="padding:8px 10px; color:#9ca3af;">
+                                                    @if($asignacion->fecha_fin)
+                                                        {{ $asignacion->fecha_fin->format('d/m/Y') }}
+                                                    @elseif($asignacion->estado === 'activa')
+                                                        Actual
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </td>
+                                                <td style="padding:8px 10px; color:#9ca3af;">{{ $asignacion->motivo_cambio ?? '—' }}</td>
+                                                <td style="padding:8px 10px; color:#9ca3af;">
+                                                    @if($asignacion->asignado_por)
+                                                        {{ $asignacion->asignadoPor?->name ?? '—' }}
+                                                    @else
+                                                        Migración inicial
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                    @else
+                                    <p style="margin-top:8px; font-size:12px; color:#9ca3af;">No existe historial docente para este programa.</p>
+                                    @endif
+                                </details>
                             </td>
                         </tr>
                         @endforeach
@@ -157,6 +250,7 @@
 
 @include('admin.partials.modal-editar-maestro')
 @include('admin.partials.modal-asignar-curso')
+@include('admin.partials.modal-cambiar-maestro')
 
 @push('scripts')
 @vite('resources/js/admin/maestros.js')

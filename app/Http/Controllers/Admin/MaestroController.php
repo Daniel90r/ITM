@@ -31,7 +31,14 @@ class MaestroController extends Controller
     {
         $maestro = Maestro::with([
             'detalleCursos' => function ($q) {
-                $q->orderBy('curso_id')->orderBy('materia_id');
+                $q->orderBy('curso_id')->orderBy('materia_id')
+                    ->withCount('notas')
+                    ->with([
+                        'asignacionesDocentes' => function ($q2) {
+                            $q2->orderBy('fecha_inicio', 'desc')->orderBy('id', 'desc')
+                                ->with(['maestro', 'asignadoPor']);
+                        },
+                    ]);
             },
             'detalleCursos.curso',
             'detalleCursos.materia',
@@ -41,7 +48,13 @@ class MaestroController extends Controller
         $cursos = Curso::where('activo', 1)->orderBy('nombre')->orderBy('nivel')->orderBy('seccion')->get();
         $materias = Materia::where('activa', 1)->orderBy('nombre')->get();
 
-        return view('admin.maestro-detalle', compact('maestro', 'cursos', 'materias'));
+        $maestrosDisponibles = Maestro::where('activo', true)
+            ->where('id', '!=', $maestro->id)
+            ->orderBy('nombre')
+            ->orderBy('apellido')
+            ->get();
+
+        return view('admin.maestro-detalle', compact('maestro', 'cursos', 'materias', 'maestrosDisponibles'));
     }
 
     private function generarCodigoMaestro(string $nombre, string $apellido): string
