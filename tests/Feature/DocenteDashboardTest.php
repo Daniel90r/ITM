@@ -202,7 +202,7 @@ class DocenteDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Materia Inactiva', false);
-        $response->assertSee('No tienes materias asignadas.', false);
+        $response->assertSee('No tienes programas activos asignados actualmente.', false);
     }
 
     public function test_materia_inactiva_no_aparece(): void
@@ -219,7 +219,7 @@ class DocenteDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Materia Inactiva', false);
-        $response->assertSee('No tienes materias asignadas.', false);
+        $response->assertSee('No tienes programas activos asignados actualmente.', false);
     }
 
     public function test_asignacion_activa_con_fecha_inicio_nula_aparece(): void
@@ -245,7 +245,7 @@ class DocenteDashboardTest extends TestCase
             ->get(route('docente.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('No tienes materias asignadas.', false);
+        $response->assertSee('No tienes programas activos asignados actualmente.', false);
     }
 
     public function test_programas_agrupados_por_curso_id(): void
@@ -293,7 +293,7 @@ class DocenteDashboardTest extends TestCase
         $response->assertOk();
         $response->assertSee('Materia Primera', false);
         $response->assertSee('Materia Segunda', false);
-        $response->assertSee('1 cursos', false);
+        $response->assertSee('1 curso', false);
     }
 
     public function test_relaciones_detalle_curso_materia_cargadas_anticipadamente(): void
@@ -365,7 +365,7 @@ class DocenteDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Materia Sin Asignacion', false);
-        $response->assertSee('No tienes materias asignadas.', false);
+        $response->assertSee('No tienes programas activos asignados actualmente.', false);
 
         $this->assertDatabaseMissing('asignaciones_docentes', [
             'detalle_curso_id' => $detalle->id,
