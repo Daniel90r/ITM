@@ -65,6 +65,22 @@
                 </div>
             </div>
 
+            {{-- Teléfono y DUI --}}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="editTelefono" name="telefono" maxlength="9" required
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">DUI <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="editDui" name="dui" maxlength="10" required
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                </div>
+            </div>
+
             {{-- Código --}}
             <div>
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Código <span style="color:#9ca3af; font-weight:400;">(No editable)</span></label>

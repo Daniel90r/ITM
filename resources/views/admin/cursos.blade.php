@@ -12,7 +12,7 @@
                 </div>
                 <div>
                     <h2 style="font-size:16px; font-weight:700; margin:0; color:#111827;">Gestión de Cursos</h2>
-                    <p style="font-size:12px; color:#6b7280; margin:0;">{{ $cursos->count() }} Cursos activos</p>
+                     <p style="font-size:12px; color:#6b7280; margin:0;">{{ $cursos->count() }} Cursos registrados</p>
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -70,27 +70,96 @@
                             <p style="font-size:15px; font-weight:700; color:#111827; margin:6px 0 2px;">{{ $curso->nombre }}</p>
                             <p style="font-size:12px; color:#6b7280; margin:0;">{{ $curso->nivel }} · {{ $curso->anio_lectivo }}</p>
                         </div>
-                        @if($curso->activo)
-                            <span class="badge-green">Activo</span>
-                        @else
-                            <span style="background:#fef2f2; color:#dc2626; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">Inactivo</span>
-                        @endif
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            @switch($curso->estado_curso)
+                                @case('PROXIMO')
+                                    <span style="background:#eff6ff; color:#1d4ed8; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">Próximo</span>
+                                    @break
+                                @case('ACTIVO')
+                                    <span style="background:#f0fdf4; color:#16a34a; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">Activo</span>
+                                    @break
+                                @case('FINALIZADO')
+                                    <span style="background:#fef2f2; color:#dc2626; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">Finalizado</span>
+                                    @break
+                                @default
+                                    <span style="background:#f3f4f6; color:#6b7280; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">Sin fechas</span>
+                            @endswitch
+
+                            @if($curso->esta_por_finalizar)
+                                <span
+                                    style="
+                                        padding:4px 8px;
+                                        border-radius:999px;
+                                        background:#fffbeb;
+                                        color:#b45309;
+                                        font-size:11px;
+                                        font-weight:600;
+                                        white-space:nowrap;
+                                    "
+                                >
+                                    @if($curso->dias_para_finalizar === 0)
+                                        ⚠ Hoy
+                                    @elseif($curso->dias_para_finalizar === 1)
+                                        ⚠ Mañana
+                                    @else
+                                        ⚠ {{ $curso->dias_para_finalizar }} días
+                                    @endif
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:16px; display:flex; flex-direction:column; gap:4px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:11px; color:#6b7280; font-weight:500;">Inicio</span>
+                            <strong style="font-size:12px; color:#111827;">{{ $curso->fecha_inicio?->translatedFormat('d \d\e F \d\e Y') ?? 'Sin definir' }}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:11px; color:#6b7280; font-weight:500;">Finaliza</span>
+                            <strong style="font-size:12px; color:#111827;">{{ $curso->fecha_fin?->translatedFormat('d \d\e F \d\e Y') ?? 'Sin definir' }}</strong>
+                        </div>
                     </div>
 
                     <div style="margin-bottom:16px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                             <span style="font-size:12px; color:#6b7280; font-weight:500;">Alumnos inscritos</span>
-                            <span style="font-size:12px; font-weight:700; color:#111827;">{{ $curso->inscripciones_count }}</span>
+                            <span style="font-size:12px; font-weight:700; color:#111827;">
+                                {{ $curso->inscripciones_count }} / 20
+                                @if($curso->esta_lleno)
+                                    <span style="color:#dc2626;"> · Cupo lleno</span>
+                                @else
+                                    <span style="color:#16a34a;"> · {{ $curso->cupos_disponibles }} disponible(s)</span>
+                                @endif
+                            </span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width:{{ $porcentaje }}%;"></div>
+                            @php $porcentaje = min(round(($curso->inscripciones_count / 20) * 100), 100); @endphp
+                            <div class="progress-fill" style="width:{{ $porcentaje }}%; {{ $curso->esta_lleno ? 'background:#dc2626;' : '' }}"></div>
                         </div>
                         <p style="font-size:11px; color:#9ca3af; margin:4px 0 0; text-align:right;">{{ $porcentaje }}% ocupado</p>
                     </div>
 
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <a href="{{ route('admin.cursos.edit', $curso->id) }}" class="btn-sm">Editar</a>
                         <a href="{{ route('admin.cursos.show', $curso->id) }}" class="btn-black">Ver detalle</a>
+
+                        @if($curso->estado_curso === 'ACTIVO')
+                        <form
+                            action="{{ route('admin.cursos.finalizar', $curso) }}"
+                            method="POST"
+                            class="form-finalizar-curso"
+                            data-confirm="¿Está seguro de que desea finalizar este curso? Esta acción cerrará el curso para nuevas inscripciones."
+                            data-confirm-titulo="Finalizar curso"
+                            data-confirm-boton="Sí, finalizar"
+                            data-confirm-tipo="peligro"
+                        >
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn-finalizar-curso">
+                                Finalizar curso
+                            </button>
+                        </form>
+                        @endif
                     </div>
                 </div>
                 @endforeach

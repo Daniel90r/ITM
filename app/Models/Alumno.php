@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Alumno extends Model
 {
+    use HasFactory;
     protected $fillable = ['user_id', 'nombre', 'apellido', 'codigo', 'fecha_nacimiento', 'dui', 'genero', 'telefono', 'direccion', 'activo'];
 
     public function getNombreCompletoAttribute(): string
@@ -45,6 +47,21 @@ class Alumno extends Model
     {
         return $this->belongsToMany(Encargado::class, 'alumno_encargado', 'alumno_id', 'encargado_id')
                     ->withPivot('parentesco')
+                    ->withTimestamps();
+    }
+
+    public function materias(): BelongsToMany
+    {
+        return $this->belongsToMany(Materia::class, 'alumno_materia')
+                    ->withPivot('curso_id')
+                    ->withTimestamps();
+    }
+
+    public function materiasEnCurso(int $cursoId)
+    {
+        return $this->belongsToMany(Materia::class, 'alumno_materia')
+                    ->withPivot('curso_id')
+                    ->wherePivot('curso_id', $cursoId)
                     ->withTimestamps();
     }
 

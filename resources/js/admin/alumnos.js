@@ -1,9 +1,10 @@
-function abrirModalEditar(id, nombre, apellido, email, cursoId) {
+function abrirModalEditar(id, nombre, apellido, email, cursoId, telefono) {
     document.getElementById('editId').value       = id;
     document.getElementById('editNombre').value   = nombre;
     document.getElementById('editApellido').value = apellido;
     document.getElementById('editEmail').value    = email;
     document.getElementById('editCurso').value    = cursoId;
+    document.getElementById('editTelefono').value = telefono ?? '';
     document.getElementById('editPassword').value = '';
     document.getElementById('formEditarAlumno').action = '/admin/alumnos/' + id;
     document.getElementById('modalEditarAlumno').style.display = 'flex';

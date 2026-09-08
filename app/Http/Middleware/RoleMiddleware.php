@@ -23,7 +23,7 @@ class RoleMiddleware
             return redirect()->guest(route('login'));
         }
 
-        if (!in_array($user->role, $roles, true)) {
+        if (! in_array($user->role, $roles, true)) {
             abort(403, 'Acceso no autorizado.');
         }
 

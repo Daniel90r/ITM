@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 // RUTAS: ADMINISTRADOR
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
     // ADMINISTRADOR: Dashboard
     Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
@@ -19,20 +19,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.alumnos.siguienteCodigo');
     // ADMINISTRADOR: Maestros
     Route::get('/admin/maestros', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'maestros'])
-        ->name('admin.maestros')
-        ->middleware('role:admin');
+        ->name('admin.maestros');
 
     Route::post('/admin/maestros', [\App\Http\Controllers\Admin\MaestroController::class, 'store'])
-        ->name('admin.maestros.store')
-        ->middleware('role:admin');
+        ->name('admin.maestros.store');
 
     Route::post('/admin/maestros/siguiente-codigo', [\App\Http\Controllers\Admin\MaestroController::class, 'siguienteCodigoMaestro'])
-        ->name('admin.maestros.siguienteCodigo')
-        ->middleware('role:admin');
+        ->name('admin.maestros.siguienteCodigo');
 
     Route::put('/admin/maestros/{id}', [\App\Http\Controllers\Admin\MaestroController::class, 'update'])
-        ->name('admin.maestros.update')
-        ->middleware('role:admin');
+        ->name('admin.maestros.update');
 
     // ADMINISTRADOR: Materias
     Route::get('/admin/materias', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'materias'])
@@ -60,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/admin/cursos/{id}', [\App\Http\Controllers\Admin\SeccionController::class, 'update'])
         ->name('admin.cursos.update');
 
+    Route::patch('/admin/cursos/{curso}/finalizar', [\App\Http\Controllers\Admin\SeccionController::class, 'finalizar'])
+        ->name('admin.cursos.finalizar');
+
     // ADMINISTRADOR: Inscripciones
     Route::get('/admin/inscripciones', [\App\Http\Controllers\Admin\InscripcionController::class, 'index'])
         ->name('admin.inscripciones');
@@ -68,22 +67,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ADMINISTRADOR: Notas
     Route::get('/admin/notas', [\App\Http\Controllers\Admin\NotaController::class, 'index'])
-        ->name('admin.notas')
-        ->middleware('role:admin');
+        ->name('admin.notas');
     Route::post('/admin/notas', [\App\Http\Controllers\Admin\NotaController::class, 'store'])
-        ->name('admin.notas.store')
-        ->middleware('role:admin');
+        ->name('admin.notas.store');
 
     // ADMINISTRADOR: Boletas
     Route::get('/admin/boletas', [\App\Http\Controllers\Admin\BoletaController::class, 'index'])
-        ->name('admin.boletas')
-        ->middleware('role:admin');
+        ->name('admin.boletas');
     Route::get('/admin/boletas/{alumno_id}', [\App\Http\Controllers\Admin\BoletaController::class, 'show'])
-        ->name('admin.boletas.show')
-        ->middleware('role:admin');
+        ->name('admin.boletas.show');
     Route::get('/boletas/{id}/pdf', [\App\Http\Controllers\Admin\BoletaController::class, 'generarPdf'])
-        ->name('admin.boletas.pdf')
-        ->middleware('role:admin');
+        ->name('admin.boletas.pdf');
 
     // ADMINISTRADOR: Mensualidades
     Route::get('/admin/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])
@@ -99,32 +93,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.pagos');
 
     Route::get('/admin/maestros/{id}', [\App\Http\Controllers\Admin\MaestroController::class, 'show'])
-        ->name('admin.maestros.show')
-        ->middleware('role:admin');
+        ->name('admin.maestros.show');
 
     Route::post('/admin/maestros/{id}/asignar', [\App\Http\Controllers\Admin\MaestroController::class, 'asignar'])
-        ->name('admin.maestros.asignar')
-        ->middleware('role:admin');
+        ->name('admin.maestros.asignar');
 
     Route::delete('/admin/maestros/{maestro_id}/desasignar/{detalle_id}', [\App\Http\Controllers\Admin\MaestroController::class, 'desasignar'])
-        ->name('admin.maestros.desasignar')
-        ->middleware('role:admin');
+        ->name('admin.maestros.desasignar');
 
     Route::put('/admin/maestros/{maestro_id}/programas/{detalle_id}/cambiar-maestro', [\App\Http\Controllers\Admin\MaestroController::class, 'cambiarMaestro'])
-        ->name('admin.maestros.asignaciones.cambiar')
-        ->middleware('role:admin');
+        ->name('admin.maestros.asignaciones.cambiar');
 
     Route::delete('/inscripciones/{id}', [\App\Http\Controllers\Admin\InscripcionController::class, 'desactivar'])->name('admin.inscripciones.desactivar');
 
     Route::get('/admin/solicitudes', [App\Http\Controllers\Admin\InscripcionController::class, 'solicitudes'])->name('admin.solicitudes');
     Route::post('/admin/solicitudes/{id}/aprobar', [App\Http\Controllers\Admin\InscripcionController::class, 'aprobar'])->name('admin.solicitudes.aprobar');
     Route::post('/admin/solicitudes/{id}/rechazar', [App\Http\Controllers\Admin\InscripcionController::class, 'rechazar'])->name('admin.solicitudes.rechazar');
+    Route::post('/admin/solicitudes/{id}/reabrir', [App\Http\Controllers\Admin\InscripcionController::class, 'reabrir'])->name('admin.solicitudes.reabrir');
 
     Route::put('/alumnos/{id}', [App\Http\Controllers\Admin\AdminDashboardController::class, 'updateAlumno'])->name('admin.alumnos.update');
 
     // ADMINISTRADOR: Asistencias
     Route::get('/admin/asistencias', [App\Http\Controllers\Admin\AsistenciaController::class, 'index'])
-        ->name('admin.asistencias')
-        ->middleware('role:admin');
+        ->name('admin.asistencias');
 
 });

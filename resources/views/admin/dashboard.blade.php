@@ -1,73 +1,6 @@
 <x-app-layout>
 <div class="page-layout admin-sidebar">
-    {{-- todo es de el panel del ditector  --}}
-    <aside class="sidebar sidebar-scroll">
-        <div class="sidebar-brand">
-            <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM Aguilares" class="sidebar-brand-img">
-            <div>
-                <p style="font-weight:700; font-size:14px; color:#0f172a;">ITM Aguilares</p>
-                <p style="font-size:11px; color:#94a3b8;">Sistema Académico</p>
-            </div>
-        </div>
-
-        <p class="sidebar-section-label">Principal</p>
-        <a href="{{ route('admin.dashboard') }}" class="sidebar-link"
-           style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; font-weight:600;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Panel principal
-        </a>
-
-        @foreach([
-            ['Alumnos',route('admin.alumnos'),'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'],
-            ['Maestros',route('admin.maestros'),'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3z']
-        ] as [$label,$href,$path])
-        <a href="{{ $href }}" class="sidebar-link">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $path }}"/><circle cx="12" cy="7" r="4"/></svg>
-            {{ $label }}
-        </a>
-        @endforeach
-        {{-- Esta es la parte academica  --}}
-        <p class="sidebar-section-label">Académico</p>
-        @foreach([
-            ['Materias',route('admin.materias'),'M4 19.5A2.5 2.5 0 0 1 6.5 17H20'],
-            ['Cursos',route('admin.cursos'),'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
-['Inscripciones',route('admin.inscripciones'),'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'],
-             ['Notas',route('admin.notas'),'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'],
-             ['Boletas',route('admin.boletas'),'M9 11l3 3L22 4']
-        ] as [$label,$href,$path])
-        <a href="{{ $href }}" class="sidebar-link">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $path }}"/></svg>
-            {{ $label }}
-        </a>
-        @endforeach
-        {{-- Esta es la parte de los pagos de los alumnos  --}}
-        <p class="sidebar-section-label">Finanzas</p>
-        @foreach([
-            ['Mensualidades',route('admin.mensualidades'),'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
-            ['Pagos',route('admin.pagos'),'M1 4h22v16H1z']
-        ] as [$label,$href,$path])
-        <a href="{{ $href }}" class="sidebar-link">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $path }}"/></svg>
-            {{ $label }}
-        </a>
-        @endforeach
-        {{-- Aqui es la parte de cerrar la seccion  --}}
-        <div class="sidebar-user">
-            <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; object-fit:cover;">
-            <div style="flex:1; overflow:hidden;">
-                <p style="font-size:13px; font-weight:500; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ Auth::user()->name }}</p>
-                <p style="font-size:11px; color:#94a3b8;">Director</p>
-            </div>
-            <form method="POST" action="{{ route('logout') }}" id="logoutForm">
-                @csrf
-                <button type="button" title="Salir"
-                        onclick="openLogoutModal(document.getElementById('logoutForm'))"
-                        class="sidebar-btn-logout">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </button>
-            </form>
-        </div>
-    </aside>
+    @include('components.admin-sidebar', ['active' => 'dashboard'])
     {{-- Esta es la parte de estadisticas que muestra datos como gagos, promedios y cosas asi --}}
     <div class="main-content main-content-alt">
 
@@ -171,6 +104,4 @@
         </div>
     </div>
 </div>
-
-<x-logout-modal />
 </x-app-layout>

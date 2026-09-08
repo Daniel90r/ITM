@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Alumno;
 use App\Models\AsignacionDocente;
+use App\Models\Asistencia;
 use App\Models\Curso;
 use App\Models\DetalleCurso;
 use App\Models\Maestro;
@@ -51,6 +52,13 @@ class TeacherAssignmentDeletionTest extends TestCase
             'maestro_id' => $maestro->id,
         ]);
 
+        AsignacionDocente::create([
+            'detalle_curso_id' => $detalle->id,
+            'maestro_id' => $maestro->id,
+            'estado' => 'activa',
+            'asignado_por' => $admin->id,
+        ]);
+
         return [
             'admin' => $admin,
             'maestro' => $maestro,
@@ -60,7 +68,7 @@ class TeacherAssignmentDeletionTest extends TestCase
         ];
     }
 
-    public function test_admin_puede_eliminar_asignacion_sin_notas(): void
+    public function test_desasignar_finaliza_asignacion_y_nullifica_maestro(): void
     {
         $data = $this->crearAsignacionBasica();
 
@@ -72,11 +80,32 @@ class TeacherAssignmentDeletionTest extends TestCase
             ]));
 
         $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
-        $response->assertSessionHas('success', 'Asignación eliminada correctamente.');
-        $this->assertDatabaseMissing('detalle_cursos', ['id' => $data['detalle']->id]);
+        $response->assertSessionHas('success', 'Asignación finalizada correctamente. El maestro fue desasignado del programa.');
+
+        // El DetalleCurso sigue existiendo
+        $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
+
+        // maestro_id queda null
+        $this->assertDatabaseHas('detalle_cursos', [
+            'id' => $data['detalle']->id,
+            'maestro_id' => null,
+        ]);
+
+        // La asignación activa fue finalizada (no eliminada)
+        $this->assertDatabaseHas('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'maestro_id' => $data['maestro']->id,
+            'estado' => 'finalizada',
+        ]);
+
+        // No queda ninguna asignación activa
+        $this->assertDatabaseMissing('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'estado' => 'activa',
+        ]);
     }
 
-    public function test_asignacion_con_notas_no_puede_eliminarse(): void
+    public function test_desasignar_preserva_notas_existentes(): void
     {
         $data = $this->crearAsignacionBasica();
 
@@ -95,12 +124,6 @@ class TeacherAssignmentDeletionTest extends TestCase
             'registrado_por' => $data['maestro']->id,
         ]);
 
-        $asignacion = AsignacionDocente::create([
-            'detalle_curso_id' => $data['detalle']->id,
-            'maestro_id' => $data['maestro']->id,
-            'estado' => 'activa',
-        ]);
-
         $response = $this
             ->actingAs($data['admin'])
             ->delete(route('admin.maestros.desasignar', [
@@ -109,20 +132,40 @@ class TeacherAssignmentDeletionTest extends TestCase
             ]));
 
         $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
-        $response->assertSessionHas('error', 'No se puede eliminar la asignación porque contiene notas registradas.');
+        $response->assertSessionHas('success');
+
+        // El DetalleCurso sigue existiendo
         $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
+
+        // Las notas existentes permanecen
         $this->assertDatabaseHas('notas', ['id' => $nota->id]);
-        $this->assertDatabaseHas('asignaciones_docentes', ['id' => $asignacion->id]);
+
+        // La asignación fue finalizada, no eliminada
+        $this->assertDatabaseHas('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'estado' => 'finalizada',
+        ]);
     }
 
-    public function test_sin_notas_con_asignacion_activa_elimina_asignacion_y_detalle(): void
+    public function test_desasignar_preserva_asistencias_existentes(): void
     {
         $data = $this->crearAsignacionBasica();
 
-        $asignacion = AsignacionDocente::create([
-            'detalle_curso_id' => $data['detalle']->id,
-            'maestro_id' => $data['maestro']->id,
-            'estado' => 'activa',
+        $alumno = Alumno::create([
+            'nombre' => 'Test',
+            'apellido' => 'Alumno',
+            'codigo' => 'ALU00002',
+            'fecha_nacimiento' => '2000-01-01',
+            'genero' => 'M',
+            'activo' => true,
+        ]);
+
+        $asistencia = Asistencia::create([
+            'curso_id' => $data['curso']->id,
+            'alumno_id' => $alumno->id,
+            'fecha' => '2025-09-01',
+            'estado' => 'presente',
+            'registrado_por' => $data['maestro']->id,
         ]);
 
         $response = $this
@@ -133,26 +176,27 @@ class TeacherAssignmentDeletionTest extends TestCase
             ]));
 
         $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
-        $response->assertSessionHas('success', 'Asignación eliminada correctamente.');
-        $this->assertDatabaseMissing('asignaciones_docentes', ['detalle_curso_id' => $data['detalle']->id]);
-        $this->assertDatabaseMissing('detalle_cursos', ['id' => $data['detalle']->id]);
+        $response->assertSessionHas('success');
+
+        // Las asistencias existentes permanecen
+        $this->assertDatabaseHas('asistencias', ['id' => $asistencia->id]);
+
+        // El DetalleCurso sigue existiendo
+        $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
     }
 
-    public function test_con_historial_finalizado_no_se_elimina(): void
+    public function test_desasignar_preserva_historial_finalizado(): void
     {
         $data = $this->crearAsignacionBasica();
 
-        AsignacionDocente::create([
-            'detalle_curso_id' => $data['detalle']->id,
-            'maestro_id' => $data['maestro']->id,
-            'estado' => 'activa',
-        ]);
-
+        // Una asignación finalizada del historial
         AsignacionDocente::create([
             'detalle_curso_id' => $data['detalle']->id,
             'maestro_id' => $data['maestro']->id,
             'estado' => 'finalizada',
+            'fecha_inicio' => '2025-01-01',
             'fecha_fin' => '2025-06-30',
+            'motivo_cambio' => 'Cambio anterior',
         ]);
 
         $response = $this
@@ -163,12 +207,133 @@ class TeacherAssignmentDeletionTest extends TestCase
             ]));
 
         $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
-        $response->assertSessionHas('error', 'No se puede eliminar el programa porque contiene historial de asignaciones docentes.');
-        $this->assertDatabaseHas('asignaciones_docentes', ['detalle_curso_id' => $data['detalle']->id]);
+        $response->assertSessionHas('success');
+
+        // El DetalleCurso sigue existiendo
         $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
+
+        // La asignación histórica finalizada sigue existiendo
+        $this->assertDatabaseHas('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'estado' => 'finalizada',
+            'motivo_cambio' => 'Cambio anterior',
+        ]);
+
+        // La asignación histórica conserva su fecha_fin original
+        $historial = AsignacionDocente::where('detalle_curso_id', $data['detalle']->id)
+            ->where('estado', 'finalizada')
+            ->where('motivo_cambio', 'Cambio anterior')
+            ->first();
+        $this->assertNotNull($historial);
+        $this->assertEquals('2025-06-30', $historial->fecha_fin->format('Y-m-d'));
+
+        // No queda ninguna asignación activa
+        $this->assertDatabaseMissing('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'estado' => 'activa',
+        ]);
+
+        // maestro_id queda null
+        $this->assertDatabaseHas('detalle_cursos', [
+            'id' => $data['detalle']->id,
+            'maestro_id' => null,
+        ]);
     }
 
-    public function test_no_puede_eliminarse_asignacion_de_otro_maestro(): void
+    public function test_desasignar_sin_asignacion_activa_falla(): void
+    {
+        $data = $this->crearAsignacionBasica();
+
+        // Finalizar la asignación activa manualmente
+        AsignacionDocente::where('detalle_curso_id', $data['detalle']->id)
+            ->where('estado', 'activa')
+            ->update([
+                'estado' => 'finalizada',
+                'fecha_fin' => today(),
+            ]);
+
+        $response = $this
+            ->actingAs($data['admin'])
+            ->delete(route('admin.maestros.desasignar', [
+                'maestro_id' => $data['maestro']->id,
+                'detalle_id' => $data['detalle']->id,
+            ]));
+
+        $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
+        $response->assertSessionHas('error');
+
+        // El DetalleCurso y la asignación no cambian
+        $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
+        $this->assertDatabaseHas('detalle_cursos', [
+            'id' => $data['detalle']->id,
+            'maestro_id' => $data['maestro']->id,
+        ]);
+    }
+
+    public function test_desasignar_con_multiples_activas_falla(): void
+    {
+        $data = $this->crearAsignacionBasica();
+
+        // Crear una segunda asignación activa (simula estado inconsistente)
+        AsignacionDocente::create([
+            'detalle_curso_id' => $data['detalle']->id,
+            'maestro_id' => $data['maestro']->id,
+            'estado' => 'activa',
+        ]);
+
+        $response = $this
+            ->actingAs($data['admin'])
+            ->delete(route('admin.maestros.desasignar', [
+                'maestro_id' => $data['maestro']->id,
+                'detalle_id' => $data['detalle']->id,
+            ]));
+
+        $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
+        $response->assertSessionHas('error', 'Este programa tiene múltiples asignaciones activas. Contacte al administrador.');
+
+        // La asignación activa original sigue activa
+        $this->assertDatabaseHas('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'estado' => 'activa',
+        ]);
+    }
+
+    public function test_segunda_desasignacion_simultanea_falla(): void
+    {
+        $data = $this->crearAsignacionBasica();
+
+        // Primera desasignación: éxito
+        $this->actingAs($data['admin'])
+            ->delete(route('admin.maestros.desasignar', [
+                'maestro_id' => $data['maestro']->id,
+                'detalle_id' => $data['detalle']->id,
+            ]));
+
+        // maestro_id fue nullificado por la primera desasignación
+        $this->assertDatabaseHas('detalle_cursos', [
+            'id' => $data['detalle']->id,
+            'maestro_id' => null,
+        ]);
+
+        // Segunda desasignación simultánea: falla porque ya no hay
+        // una fila DetalleCurso que coincida con maestro_id
+        $response = $this
+            ->actingAs($data['admin'])
+            ->delete(route('admin.maestros.desasignar', [
+                'maestro_id' => $data['maestro']->id,
+                'detalle_id' => $data['detalle']->id,
+            ]));
+
+        $response->assertNotFound();
+
+        // La asignación finalizada de la primera desasignación sigue intacta
+        $this->assertDatabaseHas('asignaciones_docentes', [
+            'detalle_curso_id' => $data['detalle']->id,
+            'estado' => 'finalizada',
+        ]);
+    }
+
+    public function test_no_puede_desasignar_asignacion_de_otro_maestro(): void
     {
         $data = $this->crearAsignacionBasica();
 
@@ -189,38 +354,6 @@ class TeacherAssignmentDeletionTest extends TestCase
             ]));
 
         $response->assertNotFound();
-        $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
-    }
-
-    public function test_desasignar_rechaza_asignacion_cuyo_maestro_no_coincide(): void
-    {
-        $data = $this->crearAsignacionBasica();
-
-        $otroMaestroUser = User::factory()->create(['role' => 'docente']);
-        $otroMaestro = Maestro::create([
-            'user_id' => $otroMaestroUser->id,
-            'nombre' => 'Otro',
-            'apellido' => 'Maestro',
-            'codigo' => 'MST00002',
-            'activo' => true,
-        ]);
-
-        $asignacion = AsignacionDocente::create([
-            'detalle_curso_id' => $data['detalle']->id,
-            'maestro_id' => $otroMaestro->id,
-            'estado' => 'activa',
-        ]);
-
-        $response = $this
-            ->actingAs($data['admin'])
-            ->delete(route('admin.maestros.desasignar', [
-                'maestro_id' => $data['maestro']->id,
-                'detalle_id' => $data['detalle']->id,
-            ]));
-
-        $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
-        $response->assertSessionHas('error');
-        $this->assertDatabaseHas('asignaciones_docentes', ['id' => $asignacion->id]);
         $this->assertDatabaseHas('detalle_cursos', ['id' => $data['detalle']->id]);
     }
 }

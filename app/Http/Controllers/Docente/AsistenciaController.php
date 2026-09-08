@@ -45,7 +45,7 @@ class AsistenciaController extends Controller
 
             $alumnos = Inscripcion::with('alumno')
                 ->where('curso_id', $curso->id)
-                ->where('activa', true)
+                ->where('estado', 'aprobada')
                 ->get()
                 ->map(fn($i) => $i->alumno)
                 ->sortBy(fn($a) => $a->apellido . ' ' . $a->nombre)
@@ -86,7 +86,7 @@ class AsistenciaController extends Controller
 
         $fecha = Carbon::parse($request->fecha)->toDateString();
         $alumnosInscritos = Inscripcion::where('curso_id', $curso->id)
-            ->where('activa', true)
+            ->where('estado', 'aprobada')
             ->pluck('alumno_id');
 
         foreach ($request->asistencias as $alumnoId => $datos) {
@@ -136,7 +136,7 @@ class AsistenciaController extends Controller
 
         $alumnos = Inscripcion::with('alumno')
             ->where('curso_id', $curso->id)
-            ->where('activa', true)
+            ->where('estado', 'aprobada')
             ->get()
             ->map(fn($i) => $i->alumno)
             ->sortBy(fn($a) => $a->apellido . ' ' . $a->nombre)

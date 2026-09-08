@@ -33,6 +33,15 @@
                 </div>
             </div>
 
+            {{-- Teléfono --}}
+            <div>
+                <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono</label>
+                <input type="text" id="editTelefono" name="telefono"
+                    placeholder="Ej: 7777-8888"
+                    style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+
             {{-- Curso --}}
             <div>
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Curso / Sección</label>

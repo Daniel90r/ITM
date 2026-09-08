@@ -62,6 +62,21 @@
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
 
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div>
+                            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Fecha de inicio <span style="color:red">*</span></label>
+                            <input type="date" name="fecha_inicio" value="{{ old('fecha_inicio', $curso->fecha_inicio?->format('Y-m-d')) }}" required
+                                style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
+                                onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Fecha de finalización <span style="color:red">*</span></label>
+                            <input type="date" name="fecha_fin" value="{{ old('fecha_fin', $curso->fecha_fin?->format('Y-m-d')) }}" required
+                                style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
+                                onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                    </div>
+
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Estado</label>
                         <select name="activo" style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"

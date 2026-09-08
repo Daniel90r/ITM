@@ -26,7 +26,10 @@ class AdminDashboardController extends Controller
     public function index()
     {
         // ── Tarjetas de estadísticas ─────────────────────────────────────────
-        $totalAlumnos = Inscripcion::where('activa', 1)->distinct()->count('alumno_id');
+        $totalAlumnos = Inscripcion::aprobada()
+            ->where('activa', true)
+            ->distinct()
+            ->count('alumno_id');
         $totalMaestros = Maestro::where('activo', 1)->count();
         $totalMaterias = Materia::where('activa', 1)->count();
 
@@ -102,7 +105,7 @@ class AdminDashboardController extends Controller
     public function alumnos()
     {
         $alumnos = Alumno::with([
-            'inscripciones' => fn ($q) => $q->where('activa', 1)->with('curso'),
+            'inscripciones' => fn ($q) => $q->aprobada()->with('curso'),
             'user',
         ])->get();
 
@@ -272,6 +275,7 @@ class AdminDashboardController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
+            'telefono' => 'nullable|string|max:20',
             'email' => 'required|email|unique:users,email,'.$alumno->user_id,
             'password' => 'nullable|min:8|confirmed',
         ]);
@@ -280,6 +284,7 @@ class AdminDashboardController extends Controller
         $alumno->update([
             'nombre' => $request->nombre,
             'apellido' => $request->apellido,
+            'telefono' => $request->telefono,
         ]);
 
         // Actualizar email en users
@@ -297,9 +302,9 @@ class AdminDashboardController extends Controller
 
         // Actualizar curso si se seleccionó uno
         if ($request->filled('curso_id')) {
-            // Desactivar inscripción anterior
+            // Desactivar inscripción anterior (aprobada o pendiente) y crear la nueva
             Inscripcion::where('alumno_id', $alumno->id)
-                ->where('activa', 1)
+                ->whereIn('estado', ['aprobada', 'pendiente'])
                 ->update(['activa' => 0, 'estado' => 'inactiva']);
 
             // Crear nueva inscripción

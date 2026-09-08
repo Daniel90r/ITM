@@ -131,6 +131,7 @@
                         <tr style="background:#f8fafc;">
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Matrícula</th>
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Nombre</th>
+                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Teléfono</th>
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Email</th>
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Curso</th>
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Estado</th>
@@ -160,6 +161,13 @@
                                     <span style="font-size:13px; font-weight:500; color:#111827;">{{ $alumno->nombre_completo }}</span>
                                 </div>
                             </td>
+                            <td style="padding:13px 24px;">
+                                @if($alumno->telefono)
+                                    <span style="font-size:13px; color:#374151;">{{ $alumno->telefono }}</span>
+                                @else
+                                    <span style="font-size:12px; color:#9ca3af;">Sin teléfono</span>
+                                @endif
+                            </td>
                             <td style="padding:13px 24px; color:#6b7280; font-size:13px;">{{ $alumno->user->email ?? '—' }}</td>
                             <td style="padding:13px 24px;">
                                 <span style="background:#eff6ff; color:#3b82f6; padding:3px 10px; border-radius:5px; font-size:12px; font-weight:500;">{{ $cursoNombre }}</span>
@@ -177,7 +185,8 @@
                                         '{{ addslashes($alumno->nombre) }}',
                                         '{{ addslashes($alumno->apellido) }}',
                                         '{{ addslashes($alumno->user->email ?? '') }}',
-                                        '{{ $cursoId }}'
+                                        '{{ $cursoId }}',
+                                        '{{ addslashes($alumno->telefono ?? '') }}'
                                     )"
                                     style="background:#eff6ff; border:none; color:#3b82f6; cursor:pointer; font-size:12px; font-weight:600; padding:5px 14px; border-radius:6px;"
                                     onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">

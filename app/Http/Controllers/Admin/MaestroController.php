@@ -216,44 +216,48 @@ class MaestroController extends Controller
         return redirect()->route('admin.maestros.show', $id)->with('success', 'Asignación realizada correctamente.');
     }
 
-    public function desasignar($maestro_id, $detalle_id)
+    public function desasignar(Request $request, $maestro_id, $detalle_id)
     {
-        return DB::transaction(function () use ($maestro_id, $detalle_id) {
+        return DB::transaction(function () use ($request, $maestro_id, $detalle_id) {
             $detalle = DetalleCurso::where('id', $detalle_id)
                 ->where('maestro_id', $maestro_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($detalle->notas()->exists()) {
-                return redirect()->route('admin.maestros.show', $maestro_id)
-                    ->with('error', 'No se puede eliminar la asignación porque contiene notas registradas.');
-            }
-
-            $asignaciones = $detalle->asignacionesDocentes()
+            $asignacionesActivas = AsignacionDocente::where('detalle_curso_id', $detalle_id)
+                ->where('estado', 'activa')
                 ->lockForUpdate()
                 ->get();
 
-            if ($asignaciones->contains('estado', 'finalizada') || $asignaciones->count() > 1) {
+            if ($asignacionesActivas->isEmpty()) {
                 return redirect()->route('admin.maestros.show', $maestro_id)
-                    ->with('error', 'No se puede eliminar el programa porque contiene historial de asignaciones docentes.');
+                    ->with('error', 'No se puede desasignar el programa porque no tiene una asignación activa.');
             }
 
-            if ($asignaciones->count() === 1) {
-                $asignacion = $asignaciones->first();
-                if ($asignacion->maestro_id != $maestro_id) {
-                    return redirect()->route('admin.maestros.show', $maestro_id)
-                        ->with('error', 'No se puede eliminar el programa porque la asignación docente no corresponde al maestro indicado.');
-                }
+            if ($asignacionesActivas->count() > 1) {
+                return redirect()->route('admin.maestros.show', $maestro_id)
+                    ->with('error', 'Este programa tiene múltiples asignaciones activas. Contacte al administrador.');
             }
 
-            if ($asignaciones->isNotEmpty()) {
-                $asignaciones->each->delete();
+            $asignacionActiva = $asignacionesActivas->first();
+
+            if ($asignacionActiva->maestro_id != $maestro_id) {
+                return redirect()->route('admin.maestros.show', $maestro_id)
+                    ->with('error', 'La asignación activa no corresponde al maestro indicado.');
             }
 
-            $detalle->delete();
+            $motivo = $request->input('motivo', 'Desasignación administrativa');
+
+            $asignacionActiva->update([
+                'estado' => 'finalizada',
+                'fecha_fin' => today(),
+                'motivo_cambio' => $motivo,
+            ]);
+
+            $detalle->update(['maestro_id' => null]);
 
             return redirect()->route('admin.maestros.show', $maestro_id)
-                ->with('success', 'Asignación eliminada correctamente.');
+                ->with('success', 'Asignación finalizada correctamente. El maestro fue desasignado del programa.');
         });
     }
 
@@ -267,6 +271,12 @@ class MaestroController extends Controller
         $motivoCambio = $datos['motivo_cambio'];
         $adminId = auth()->id();
         $fechaEfectiva = today()->toImmutable();
+
+        if ($fechaEfectiva->isFuture()) {
+            throw ValidationException::withMessages([
+                'nuevo_maestro_id' => 'La fecha efectiva no puede ser futura.',
+            ]);
+        }
 
         $detalleInicial = DetalleCurso::where('id', $detalle_id)
             ->where('maestro_id', $maestro_id)
@@ -343,23 +353,25 @@ class MaestroController extends Controller
                 ]);
             }
 
-            $asignacionActiva->update([
-                'estado' => 'finalizada',
-                'fecha_fin' => $fechaEfectiva->subDay(),
-                'motivo_cambio' => $motivoCambio,
-            ]);
+        $fechaFinAnterior = $fechaEfectiva->copy()->subDay();
 
-            AsignacionDocente::create([
-                'detalle_curso_id' => $detalle_id,
-                'maestro_id' => $nuevoMaestroId,
-                'fecha_inicio' => $fechaEfectiva,
-                'fecha_fin' => null,
-                'estado' => 'activa',
-                'motivo_cambio' => null,
-                'asignado_por' => $adminId,
-            ]);
+        $asignacionActiva->update([
+            'estado' => 'finalizada',
+            'fecha_fin' => $fechaFinAnterior,
+            'motivo_cambio' => $motivoCambio,
+        ]);
 
-            $detalle->update(['maestro_id' => $nuevoMaestroId]);
+        AsignacionDocente::create([
+            'detalle_curso_id' => $detalle_id,
+            'maestro_id' => $nuevoMaestroId,
+            'fecha_inicio' => $fechaEfectiva,
+            'fecha_fin' => null,
+            'estado' => 'activa',
+            'motivo_cambio' => null,
+            'asignado_por' => $adminId,
+        ]);
+
+        $detalle->update(['maestro_id' => $nuevoMaestroId]);
         }, 3);
 
         return redirect()->route('admin.maestros.show', $nuevoMaestroId)

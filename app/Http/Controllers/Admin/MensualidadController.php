@@ -43,8 +43,7 @@ class MensualidadController extends Controller
 
         $totalPendiente = Mensualidad::where('estado', 'Pendiente')->where('anio', $anioSeleccionado)->sum('monto');
         $totalPagado    = Mensualidad::where('estado', 'Pagado')->where('anio', $anioSeleccionado)->sum('monto');
-        $totalAlumnos   = Inscripcion::where('activa', 1)
-                            ->where('estado', 'aprobada')
+        $totalAlumnos   = Inscripcion::aprobada()
                             ->distinct('alumno_id')
                             ->count('alumno_id');
 
@@ -73,7 +72,7 @@ class MensualidadController extends Controller
         $numMes    = array_search($nombreMes, $this->meses, true);
         $anio      = (int) $request->anio;
 
-        $query = Inscripcion::where('activa', 1)->where('estado', 'aprobada')->with('alumno');
+        $query = Inscripcion::aprobada()->with('alumno');
 
         if ($request->tipo === 'curso') {
             $query->where('curso_id', $request->curso_id);

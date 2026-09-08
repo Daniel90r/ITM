@@ -10,6 +10,10 @@ class DetalleCurso extends Model
 {
     protected $fillable = ['curso_id', 'materia_id', 'maestro_id'];
 
+    protected $casts = [
+        'maestro_id' => 'integer',
+    ];
+
     public function curso(): BelongsTo
     {
         return $this->belongsTo(Curso::class);

@@ -68,6 +68,22 @@
                 </div>
             </div>
 
+            {{-- Teléfono y DUI --}}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
+                    <input type="text" name="telefono" id="telefonoNuevoMaestro" value="{{ old('telefono') }}" required placeholder="Ej: 7777-8888" maxlength="9"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">DUI <span style="color:#dc2626;">*</span></label>
+                    <input type="text" name="dui" id="duiNuevoMaestro" value="{{ old('dui') }}" required placeholder="Ej: 00000000-0" maxlength="10"
+                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                </div>
+            </div>
+
             {{-- Código --}}
             <div>
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Código <span style="color:#9ca3af; font-weight:400;">(No editable)</span></label>
