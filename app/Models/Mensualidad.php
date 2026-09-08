@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Mensualidad extends Model
 {
+    use HasFactory;
+
     protected $table = 'mensualidades'; // ← esto le dice el nombre real
 
     protected $fillable = [
@@ -36,8 +39,10 @@ class Mensualidad extends Model
         }
         if (is_numeric($mes)) {
             $mes = str_pad((string) $mes, 2, '0', STR_PAD_LEFT);
+
             return self::$meses[$mes] ?? $mes;
         }
+
         return $mes;
     }
 

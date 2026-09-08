@@ -15,6 +15,14 @@ class Pago extends Model
         'observacion',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'fecha_pago' => 'date',
+            'monto_pagado' => 'decimal:2',
+        ];
+    }
+
     public function mensualidad()
     {
         return $this->belongsTo(Mensualidad::class);

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (! Schema::hasColumn('inscripciones', 'motivo_rechazo')) {
             Schema::table('inscripciones', function (Blueprint $table) {
-                $table->text('motivo_rechazo')->nullable()->after('observacion');
+                $table->text('motivo_rechazo')->nullable()->after('estado');
             });
         }
     }

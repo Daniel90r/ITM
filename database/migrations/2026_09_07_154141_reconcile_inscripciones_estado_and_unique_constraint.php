@@ -26,17 +26,21 @@ return new class extends Migration
             ->exists();
 
         if ($duplicados) {
-            throw new \RuntimeException(
-                'Existen duplicados de (alumno_id, curso_id) en inscripciones. ' .
-                'Resuelva los registros duplicados antes de aplicar esta migración. ' .
+            throw new RuntimeException(
+                'Existen duplicados de (alumno_id, curso_id) en inscripciones. '.
+                'Resuelva los registros duplicados antes de aplicar esta migración. '.
                 'No se eliminaron filas.'
             );
         }
 
         // ── 3. Restaurar unique(alumno_id, curso_id) si no existe ──────────
-        if (! Schema::hasIndex('inscripciones', ['alumno_id', 'curso_id'])) {
-            Schema::table('inscripciones', function (Blueprint $table) {
-                $table->unique(['alumno_id', 'curso_id'], 'inscripciones_alumno_id_curso_id_unique');
+        $indexName = 'inscripciones_alumno_id_curso_id_unique';
+        $exists = Schema::hasIndex('inscripciones', ['alumno_id', 'curso_id'])
+            || Schema::hasIndex('inscripciones', $indexName);
+
+        if (! $exists) {
+            Schema::table('inscripciones', function (Blueprint $table) use ($indexName) {
+                $table->unique(['alumno_id', 'curso_id'], $indexName);
             });
         }
     }
@@ -45,9 +49,11 @@ return new class extends Migration
     {
         // El down() NO cambia estados ni elimina solicitudes.
         // Solo elimina el índice unique si existe.
-        if (Schema::hasIndex('inscripciones', ['alumno_id', 'curso_id'])) {
-            Schema::table('inscripciones', function (Blueprint $table) {
-                $table->dropUnique('inscripciones_alumno_id_curso_id_unique');
+        $indexName = 'inscripciones_alumno_id_curso_id_unique';
+        if (Schema::hasIndex('inscripciones', ['alumno_id', 'curso_id'])
+            && Schema::hasIndex('inscripciones', $indexName)) {
+            Schema::table('inscripciones', function (Blueprint $table) use ($indexName) {
+                $table->dropUnique($indexName);
             });
         }
     }

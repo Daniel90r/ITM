@@ -35,6 +35,13 @@ return new class extends Migration
             });
         }
 
+        $uniqueName = 'pagos_mensualidad_id_unique';
+        if (! Schema::hasIndex('pagos', $uniqueName)) {
+            Schema::table('pagos', function (Blueprint $table) use ($uniqueName) {
+                $table->unique('mensualidad_id', $uniqueName);
+            });
+        }
+
         if (Schema::hasColumn('pagos', 'mensualidad_id')) {
             $existing = DB::table('pagos')
                 ->whereNotIn('mensualidad_id', function ($q) {
@@ -43,8 +50,8 @@ return new class extends Migration
                 ->exists();
 
             if ($existing) {
-                throw new \RuntimeException(
-                    'Existen registros en pagos con mensualidad_id que no referencian una mensualidad válida. ' .
+                throw new RuntimeException(
+                    'Existen registros en pagos con mensualidad_id que no referencian una mensualidad válida. '.
                     'Resuelva los datos huérfanos antes de aplicar esta migración.'
                 );
             }
@@ -57,12 +64,20 @@ return new class extends Migration
             if (Schema::hasIndex('pagos', ['fecha_pago'])) {
                 $table->dropIndex(['fecha_pago']);
             }
+        });
 
+        $uniqueName = 'pagos_mensualidad_id_unique';
+        Schema::table('pagos', function (Blueprint $table) use ($uniqueName) {
+            if (Schema::hasIndex('pagos', $uniqueName)) {
+                $table->dropUnique($uniqueName);
+            }
+        });
+
+        Schema::table('pagos', function (Blueprint $table) {
             if (Schema::hasColumn('pagos', 'mensualidad_id')) {
                 if (Schema::hasForeignKey('pagos', 'mensualidad_id')) {
                     $table->dropForeign(['mensualidad_id']);
                 }
-                $table->dropUnique(['mensualidad_id']);
                 $table->dropColumn(['mensualidad_id', 'fecha_pago', 'monto_pagado', 'observacion']);
             }
         });
