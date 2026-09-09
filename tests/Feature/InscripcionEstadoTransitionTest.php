@@ -6,6 +6,7 @@ use App\Models\Alumno;
 use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -201,6 +202,27 @@ class InscripcionEstadoTransitionTest extends TestCase
         $this->assertDatabaseHas('inscripciones', [
             'id' => $inscripcion->id,
             'estado' => 'aprobada',
+        ]);
+    }
+
+    public function test_no_se_puede_crear_dos_inscripciones_para_el_mismo_alumno_y_curso(): void
+    {
+        Inscripcion::create([
+            'alumno_id' => $this->alumno->id,
+            'curso_id' => $this->curso->id,
+            'fecha_inscripcion' => now()->toDateString(),
+            'activa' => 1,
+            'estado' => 'aprobada',
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        Inscripcion::create([
+            'alumno_id' => $this->alumno->id,
+            'curso_id' => $this->curso->id,
+            'fecha_inscripcion' => now()->toDateString(),
+            'activa' => 0,
+            'estado' => 'pendiente',
         ]);
     }
 }
