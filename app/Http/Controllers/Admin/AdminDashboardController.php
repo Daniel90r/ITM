@@ -165,7 +165,6 @@ class AdminDashboardController extends Controller
 
         return response()->json([
             'codigo' => $codigo,
-            'email' => strtolower($codigo).'@itm.edu.sv',
         ]);
     }
 
@@ -187,8 +186,9 @@ class AdminDashboardController extends Controller
             'apellido' => 'required|string|max:255',
             'fecha_nacimiento' => 'required|date|before:today',
             'sexo' => 'nullable|in:M,F',
-            'telefono' => 'nullable|string|max:20',
+            'telefono' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
             'direccion' => 'nullable|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|min:8|confirmed',
 
             'dui' => [
@@ -202,7 +202,7 @@ class AdminDashboardController extends Controller
             'encargado_apellido' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
             'encargado_parentesco' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:50'],
             'encargado_dui' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'regex:/^\d{8}-\d$/'],
-            'encargado_telefono' => 'nullable|string|max:20',
+            'encargado_telefono' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
             'encargado_email' => 'nullable|email|max:255',
         ], [
             'fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria para determinar si el alumno es mayor o menor de edad.',
@@ -215,12 +215,14 @@ class AdminDashboardController extends Controller
             'encargado_parentesco.required' => 'El parentesco del encargado es obligatorio para alumnos menores de edad.',
             'encargado_dui.required' => 'El DUI del encargado es obligatorio para alumnos menores de edad.',
             'encargado_dui.regex' => 'El DUI del encargado debe tener el formato 01234567-8.',
+            'telefono.regex' => 'El teléfono debe tener el formato 7777-8888.',
+            'encargado_telefono.regex' => 'El teléfono del encargado debe tener el formato 7777-8888.',
         ]);
 
         DB::transaction(function () use ($request, $esMayorDeEdad) {
 
             $codigo = $this->generarCodigoAlumno($request->nombre, $request->apellido);
-            $email = strtolower($codigo).'@itm.edu.sv';
+            $email = trim(strtolower($request->email));
 
             $user = User::create([
                 'name' => $request->nombre.' '.$request->apellido,
@@ -275,47 +277,72 @@ class AdminDashboardController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
-            'telefono' => 'nullable|string|max:20',
-            'email' => 'required|email|unique:users,email,'.$alumno->user_id,
+            'telefono' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
+            'email' => 'required|email|max:255|unique:users,email,'.$alumno->user_id,
             'password' => 'nullable|min:8|confirmed',
+        ], [
+            'telefono.regex' => 'El teléfono debe tener el formato 7777-8888.',
         ]);
 
-        // Actualizar datos del alumno
-        $alumno->update([
-            'nombre' => $request->nombre,
-            'apellido' => $request->apellido,
-            'telefono' => $request->telefono,
-        ]);
+        DB::transaction(function () use ($request, $alumno) {
 
-        // Actualizar email en users
-        $alumno->user->update([
-            'name' => $request->nombre.' '.$request->apellido,
-            'email' => $request->email,
-        ]);
+            // Actualizar datos personales del alumno
+            $alumno->update([
+                'nombre'    => $request->nombre,
+                'apellido'  => $request->apellido,
+                'telefono'  => $request->telefono,
+            ]);
 
-        // Actualizar contraseña solo si se ingresó
-        if ($request->filled('password')) {
+            // Actualizar email en users (normalizado a minúsculas, sin espacios)
             $alumno->user->update([
-                'password' => Hash::make($request->password),
+                'name'  => $request->nombre.' '.$request->apellido,
+                'email' => trim(strtolower($request->email)),
             ]);
-        }
 
-        // Actualizar curso si se seleccionó uno
-        if ($request->filled('curso_id')) {
-            // Desactivar inscripción anterior (aprobada o pendiente) y crear la nueva
-            Inscripcion::where('alumno_id', $alumno->id)
-                ->whereIn('estado', ['aprobada', 'pendiente'])
-                ->update(['activa' => 0, 'estado' => 'inactiva']);
+            // Actualizar contraseña solo si se ingresó
+            if ($request->filled('password')) {
+                $alumno->user->update([
+                    'password' => Hash::make($request->password),
+                ]);
+            }
 
-            // Crear nueva inscripción
-            Inscripcion::create([
-                'alumno_id' => $alumno->id,
-                'curso_id' => $request->curso_id,
-                'fecha_inscripcion' => now()->toDateString(),
-                'activa' => 1,
-                'estado' => 'aprobada',
-            ]);
-        }
+            // Cambiar de curso SOLO si el curso solicitado difiere del actual
+            $inscripcionActual = Inscripcion::where('alumno_id', $alumno->id)
+                ->where('activa', true)
+                ->where('estado', 'aprobada')
+                ->first();
+
+            if ($request->filled('curso_id') && $request->curso_id != $inscripcionActual?->curso_id) {
+                // Desactivar inscripción vigente
+                if ($inscripcionActual) {
+                    $inscripcionActual->update([
+                        'activa' => 0,
+                        'estado' => 'inactiva',
+                    ]);
+                }
+
+                // Reactivar o crear inscripción al curso destino
+                $existeDestino = Inscripcion::where('alumno_id', $alumno->id)
+                    ->where('curso_id', $request->curso_id)
+                    ->first();
+
+                if ($existeDestino) {
+                    $existeDestino->update([
+                        'activa'           => 1,
+                        'estado'           => 'aprobada',
+                        'fecha_inscripcion' => $existeDestino->fecha_inscripcion,
+                    ]);
+                } else {
+                    Inscripcion::create([
+                        'alumno_id'         => $alumno->id,
+                        'curso_id'          => $request->curso_id,
+                        'fecha_inscripcion' => now()->toDateString(),
+                        'activa'            => 1,
+                        'estado'            => 'aprobada',
+                    ]);
+                }
+            }
+        });
 
         return redirect()->route('admin.alumnos')->with('success', 'Alumno actualizado correctamente.');
     }
@@ -343,7 +370,12 @@ class AdminDashboardController extends Controller
     public function storeMateria(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre' => ['required', 'string', 'max:255', function ($attribute, $value, $fail) {
+                $normalizado = $this->normalizarNombreMateria($value);
+                if (Materia::whereRaw('UPPER(REPLACE(nombre, " ", "")) = ?', [strtoupper(str_replace(' ', '', $normalizado))])->exists()) {
+                    $fail('Ya existe una materia con ese nombre.');
+                }
+            }],
         ]);
 
         $codigo = $this->generarCodigoMateria($request->nombre);
@@ -357,38 +389,80 @@ class AdminDashboardController extends Controller
         return redirect()->route('admin.materias')->with('success', 'Materia registrada correctamente.');
     }
 
+    private function normalizarNombreMateria(string $nombre): string
+    {
+        $texto = trim($nombre);
+        $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto) ?: $texto;
+        $texto = preg_replace('/[^a-zA-Z\s]/', '', $texto);
+        $texto = preg_replace('/\s+/', ' ', $texto);
+
+        $stopWords = ['de', 'del', 'la', 'el', 'los', 'las', 'y', 'e', 'o', 'u', 'a', 'en', 'con', 'para', 'por', 'sin', 'sobre', 'entre', 'hacia', 'desde', 'hasta', 'mediante', 'según', 'durante', 'frente', 'bajo', 'tras', 'versus', 'via'];
+        $palabras = array_values(array_filter(explode(' ', $texto), fn ($p) => $p !== '' && ! in_array(strtolower($p), $stopWords)));
+
+        return implode(' ', $palabras);
+    }
+
     private function generarCodigoMateria(string $nombre): string
     {
-        $limpiar = function (string $texto): string {
-            $texto = trim($texto);
-            $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto) ?: $texto;
-            $texto = preg_replace('/[^a-zA-Z\s]/', '', $texto);
+        $normalizado = $this->normalizarNombreMateria($nombre);
+        $palabras = array_values(array_filter(explode(' ', $normalizado)));
 
-            return $texto;
-        };
+        if (empty($palabras)) {
+            $palabras = array_values(array_filter(explode(' ', $normalizado)));
+        }
 
-        $nombreLimpio = $limpiar($nombre);
-        $palabras = array_values(array_filter(explode(' ', $nombreLimpio)));
-
-        $codigo = '';
+        $iniciales = '';
         foreach ($palabras as $p) {
-            if ($p) {
-                $codigo .= strtoupper($p[0]);
+            if ($p !== '') {
+                $iniciales .= strtoupper($p[0]);
             }
         }
 
-        $base = substr($codigo, 0, 5);
-
-        $intento = 2;
-        while (Materia::where('codigo', $base)->exists() && $intento <= count($palabras)) {
-            $base = '';
-            for ($i = 0; $i < min($intento, count($palabras)); $i++) {
-                $base .= strtoupper($palabras[$i][0]);
-            }
-            $intento++;
+        $candidato = $iniciales;
+        if (! Materia::where('codigo', $candidato)->exists()) {
+            return $candidato;
         }
 
-        return $base;
+        $palabrasUpper = array_map('strtoupper', $palabras);
+        $numPalabras = count($palabrasUpper);
+
+        for ($idxPalabra = $numPalabras - 1; $idxPalabra >= 0; $idxPalabra--) {
+            $palabra = $palabrasUpper[$idxPalabra];
+            $longitudPalabra = strlen($palabra);
+
+            for ($posLetra = 1; $posLetra < $longitudPalabra; $posLetra++) {
+                $prefijo = '';
+                for ($i = 0; $i < $numPalabras; $i++) {
+                    if ($i === $idxPalabra) {
+                        $prefijo .= substr($palabrasUpper[$i], 0, $posLetra + 1);
+                    } else {
+                        $prefijo .= $palabrasUpper[$i][0];
+                    }
+                }
+
+                if (! Materia::where('codigo', $prefijo)->exists()) {
+                    return $prefijo;
+                }
+            }
+        }
+
+        $firma = strtoupper(str_replace(' ', '', $normalizado));
+        for ($len = strlen($iniciales) + 1; $len <= strlen($firma); $len++) {
+            $candidato = substr($firma, 0, $len);
+            if (! Materia::where('codigo', $candidato)->exists()) {
+                return $candidato;
+            }
+        }
+
+        $hash = substr(strtoupper(hash('crc32', $firma)), 0, 3);
+        $candidato = substr($firma, 0, min(5, strlen($firma))) . $hash;
+        $contador = 1;
+        while (Materia::where('codigo', $candidato)->exists()) {
+            $candidato = substr($firma, 0, min(5, strlen($firma))) . $hash . $contador;
+            $contador++;
+        }
+
+        return $candidato;
     }
 
     public function siguienteCodigoMateria(Request $request)

@@ -1,6 +1,5 @@
-{{-- ═══════════════════════════════════════════════════════════ --}}
-{{-- MODAL: NUEVA MATERIA --}}
-{{-- ═══════════════════════════════════════════════════════════ --}}
+
+{{-- Aqui se genera una nueva materia --}}
 <div id="modalNuevaMateria" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:460px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px;">
 

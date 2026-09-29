@@ -1,6 +1,4 @@
-{{-- ═══════════════════════════════════════════════════════════ --}}
-{{-- MODAL: NUEVO ALUMNO --}}
-{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- Aqui generamos un nuevo alumno --}}
 <div id="modalNuevoAlumno" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:560px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px; max-height:90vh; overflow-y:auto;">
 
@@ -197,9 +195,9 @@
                 <div style="margin-bottom:14px;">
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Correo electrónico <span style="color:#dc2626;">*</span></label>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="email" name="email" id="emailAlumno" required placeholder="Se genera automáticamente" readonly
-                            style="flex:1; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f0fdf4; color:#111827; outline:none; box-sizing:border-box;">
-                        <span id="badgeEmail" style="display:none; background:#dcfce7; color:#16a34a; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap;">Automático</span>
+                        <input type="email" name="email" id="emailAlumno" required placeholder="Ej: alumno@gmail.com"
+                            style="flex:1; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
                 </div>
 
@@ -329,13 +327,9 @@
 
         const codigoInput = document.getElementById('codigoAlumno');
         const emailInput  = document.getElementById('emailAlumno');
-        const badgeCodigo = document.getElementById('badgeCodigo');
-        const badgeEmail  = document.getElementById('badgeEmail');
 
         if (codigoInput) codigoInput.value = '';
         if (emailInput) emailInput.value = '';
-        if (badgeCodigo) badgeCodigo.style.display = 'none';
-        if (badgeEmail) badgeEmail.style.display = 'none';
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -347,9 +341,7 @@
         const nombreInput   = document.getElementById('nombreNuevoAlumno');
         const apellidoInput = document.getElementById('apellidoNuevoAlumno');
         const codigoInput   = document.getElementById('codigoAlumno');
-        const emailInput    = document.getElementById('emailAlumno');
         const badgeCodigo   = document.getElementById('badgeCodigo');
-        const badgeEmail    = document.getElementById('badgeEmail');
 
         function limpiar(texto) {
             return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ñ/g, 'n').replace(/Ñ/g, 'N');
@@ -374,9 +366,7 @@
 
                 if (ini.length < 2) {
                     codigoInput.value = '';
-                    emailInput.value = '';
                     badgeCodigo.style.display = 'none';
-                    badgeEmail.style.display = 'none';
                     return;
                 }
 
@@ -391,9 +381,7 @@
                     });
                     const data = await res.json();
                     codigoInput.value = data.codigo;
-                    emailInput.value = data.email;
                     badgeCodigo.style.display = 'inline-block';
-                    badgeEmail.style.display = 'inline-block';
                 } catch (e) {
                     console.error('Error al calcular código:', e);
                 }
@@ -417,7 +405,3 @@
         @endif
     });
 </script>
-
-@push('scripts')
-@vite('resources/js/admin/modals.js')
-@endpush
