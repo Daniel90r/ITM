@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Materia extends Model
 {
     use HasFactory;
-    protected $fillable = ['nombre', 'codigo', 'descripcion', 'activa'];
+    protected $fillable = ['nombre', 'codigo', 'descripcion', 'activa', 'es_opcional'];
 
     public function detalleCursos(): HasMany
     {

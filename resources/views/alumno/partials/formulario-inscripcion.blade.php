@@ -192,15 +192,16 @@
         <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:20px;">
             <p style="font-size:12px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.05em; margin:0 0 16px;">Selección de Sección</p>
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px;">
-                @foreach($cursosDisponibles as $curso)
-                <label style="cursor:pointer;">
-                    <input type="radio" name="curso_id" value="{{ $curso->id }}" style="display:none;" class="curso-radio" required>
-                    <div class="curso-card" style="background:#ffffff; border:2px solid #e5e7eb; border-radius:10px; padding:14px; text-align:center; transition:all .15s;">
+                @forelse($cursosDisponibles as $curso)
+                @php $lleno = $curso->esta_lleno; @endphp
+                <label style="cursor:{{ $lleno ? 'not-allowed' : 'pointer' }};">
+                    <input type="radio" name="curso_id" value="{{ $curso->id }}" style="display:none;" class="curso-radio" {{ $lleno ? 'disabled' : '' }} required>
+                    <div class="curso-card" style="background:{{ $lleno ? '#f9fafb' : '#ffffff' }}; border:2px solid #e5e7eb; border-radius:10px; padding:14px; text-align:center; transition:all .15s; {{ $lleno ? 'opacity:0.6;' : '' }}">
                         <p style="font-size:18px; font-weight:700; color:#111827; margin:0 0 2px;">{{ $curso->seccion }}</p>
                         <p style="font-size:12px; font-weight:500; color:#374151; margin:0 0 2px;">{{ $curso->nombre }}</p>
                         <p style="font-size:11px; color:#6b7280; margin:0;">{{ $curso->nivel }}</p>
-                        <p style="font-size:11px; margin:4px 0 0; {{ $curso->esta_lleno ? 'color:#dc2626;' : 'color:#16a34a;' }}">
-                            @if($curso->esta_lleno)
+                        <p style="font-size:11px; margin:4px 0 0; {{ $lleno ? 'color:#dc2626;' : 'color:#16a34a;' }}">
+                            @if($lleno)
                                 Cupo lleno
                             @else
                                 {{ $curso->cupos_disponibles }} cupo(s) disponible(s) de 20
@@ -208,7 +209,12 @@
                         </p>
                     </div>
                 </label>
-                @endforeach
+                @empty
+                <div style="grid-column:1 / -1; background:#f9fafb; border:1px dashed #d1d5db; border-radius:10px; padding:24px; text-align:center;">
+                    <p style="font-size:13px; font-weight:600; color:#374151; margin:0 0 4px;">No hay cursos disponibles para inscripción.</p>
+                    <p style="font-size:12px; color:#6b7280; margin:0;">Por el momento no hay cursos en estado Próximo. Vuelve a consultar más adelante.</p>
+                </div>
+                @endforelse
             </div>
         </div>
 

@@ -82,12 +82,6 @@
                         </div>
                     </div>
                     <div style="display:flex; gap:10px; flex-shrink:0;">
-                        <button type="button"
-                            onclick="abrirModalEditarMaestro(@js($maestro->id), @js($maestro->nombre), @js($maestro->apellido), @js($maestro->telefono), @js($maestro->dui), @js($maestro->codigo), @js($maestro->user?->email ?? ''))"
-                            style="background:#111827; border:none; padding:8px 18px; border-radius:8px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;"
-                            onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
-                            Editar Maestro
-                        </button>
                         @if($maestro->activo)
                         <button type="button" onclick="abrirModalAsignarCurso()"
                             style="background:#111827; border:none; padding:8px 18px; border-radius:8px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;"

@@ -65,6 +65,12 @@ class Alumno extends Model
                     ->withTimestamps();
     }
 
+    public function materiasOpcionalesEnCurso(int $cursoId)
+    {
+        return $this->materiasEnCurso($cursoId)
+            ->where('materias.es_opcional', true);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

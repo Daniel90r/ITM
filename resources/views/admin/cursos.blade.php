@@ -17,7 +17,8 @@
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:12px; color:#9ca3af; background:#f3f4f6; padding:6px 12px; border-radius:8px;">{{ now()->isoFormat('MMMM YYYY') }}</span>
-                {{-- Botón conectado al modal --}}
+
+                {{-- El botón que conecta al modal --}}
                 <button onclick="abrirModalCurso()"
                     style="background:#111827; border:none; padding:8px 18px; border-radius:8px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;"
                     onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
@@ -26,7 +27,7 @@
             </div>
         </header>
 
-        {{-- Buscador --}}
+        {{-- El buscador --}}
         <div style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; gap:12px; flex-shrink:0;">
             <div style="position:relative; flex:1; max-width:360px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>

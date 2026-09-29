@@ -175,37 +175,105 @@ class TeacherAssignmentInterfaceTest extends TestCase
         $response->assertSee('name="curso_id"', false);
     }
 
-    public function test_select_materia_id_exists(): void
+    public function test_materia_ids_checkboxes_generated_for_selected_curso(): void
     {
         $data = $this->crearDatosBase();
 
         $response = $this->actingAs($data['admin'])
             ->get(route('admin.maestros.show', $data['maestro']->id));
 
-        $response->assertSee('name="materia_id"', false);
+        // Un maestro puede impartir VARIAS materias en el mismo curso: ya no
+        // existe el <select name="materia_id"> de selección única.
+        $this->assertStringNotContainsString('name="materia_id"', $response->getContent());
+
+        $response->assertSee('id="materiasContainer"', false);
+        $response->assertSee('id="materiasList"', false);
+        $response->assertSee('Programas / Materias', false);
+
+        // Las materias se pintan en el navegador una vez elegido el curso.
+        $js = file_get_contents(resource_path('js/admin/modals.js'));
+
+        $this->assertStringContainsString("checkbox.name = 'materia_ids[]'", $js);
+        $this->assertStringContainsString('materias.forEach', $js);
+        $this->assertStringContainsString("checkbox.type = 'checkbox'", $js);
     }
 
-    public function test_selects_have_required_attribute(): void
+    public function test_curso_select_required_and_materias_required_on_server(): void
     {
         $data = $this->crearDatosBase();
 
         $response = $this->actingAs($data['admin'])
             ->get(route('admin.maestros.show', $data['maestro']->id));
 
-        $content = $response->getContent();
         $dom = new \DOMDocument;
-        @$dom->loadHTML($content, LIBXML_NOWARNING);
+        @$dom->loadHTML($response->getContent(), LIBXML_NOWARNING);
 
         $xpath = new \DOMXPath($dom);
 
         $cursoSelect = $xpath->query('//select[@name="curso_id"]')->item(0);
-        $materiaSelect = $xpath->query('//select[@name="materia_id"]')->item(0);
 
         $this->assertNotNull($cursoSelect, 'El select curso_id existe en el DOM');
         $this->assertTrue($cursoSelect->hasAttribute('required'), 'El select curso_id tiene el atributo required');
 
-        $this->assertNotNull($materiaSelect, 'El select materia_id existe en el DOM');
-        $this->assertTrue($materiaSelect->hasAttribute('required'), 'El select materia_id tiene el atributo required');
+        // La selección múltiple son checkboxes: un `required` por elemento
+        // obligaría al administrador a marcarlas todas. La obligatoriedad la
+        // garantiza el servidor.
+        $this->assertStringNotContainsString('name="materia_id"', $response->getContent());
+
+        $this->actingAs($data['admin'])
+            ->from(route('admin.maestros.show', $data['maestro']->id))
+            ->post(route('admin.maestros.asignar', $data['maestro']->id), [
+                'curso_id' => $data['curso']->id,
+            ])
+            ->assertSessionHasErrors('materia_ids');
+    }
+
+    public function test_materias_ajenas_o_tomadas_quedan_bloqueadas_en_la_lista(): void
+    {
+        $js = file_get_contents(resource_path('js/admin/modals.js'));
+
+        $this->assertStringContainsString('materia.tiene_maestro_actual', $js);
+        $this->assertStringContainsString('materia.ya_asignada_a_este_maestro', $js);
+        $this->assertStringContainsString('checkbox.disabled = bloqueada;', $js);
+
+        // "(Asignada a X)" y "(Ya asignada a este maestro)" deben llegar como
+        // texto, nunca inyectados como HTML.
+        $this->assertStringContainsString('estado.textContent = estadoTexto;', $js);
+        $this->assertStringContainsString('nombre.textContent =', $js);
+    }
+
+    private function crearCurso(string $nombre, string $nivel = 'Matutino', string $seccion = 'A'): Curso
+    {
+        return Curso::create([
+            'nombre' => $nombre,
+            'nivel' => $nivel,
+            'seccion' => $seccion,
+            'anio_lectivo' => 2025,
+            'activo' => true,
+        ]);
+    }
+
+    private function crearMateria(string $nombre, string $codigo, bool $activa = true): Materia
+    {
+        return Materia::create([
+            'nombre' => $nombre,
+            'codigo' => $codigo,
+            'descripcion' => 'Test',
+            'activa' => $activa,
+        ]);
+    }
+
+    private function codigosDeMateriasDelCurso(User $admin, Curso $curso, Maestro $maestro): \Illuminate\Support\Collection
+    {
+        $response = $this->actingAs($admin)
+            ->getJson(route('admin.maestros.materiasPorCurso', [
+                'curso_id' => $curso->id,
+                'maestro_id' => $maestro->id,
+            ]));
+
+        $response->assertOk();
+
+        return collect($response->json('materias'))->pluck('codigo');
     }
 
     public function test_only_active_cursos_shown(): void
@@ -248,34 +316,54 @@ class TeacherAssignmentInterfaceTest extends TestCase
     {
         $data = $this->crearDatosBase();
 
-        Materia::create([
-            'nombre' => 'Materia Inactiva',
-            'codigo' => 'MAT99999',
-            'descripcion' => 'Inactiva',
-            'activa' => false,
+        // Las materias ya no se imprimen en el HTML del servidor: se piden por
+        // AJAX al elegir el curso. La materia activa del curso sí debe ofrecerse.
+        $activa = $this->crearMateria('Materia Activa XYZ', 'MAT80002');
+        $this->crearMateria('Materia Inactiva', 'MAT99999', false);
+
+        DetalleCurso::create([
+            'curso_id' => $data['curso']->id,
+            'materia_id' => $activa->id,
         ]);
 
-        $response = $this->actingAs($data['admin'])
-            ->get(route('admin.maestros.show', $data['maestro']->id));
+        DetalleCurso::create([
+            'curso_id' => $data['curso']->id,
+            'materia_id' => $data['materia']->id,
+        ]);
 
-        $response->assertSee('Test Materia', false);
+        $codigos = $this->codigosDeMateriasDelCurso($data['admin'], $data['curso'], $data['maestro']);
+
+        $this->assertTrue($codigos->contains('MAT80001'));
+        $this->assertTrue($codigos->contains('MAT80002'));
     }
 
     public function test_inactive_materias_not_shown(): void
     {
         $data = $this->crearDatosBase();
 
-        Materia::create([
-            'nombre' => 'Materia Inactiva ABC',
-            'codigo' => 'MAT99999',
-            'descripcion' => 'Inactiva',
-            'activa' => false,
+        $inactiva = $this->crearMateria('Materia Inactiva ABC', 'MAT99999', false);
+        $deOtroCurso = $this->crearMateria('Materia De Otro Curso', 'MAT80002');
+        $otroCurso = $this->crearCurso('Curso Ajeno', 'Vespertino', 'B');
+
+        DetalleCurso::create([
+            'curso_id' => $data['curso']->id,
+            'materia_id' => $inactiva->id,
         ]);
 
-        $response = $this->actingAs($data['admin'])
-            ->get(route('admin.maestros.show', $data['maestro']->id));
+        DetalleCurso::create([
+            'curso_id' => $data['curso']->id,
+            'materia_id' => $data['materia']->id,
+        ]);
 
-        $response->assertDontSee('Materia Inactiva ABC', false);
+        DetalleCurso::create([
+            'curso_id' => $otroCurso->id,
+            'materia_id' => $deOtroCurso->id,
+        ]);
+
+        $codigos = $this->codigosDeMateriasDelCurso($data['admin'], $data['curso'], $data['maestro']);
+
+        $this->assertFalse($codigos->contains('MAT99999'), 'Una materia inactiva no debe ofrecerse.');
+        $this->assertFalse($codigos->contains('MAT80002'), 'Una materia de otro curso no debe ofrecerse.');
     }
 
     public function test_curso_id_old_input_preserved_when_materia_fails(): void
@@ -287,25 +375,42 @@ class TeacherAssignmentInterfaceTest extends TestCase
             ->followingRedirects()
             ->post(route('admin.maestros.asignar', $data['maestro']->id), [
                 'curso_id' => $data['curso']->id,
-                'materia_id' => 999999,
+                'materia_ids' => [999999],
             ]);
 
         $response->assertSee('value="'.$data['curso']->id.'" selected', false);
     }
 
-    public function test_materia_id_old_input_preserved_when_curso_fails(): void
+    public function test_materia_ids_old_input_preserved_when_curso_fails(): void
     {
         $data = $this->crearDatosBase();
+
+        DetalleCurso::create([
+            'curso_id' => $data['curso']->id,
+            'materia_id' => $data['materia']->id,
+        ]);
 
         $response = $this->actingAs($data['admin'])
             ->withHeader('Referer', route('admin.maestros.show', $data['maestro']->id))
             ->followingRedirects()
             ->post(route('admin.maestros.asignar', $data['maestro']->id), [
                 'curso_id' => '',
-                'materia_id' => $data['materia']->id,
+                'materia_ids' => [$data['materia']->id],
             ]);
 
-        $response->assertSee('value="'.$data['materia']->id.'" selected', false);
+        $response->assertSee('data-open="1"', false);
+
+        // El modal debe rememberar cuáles materias estaban marcadas para que el
+        // JS las vuelva a marcar y el administrador no repita la selección.
+        $this->assertMatchesRegularExpression(
+            '/data-materias-seleccionadas="[^"]*'.$data['materia']->id.'[^"]*"/',
+            $response->getContent()
+        );
+
+        $js = file_get_contents(resource_path('js/admin/modals.js'));
+
+        $this->assertStringContainsString('modal.dataset.materiasSeleccionadas', $js);
+        $this->assertStringContainsString('checkbox.checked = !bloqueada && seleccionadas.includes(String(materia.id));', $js);
     }
 
     public function test_validation_errors_reopen_modal(): void
@@ -317,7 +422,7 @@ class TeacherAssignmentInterfaceTest extends TestCase
             ->followingRedirects()
             ->post(route('admin.maestros.asignar', $data['maestro']->id), [
                 'curso_id' => 999999,
-                'materia_id' => 999999,
+                'materia_ids' => [999999],
             ]);
 
         $response->assertSee('data-open="1"', false);

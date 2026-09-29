@@ -1,5 +1,5 @@
 <x-app-layout>
-<div style="display:flex; height:100vh; overflow:hidden;">
+<div style="display:flex; height:100vh; overflow:hidden">
 
     @include('components.admin-sidebar', ['active' => 'cursos'])
 
@@ -25,6 +25,7 @@
              {{-- Stats del curso --}}
             @php
                 $inscritos = $curso->inscripciones()->aprobada()->count();
+                $inscritosAprobados = $curso->inscripciones()->aprobada()->get();
                 $porcentaje = min(round(($inscritos / 20) * 100), 100);
             @endphp
             <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
@@ -39,7 +40,7 @@
                 </div>
                 <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px;">
                     <p style="font-size:11px; color:#6b7280; text-transform:uppercase; font-weight:600; margin:0 0 6px;">Materias</p>
-                    <p style="font-size:26px; font-weight:700; color:#111827; margin:0;">{{ $curso->detalleCursos->count() }}</p>
+                    <p style="font-size:26px; font-weight:700; color:#111827; margin:0;">{{ $detalleCursosVisibles->count() }}</p>
                 </div>
                 <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px;">
                     <p style="font-size:11px; color:#6b7280; text-transform:uppercase; font-weight:600; margin:0 0 6px;">Curso</p>
@@ -90,12 +91,25 @@
                     </div>
                     <div style="max-height:300px; overflow-y:auto;">
                         @forelse($curso->inscripciones as $inscripcion)
+                        @php
+                            // Datos precargados por SeccionController@show (sin consultas en la vista).
+                            // Son los NOMBRES de las materias opcionales que este alumno lleva en el curso.
+                            $materiasOpcionalesDelAlumno = $materiasOpcionalesPorAlumno->get($inscripcion->alumno_id, collect());
+                        @endphp
                         <div style="display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid #f3f4f6;">
                             <div style="width:32px; height:32px; border-radius:50%; background:#111827; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex-shrink:0;">
                                 {{ strtoupper(substr($inscripcion->alumno->nombre,0,1).substr($inscripcion->alumno->apellido,0,1)) }}
                             </div>
                             <div>
-                                <p style="font-size:13px; font-weight:500; color:#111827; margin:0;">{{ $inscripcion->alumno->nombre }} {{ $inscripcion->alumno->apellido }}</p>
+                                <p style="font-size:13px; font-weight:500; color:#111827; margin:0;">
+                                    {{ $inscripcion->alumno->nombre }} {{ $inscripcion->alumno->apellido }}
+                                    @foreach($materiasOpcionalesDelAlumno as $materiaOpcional)
+                                        <span style="display:inline-flex; align-items:center; gap:4px; background:#eff6ff; color:#1d4ed8; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; margin-left:8px; white-space:nowrap;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-2.21 1.79-4 4-4s4 1.79 4 4v.18z"/></svg>
+                                            {{ $materiaOpcional }}
+                                        </span>
+                                    @endforeach
+                                </p>
                                 <p style="font-size:11px; color:#9ca3af; margin:0;">{{ $inscripcion->alumno->codigo }}</p>
                             </div>
                         </div>
@@ -112,10 +126,60 @@
                         <p style="font-size:14px; font-weight:600; color:#111827; margin:0;">Materias y Maestros</p>
                     </div>
                     <div style="max-height:300px; overflow-y:auto;">
-                        @forelse($curso->detalleCursos as $detalle)
+                        @forelse($detalleCursosConOpcional as $detalle)
                         <div style="padding:12px 20px; border-bottom:1px solid #f3f4f6;">
-                            <p style="font-size:13px; font-weight:600; color:#111827; margin:0 0 2px;">{{ $detalle->materia->nombre }}</p>
-                            <p style="font-size:12px; color:#6b7280; margin:0;">
+                            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                                <div style="flex:1; min-width:200px;">
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                                        <p style="font-size:13px; font-weight:600; color:#111827; margin:0;">{{ $detalle->materia->nombre }}</p>
+                                        @unless($detalle->materia->activa)
+                                            <span style="background:#f3f4f6; color:#6b7280; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; white-space:nowrap;" title="Materia inactiva en el catálogo, pero conserva notas o asistencias en este curso.">Inactiva · histórico</span>
+                                        @endunless
+                                    </div>
+                                    @if($detalle->materia->es_opcional)
+                                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                            <span style="background:#fffbeb; color:#92400e; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600;">Opcional</span>
+                                            @if(isset($detalle->alumnos_opcional))
+                                                <span style="color:#6b7280; font-size:11px;">{{ $detalle->alumnos_opcional->count() }} de {{ $detalle->total_alumnos_curso }} alumnos</span>
+                                            @else
+                                                <span style="color:#6b7280; font-size:11px;">0 de {{ $detalle->total_alumnos_curso }} alumnos</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                                <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                                    @if($detalle->materia->es_opcional && isset($detalle->alumnos_opcional))
+                                        <button type="button"
+                                            onclick="toggleAlumnosOpcional(this, {{ $detalle->id }})"
+                                            data-alumnos='{{ json_encode($detalle->alumnos_opcional->map(function($a) { return ["id" => $a->id, "nombre" => $a->nombre, "apellido" => $a->apellido, "codigo" => $a->codigo]; })) }}'
+                                            style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; font-size:11px; font-weight:600; color:#2563eb; cursor:pointer; padding:6px 12px;"
+                                            onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                                            Ver alumnos
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+
+                            {{-- Lista expandible de alumnos de materia opcional --}}
+                            @if($detalle->materia->es_opcional && isset($detalle->alumnos_opcional))
+                            <div id="alumnos-opcional-{{ $detalle->id }}" style="display:none; margin-top:10px; padding:10px 0 0 0; border-top:1px solid #f3f4f6;">
+                                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px;">
+                                    @foreach($detalle->alumnos_opcional as $alumno)
+                                    <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f9fafb; border-radius:8px; font-size:12px; color:#374151;">
+                                        <div style="width:24px; height:24px; border-radius:50%; background:#1d4ed8; display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; font-weight:700; flex-shrink:0;">
+                                            {{ strtoupper(substr($alumno->nombre,0,1).substr($alumno->apellido,0,1)) }}
+                                        </div>
+                                        <div>
+                                            <p style="font-size:11px; font-weight:500; color:#111827; margin:0;">{{ $alumno->nombre }} {{ $alumno->apellido }}</p>
+                                            <p style="font-size:10px; color:#9ca3af; margin:0;">{{ $alumno->codigo }}</p>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
+                            <p style="font-size:12px; color:#6b7280; margin:8px 0 0 0;">
                                 @if($detalle->maestro)
                                     Prof. {{ $detalle->maestro->nombre }} {{ $detalle->maestro->apellido }}
                                 @else
@@ -134,3 +198,19 @@
     </div>
 </div>
 </x-app-layout>
+
+@push('scripts')
+<script>
+function toggleAlumnosOpcional(btn, detalleId) {
+    const container = document.getElementById('alumnos-opcional-' + detalleId);
+    if (!container) return;
+
+    const isHidden = container.style.display === 'none';
+    container.style.display = isHidden ? 'block' : 'none';
+    btn.textContent = isHidden ? 'Ocultar alumnos' : 'Ver alumnos';
+
+    // Toggle icon/chevron if needed
+    btn.style.background = isHidden ? '#dbeafe' : '#eff6ff';
+}
+</script>
+@endpush

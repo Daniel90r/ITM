@@ -63,11 +63,11 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
         $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
-        $response->assertSessionHas('success', 'Asignación realizada correctamente.');
+        $response->assertSessionHas('success', 'Programa asignado correctamente al maestro.');
 
         $detalle = DetalleCurso::where('curso_id', $data['curso']->id)
             ->where('materia_id', $data['materia']->id)
@@ -90,13 +90,15 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
-        $this->actingAs($data['admin'])->post(
+        $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
+
+        $response->assertSessionHas('success', 'Todos los programas seleccionados ya estaban asignados a este maestro.');
 
         $this->assertSame(1, DetalleCurso::where('curso_id', $data['curso']->id)
             ->where('materia_id', $data['materia']->id)->count());
@@ -108,13 +110,75 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
             ->where('estado', 'activa')->count());
     }
 
+    public function test_asigna_varias_materias_del_mismo_curso_en_un_solo_envio(): void
+    {
+        $data = $this->crearDatosBase();
+
+        $materias = collect([
+            Materia::create(['nombre' => 'Historia', 'codigo' => 'MAT80002', 'activa' => true]),
+            Materia::create(['nombre' => 'Ciencia', 'codigo' => 'MAT80003', 'activa' => true]),
+            Materia::create(['nombre' => 'Arte', 'codigo' => 'MAT80004', 'activa' => true]),
+        ]);
+
+        $ids = $materias->pluck('id')->all();
+
+        $response = $this->actingAs($data['admin'])->post(
+            route('admin.maestros.asignar', $data['maestro']->id),
+            ['curso_id' => $data['curso']->id, 'materia_ids' => $ids]
+        );
+
+        $response->assertRedirect(route('admin.maestros.show', $data['maestro']->id));
+        $response->assertSessionHas('success', '3 programas asignados correctamente al maestro.');
+
+        $detalles = DetalleCurso::where('curso_id', $data['curso']->id)
+            ->whereIn('materia_id', $ids)
+            ->get();
+
+        $this->assertCount(3, $detalles);
+
+        foreach ($detalles as $detalle) {
+            $this->assertSame($data['maestro']->id, $detalle->maestro_id);
+
+            $this->assertDatabaseHas('asignaciones_docentes', [
+                'detalle_curso_id' => $detalle->id,
+                'maestro_id' => $data['maestro']->id,
+                'estado' => 'activa',
+            ]);
+        }
+    }
+
+    public function test_reenvio_de_las_mismas_materias_no_duplica_nada(): void
+    {
+        $data = $this->crearDatosBase();
+
+        $materias = collect([
+            Materia::create(['nombre' => 'Historia', 'codigo' => 'MAT80002', 'activa' => true]),
+            Materia::create(['nombre' => 'Ciencia', 'codigo' => 'MAT80003', 'activa' => true]),
+        ]);
+
+        $ids = $materias->pluck('id')->all();
+
+        $this->actingAs($data['admin'])->post(
+            route('admin.maestros.asignar', $data['maestro']->id),
+            ['curso_id' => $data['curso']->id, 'materia_ids' => $ids]
+        );
+
+        $this->actingAs($data['admin'])->post(
+            route('admin.maestros.asignar', $data['maestro']->id),
+            ['curso_id' => $data['curso']->id, 'materia_ids' => $ids]
+        );
+
+        $this->assertSame(2, DetalleCurso::count());
+        $this->assertSame(2, AsignacionDocente::where('estado', 'activa')->count());
+    }
+
     public function test_error_assigning_same_program_to_another_maestro(): void
     {
         $data = $this->crearDatosBase();
 
         $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
         $otroMaestroUser = User::factory()->create(['role' => 'docente']);
@@ -128,10 +192,10 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $otroMaestro->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
-        $response->assertSessionHasErrors('materia_id');
+        $response->assertSessionHasErrors('materia_ids');
 
         $detalle = DetalleCurso::where('curso_id', $data['curso']->id)
             ->where('materia_id', $data['materia']->id)->first();
@@ -149,7 +213,7 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
         $response->assertSessionHasErrors('curso_id');
@@ -164,10 +228,10 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
-        $response->assertSessionHasErrors('materia_id');
+        $response->assertSessionHasErrors('materia_ids.*');
         $this->assertSame(0, DetalleCurso::count());
         $this->assertSame(0, AsignacionDocente::count());
     }
@@ -179,7 +243,7 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
         $response->assertNotFound();
@@ -214,10 +278,10 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
-        $response->assertSessionHasErrors('materia_id');
+        $response->assertSessionHasErrors('materia_ids');
         $this->assertSame(1, DetalleCurso::count());
         $this->assertSame(1, AsignacionDocente::count());
     }
@@ -246,10 +310,10 @@ class TeacherAssignmentCreationHistoryTest extends TestCase
 
         $response = $this->actingAs($data['admin'])->post(
             route('admin.maestros.asignar', $data['maestro']->id),
-            ['curso_id' => $data['curso']->id, 'materia_id' => $data['materia']->id]
+            ['curso_id' => $data['curso']->id, 'materia_ids' => [$data['materia']->id]]
         );
 
-        $response->assertSessionHasErrors('materia_id');
+        $response->assertSessionHasErrors('materia_ids');
         $this->assertSame(1, DetalleCurso::count());
         $this->assertSame(2, AsignacionDocente::count());
     }

@@ -46,7 +46,6 @@ class MaestroController extends Controller
         ])->findOrFail($id);
 
         $cursos = Curso::where('activo', 1)->orderBy('nombre')->orderBy('nivel')->orderBy('seccion')->get();
-        $materias = Materia::where('activa', 1)->orderBy('nombre')->get();
 
         $maestrosDisponibles = Maestro::where('activo', true)
             ->where('id', '!=', $maestro->id)
@@ -54,7 +53,7 @@ class MaestroController extends Controller
             ->orderBy('apellido')
             ->get();
 
-        return view('admin.maestro-detalle', compact('maestro', 'cursos', 'materias', 'maestrosDisponibles'));
+        return view('admin.maestro-detalle', compact('maestro', 'cursos', 'maestrosDisponibles'));
     }
 
     private function generarCodigoMaestro(string $nombre, string $apellido): string
@@ -138,17 +137,16 @@ class MaestroController extends Controller
     {
         $request->validate([
             'curso_id' => ['required', 'integer', Rule::exists('cursos', 'id')->where('activo', 1)],
-            'materia_id' => ['required', 'integer', Rule::exists('materias', 'id')->where('activa', 1)],
+            'materia_ids' => ['required', 'array', 'min:1'],
+            'materia_ids.*' => ['required', 'integer', Rule::exists('materias', 'id')->where('activa', 1)],
         ]);
 
-        DB::transaction(function () use ($request, $id) {
+        $asignados = 0;
+        $earlyReturn = false;
+
+        DB::transaction(function () use ($request, $id, &$asignados, &$earlyReturn) {
             $curso = Curso::where('id', $request->curso_id)
                 ->where('activo', 1)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $materia = Materia::where('id', $request->materia_id)
-                ->where('activa', 1)
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -157,63 +155,153 @@ class MaestroController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $detalle = DetalleCurso::where('curso_id', $request->curso_id)
-                ->where('materia_id', $request->materia_id)
+            $materias = Materia::whereIn('id', $request->materia_ids)
+                ->where('activa', 1)
                 ->lockForUpdate()
-                ->first();
+                ->get()
+                ->keyBy('id');
 
-            if ($detalle) {
-                if ($detalle->maestro_id != $maestro->id) {
-                    throw ValidationException::withMessages([
-                        'materia_id' => 'Este programa ya está asignado a otro maestro. Utilice el flujo de cambio de maestro.',
-                    ]);
-                }
+            if ($materias->count() !== count($request->materia_ids)) {
+                throw ValidationException::withMessages([
+                    'materia_ids' => 'Una o más materias seleccionadas no existen o están inactivas.',
+                ]);
+            }
 
-                $asignacionesActivas = AsignacionDocente::where('detalle_curso_id', $detalle->id)
-                    ->where('estado', 'activa')
-                    ->lockForUpdate()
-                    ->get();
+            $detalles = DetalleCurso::where('curso_id', $request->curso_id)
+                ->whereIn('materia_id', $request->materia_ids)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('materia_id');
 
-                if ($asignacionesActivas->count() > 1) {
-                    throw ValidationException::withMessages([
-                        'materia_id' => 'Este programa tiene múltiples asignaciones activas. Contacte al administrador.',
-                    ]);
-                }
+            foreach ($request->materia_ids as $materiaId) {
+                $materia = $materias[$materiaId];
+                $detalle = $detalles->get($materiaId);
 
-                if ($asignacionesActivas->count() === 1) {
-                    $asignacionActiva = $asignacionesActivas->first();
-                    if ($asignacionActiva->maestro_id != $maestro->id) {
+                // Verificar si la materia pertenece al curso
+                if ($detalle) {
+                    // La materia ya existe en el curso
+                    if ($detalle->maestro_id !== null && $detalle->maestro_id != $maestro->id) {
                         throw ValidationException::withMessages([
-                            'materia_id' => 'Este programa ya está asignado a otro maestro. Utilice el flujo de cambio de maestro.',
+                            'materia_ids' => "El programa {$materia->nombre} ya está asignado a otro maestro. Utilice el flujo de cambio de maestro.",
                         ]);
                     }
-                }
 
-                if ($asignacionesActivas->isEmpty()) {
+                    $asignacionesActivas = AsignacionDocente::where('detalle_curso_id', $detalle->id)
+                        ->where('estado', 'activa')
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($asignacionesActivas->count() > 1) {
+                        throw ValidationException::withMessages([
+                            'materia_ids' => "El programa {$materia->nombre} tiene múltiples asignaciones activas. Contacte al administrador.",
+                        ]);
+                    }
+
+                    if ($asignacionesActivas->count() === 1) {
+                        $asignacionActiva = $asignacionesActivas->first();
+                        if ($asignacionActiva->maestro_id != $maestro->id) {
+                            throw ValidationException::withMessages([
+                                'materia_ids' => "El programa {$materia->nombre} ya está asignado a otro maestro. Utilice el flujo de cambio de maestro.",
+                            ]);
+                        }
+                    }
+
+                    if ($asignacionesActivas->isEmpty()) {
+                        AsignacionDocente::create([
+                            'detalle_curso_id' => $detalle->id,
+                            'maestro_id' => $maestro->id,
+                            'estado' => 'activa',
+                            'asignado_por' => auth()->id(),
+                        ]);
+
+                        $detalle->update(['maestro_id' => $maestro->id]);
+                        $asignados++;
+                    }
+                } else {
+                    // La materia no existe en el curso, crearla
+                    // Verificar que la materia pertenece al curso (ya está en DetalleCurso con unique constraint)
+                    // Pero también verificar que no hay asignación activa para esta materia en este curso
+                    $detalle = DetalleCurso::create([
+                        'curso_id' => $request->curso_id,
+                        'materia_id' => $materiaId,
+                        'maestro_id' => $maestro->id,
+                    ]);
+
                     AsignacionDocente::create([
                         'detalle_curso_id' => $detalle->id,
                         'maestro_id' => $maestro->id,
                         'estado' => 'activa',
                         'asignado_por' => auth()->id(),
                     ]);
+                    $asignados++;
                 }
-            } else {
-                $detalle = DetalleCurso::create([
-                    'curso_id' => $request->curso_id,
-                    'materia_id' => $request->materia_id,
-                    'maestro_id' => $maestro->id,
-                ]);
+            }
 
-                AsignacionDocente::create([
-                    'detalle_curso_id' => $detalle->id,
-                    'maestro_id' => $maestro->id,
-                    'estado' => 'activa',
-                    'asignado_por' => auth()->id(),
-                ]);
+            if ($asignados === 0) {
+                $earlyReturn = true;
+                return redirect()->route('admin.maestros.show', $id)
+                    ->with('success', 'Todos los programas seleccionados ya estaban asignados a este maestro.');
             }
         });
 
-        return redirect()->route('admin.maestros.show', $id)->with('success', 'Asignación realizada correctamente.');
+        if ($earlyReturn) {
+            return redirect()->route('admin.maestros.show', $id)
+                ->with('success', 'Todos los programas seleccionados ya estaban asignados a este maestro.');
+        }
+
+        $mensaje = $asignados === 1
+            ? 'Programa asignado correctamente al maestro.'
+            : "{$asignados} programas asignados correctamente al maestro.";
+
+        return redirect()->route('admin.maestros.show', $id)->with('success', $mensaje);
+    }
+
+    public function materiasPorCurso(Request $request, $curso_id)
+    {
+        $maestroId = $request->query('maestro_id');
+
+        $curso = Curso::where('id', $curso_id)
+            ->where('activo', 1)
+            ->firstOrFail();
+
+        // Obtener las materias que pertenecen a este curso (a través de detalle_cursos)
+        $detalles = DetalleCurso::where('curso_id', $curso_id)
+            ->with(['materia', 'asignacionesDocentes' => function ($q) {
+                $q->where('estado', 'activa')->with('maestro');
+            }])
+            ->get();
+
+        $materias = [];
+
+        foreach ($detalles as $detalle) {
+            $materia = $detalle->materia;
+            if (!$materia || !$materia->activa) continue;
+
+            $asignacionesActivas = $detalle->asignacionesDocentes->where('estado', 'activa');
+            $tieneAsignacionActiva = $asignacionesActivas->isNotEmpty();
+            $maestroActual = $tieneAsignacionActiva ? $asignacionesActivas->first()->maestro : null;
+
+            // Verificar si ya está asignada al maestro que estamos viendo
+            $yaAsignadaAesteMaestro = $maestroActual && $maestroId && $maestroActual->id == $maestroId;
+
+            // Verificar si tiene historial docente (asignaciones finalizadas)
+            $tieneHistorial = $detalle->asignacionesDocentes->where('estado', 'finalizada')->isNotEmpty();
+
+            // Si tiene maestro actual y no es el maestro que estamos viendo, no se puede asignar
+            $tieneMaestroActual = $tieneAsignacionActiva && !$yaAsignadaAesteMaestro;
+
+            $materias[] = [
+                'id' => $materia->id,
+                'nombre' => $materia->nombre,
+                'codigo' => $materia->codigo,
+                'tiene_maestro_actual' => $tieneMaestroActual,
+                'maestro_actual' => $maestroActual ? $maestroActual->nombre_completo : null,
+                'ya_asignada_a_este_maestro' => $yaAsignadaAesteMaestro,
+                'tiene_historial' => $tieneHistorial && !$yaAsignadaAesteMaestro,
+            ];
+        }
+
+        return response()->json(['materias' => $materias]);
     }
 
     public function desasignar(Request $request, $maestro_id, $detalle_id)

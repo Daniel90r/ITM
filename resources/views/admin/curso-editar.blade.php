@@ -75,18 +75,36 @@
                                 style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
                                 onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                         </div>
-                    </div>
+                     </div>
 
                     <div>
-                        <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Estado</label>
-                        <select name="activo" style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
+                        <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">
+                            Estado
+                            @if($curso->estado_curso === 'FINALIZADO')
+                                <span style="color:#6b7280; font-weight:400;">(estado terminal, no se puede modificar)</span>
+                            @else
+                                <span style="color:red">*</span>
+                            @endif
+                        </label>
+                        @php $esFinalizado = $curso->estado_curso === 'FINALIZADO'; @endphp
+                        <select name="estado" @if($esFinalizado) disabled @endif
+                            style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; {{ $esFinalizado ? 'opacity:0.6; cursor:not-allowed;' : '' }}"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
-                            <option value="1" {{ $curso->activo ? 'selected' : '' }}>Activo</option>
-                            <option value="0" {{ !$curso->activo ? 'selected' : '' }}>Inactivo</option>
+                            @if($esFinalizado)
+                                <option value="FINALIZADO" selected>Finalizado</option>
+                            @else
+                                <option value="PROXIMO" {{ old('estado', $curso->estado_editable) === 'PROXIMO' ? 'selected' : '' }}>Próximo</option>
+                                <option value="ACTIVO" {{ old('estado', $curso->estado_editable) === 'ACTIVO' ? 'selected' : '' }}>Activo</option>
+                            @endif
                         </select>
+                        @if($esFinalizado)
+                            <p style="font-size:11px; color:#6b7280; margin:6px 0 0;">Este curso ya fue finalizado. «Finalizado» es un estado terminal y solo se revierte desde el flujo de cursos, no desde este formulario.</p>
+                        @else
+                            <p style="font-size:11px; color:#6b7280; margin:6px 0 0;">«Finalizado» no se selecciona aquí: se aplica con el botón <strong>Finalizar curso</strong>.</p>
+                        @endif
                     </div>
 
-                    <div style="display:flex; gap:10px; padding-top:4px;">
+                     <div style="display:flex; gap:10px; padding-top:4px;">
             <a href="{{ route('admin.cursos') }}"
                            style="flex:1; padding:10px; border-radius:10px; background:#f3f4f6; color:#374151; font-size:13px; font-weight:600; border:none; cursor:pointer; text-align:center; text-decoration:none;"
                            onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">

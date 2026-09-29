@@ -1,6 +1,4 @@
-{{-- ═══════════════════════════════════════════════════════════ --}}
-{{-- MODAL: NUEVO CURSO --}}
-{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- Aqui generamos un nuevo curso --}}
 <div id="modalNuevoCurso" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px;">
 
@@ -18,7 +16,7 @@
         <form method="POST" action="{{ route('admin.cursos.store') }}" autocomplete="off" style="display:flex; flex-direction:column; gap:16px;">
             @csrf
 
-            {{-- Nombre y Sección --}}
+            {{-- Nombre de curso y Sección --}}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre <span style="color:#dc2626;">*</span></label>
@@ -35,7 +33,7 @@
                 </div>
             </div>
 
-            {{-- Turno y Año --}}
+            {{-- El turno y año --}}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Turno <span style="color:#dc2626;">*</span></label>
@@ -69,20 +67,9 @@
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
                 </div>
-            </div>
+             </div>
 
-            {{-- Estado --}}
-            <div>
-                <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Estado</label>
-                <select name="activo"
-                    style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box; cursor:pointer;"
-                    onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
-                    <option value="1">Activo</option>
-                    <option value="0">Inactivo</option>
-                </select>
-            </div>
-
-            {{-- Botones --}}
+             {{-- Botones --}}
             <div style="display:flex; gap:10px; padding-top:4px;">
                 <button type="button" onclick="cerrarModalCurso()"
                     style="flex:1; padding:10px; background:#f3f4f6; border:none; border-radius:10px; font-size:13px; font-weight:600; color:#374151; cursor:pointer;"

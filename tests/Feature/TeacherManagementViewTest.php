@@ -67,27 +67,42 @@ class TeacherManagementViewTest extends TestCase
         $this->assertSame(1, preg_match_all("/@include\s*\(\s*['\"]admin\.partials\.modal-asignar-curso['\"]\s*\)/", $content));
     }
 
-    public function test_detail_view_edit_button_has_type_button(): void
+    public function test_detail_view_has_no_edit_maestro_button(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $maestro = $this->crearMaestroConUsuario();
 
         $response = $this->actingAs($admin)->get(route('admin.maestros.show', $maestro->id));
 
-        $response->assertSee('type="button"', false);
-        $response->assertSee('abrirModalEditarMaestro(');
+        // Decisión vigente: la edición de maestros NO se inicia desde la vista
+        // detalle. El modal sigue incluido (ver test_detail_view_includes_edit_modal),
+        // pero ningún control de esta pantalla lo abre.
+        $response->assertDontSee('abrirModalEditarMaestro(', false);
     }
 
-    public function test_detail_view_no_duplicate_edit_buttons(): void
+    public function test_detail_view_keeps_the_rest_of_the_maestro_actions(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $maestro = $this->crearMaestroConUsuario();
 
         $response = $this->actingAs($admin)->get(route('admin.maestros.show', $maestro->id));
 
-        $html = $response->getContent();
-        $count = substr_count($html, 'abrirModalEditarMaestro(');
-        $this->assertSame(1, $count, 'Debe haber exactamente un botón "Editar" en la vista de detalle.');
+        // Asignar programas, cambiar maestro, desasignar e historial siguen vivos.
+        $response->assertSee('abrirModalAsignarCurso(', false);
+        $response->assertSee('Asignar programa', false);
+        $response->assertSee('id="modalAsignarCurso"', false);
+        $response->assertSee('id="modalCambiarMaestro"', false);
+        $response->assertSee('Programas asignados', false);
+    }
+
+    public function test_list_view_keeps_the_edit_maestro_button(): void
+    {
+        $this->crearMaestroConUsuario();
+
+        $content = file_get_contents(resource_path('views/admin/maestros.blade.php'));
+
+        $this->assertStringContainsString('abrirModalEditarMaestro(', $content);
+        $this->assertSame(1, substr_count($content, 'abrirModalEditarMaestro('), 'La vista de listado debe tener un único botón Editar.');
     }
 
     public function test_detail_view_no_obsolete_function_calls(): void

@@ -6,14 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Curso;
 use App\Models\Materia;
 use App\Models\DetalleCurso;
+use App\Models\Alumno;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class SeccionController extends Controller
 {
     public function index()
     {
-        $cursos = Curso::withCount('inscripciones')->orderBy('seccion')->get();
+        $cursos = Curso::withCount(['inscripciones' => function ($query) {
+            $query->aprobada();
+        }])->orderBy('seccion')->get();
         return view('admin.cursos', compact('cursos'));
     }
 
@@ -35,11 +39,9 @@ class SeccionController extends Controller
                 'date',
                 'after:fecha_inicio',
             ],
-
-            'activo' => 'sometimes|boolean',
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated) {
             $curso = Curso::create([
                 'nombre' => $validated['nombre'],
                 'seccion' => strtoupper($validated['seccion']),
@@ -47,7 +49,7 @@ class SeccionController extends Controller
                 'anio_lectivo' => $validated['anio_lectivo'],
                 'fecha_inicio' => $validated['fecha_inicio'],
                 'fecha_fin' => $validated['fecha_fin'],
-                'activo' => $request->filled('activo') ? 1 : 0,
+                'activo' => true,
             ]);
 
             $materiasActivas = Materia::where('activa', true)->get();
@@ -66,12 +68,74 @@ class SeccionController extends Controller
     public function show($id)
     {
         $curso = Curso::with([
-            'inscripciones.alumno',
-            'detalleCursos.materia',
-            'detalleCursos.maestro',
+            'inscripciones' => function ($query) {
+                $query->aprobada()->with('alumno');
+            },
         ])->findOrFail($id);
 
-        return view('admin.curso-detalle', compact('curso'));
+        // Obtener alumnos aprobados
+        $inscritosAprobados = $curso->inscripciones->pluck('alumno');
+
+        // Única fuente de verdad: las materias visibles del curso.
+        // El contador y el listado de la vista usan esta misma colección.
+        $detalleCursosVisibles = $curso->detalleCursos()
+            ->visibles()
+            ->with(['materia', 'maestro'])
+            ->orderBy('id')
+            ->get();
+
+        // Cargar materias opcionales con sus alumnos inscritos usando eager loading
+        $materiasOpcionalesPorId = $detalleCursosVisibles
+            ->filter(fn ($detalle) => $detalle->materia && $detalle->materia->es_opcional)
+            ->mapWithKeys(fn ($detalle) => [$detalle->materia_id => $detalle->materia->nombre]);
+
+        $materiasOpcionalesIds = $materiasOpcionalesPorId->keys()->all();
+
+        $alumnosPorMateriaOpcional = [];
+        $materiasOpcionalesPorAlumno = collect();
+
+        if (!empty($materiasOpcionalesIds)) {
+            // Una sola consulta para obtener todos los alumnos de materias opcionales del curso
+            $alumnosMaterias = DB::table('alumno_materia')
+                ->where('curso_id', $curso->id)
+                ->whereIn('materia_id', $materiasOpcionalesIds)
+                ->join('alumnos', 'alumno_materia.alumno_id', '=', 'alumnos.id')
+                ->select('alumnos.id', 'alumnos.nombre', 'alumnos.apellido', 'alumnos.codigo', 'alumno_materia.materia_id')
+                ->get()
+                ->groupBy('materia_id');
+
+            foreach ($materiasOpcionalesIds as $materiaId) {
+                $alumnosPorMateriaOpcional[$materiaId] = $alumnosMaterias->get($materiaId, collect());
+            }
+
+            // Nombres de las materias opcionales que realmente lleva cada alumno.
+            // Se derivan de la misma consulta para que la vista no tenga que
+            // consultar nada: nada de ids hardcodeados ni de N+1.
+            $materiasOpcionalesPorAlumno = $alumnosMaterias
+                ->flatten(1)
+                ->groupBy('id')
+                ->map(fn ($filas) => $filas
+                    ->map(fn ($fila) => $materiasOpcionalesPorId[$fila->materia_id] ?? null)
+                    ->filter()
+                    ->unique()
+                    ->values());
+        }
+
+        // Preparar detalleCursos con información de materias opcionales
+        $detalleCursosConOpcional = $detalleCursosVisibles->map(function ($detalle) use ($inscritosAprobados, $alumnosPorMateriaOpcional) {
+            if ($detalle->materia->es_opcional) {
+                $detalle->alumnos_opcional = $alumnosPorMateriaOpcional[$detalle->materia_id] ?? collect();
+                $detalle->total_alumnos_curso = $inscritosAprobados->count();
+            }
+            return $detalle;
+        });
+
+        return view('admin.curso-detalle', compact(
+            'curso',
+            'detalleCursosConOpcional',
+            'detalleCursosVisibles',
+            'materiasOpcionalesPorAlumno'
+        ));
     }
 
     public function edit($id)
@@ -101,18 +165,41 @@ class SeccionController extends Controller
                 'after:fecha_inicio',
             ],
 
-            'activo' => 'sometimes|boolean',
+            'estado' => [
+                'nullable',
+                Rule::in(Curso::ESTADOS_EDITABLES),
+            ],
         ]);
 
-        $curso->update([
+        // «Finalizado» es un estado TERMINAL. La regla no puede depender del
+        // <select disabled> del formulario: los inputs deshabilitados no se
+        // envían, así que un request manipulado podría mover fecha_fin al
+        // futuro y devolver el curso a ACTIVO/PROXIMO. Se bloquea el update
+        // completo mientras el curso esté finalizado.
+        if ($curso->estado_curso === Curso::ESTADO_FINALIZADO) {
+            return back()
+                ->withInput()
+                ->with('error', 'Un curso finalizado no puede modificarse: «Finalizado» es un estado terminal.');
+        }
+
+        $datos = [
             'nombre' => $validated['nombre'],
             'nivel' => $validated['nivel'],
             'seccion' => $validated['seccion'],
             'anio_lectivo' => $validated['anio_lectivo'],
             'fecha_inicio' => $validated['fecha_inicio'],
             'fecha_fin' => $validated['fecha_fin'],
-            'activo' => $request->filled('activo') ? 1 : 0,
-        ]);
+        ];
+
+        if (array_key_exists('estado', $validated)) {
+            $estadoSolicitado = $validated['estado'];
+
+            if ($estadoSolicitado !== $curso->estado) {
+                $datos['estado'] = $estadoSolicitado;
+            }
+        }
+
+        $curso->update($datos);
 
         return redirect()->route('admin.cursos')->with('success', 'Curso actualizado correctamente.');
     }

@@ -104,6 +104,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::put('/admin/maestros/{maestro_id}/programas/{detalle_id}/cambiar-maestro', [\App\Http\Controllers\Admin\MaestroController::class, 'cambiarMaestro'])
         ->name('admin.maestros.asignaciones.cambiar');
 
+    Route::get('/admin/maestros/materias-por-curso/{curso_id}', [\App\Http\Controllers\Admin\MaestroController::class, 'materiasPorCurso'])
+        ->name('admin.maestros.materiasPorCurso');
+
     Route::delete('/inscripciones/{id}', [\App\Http\Controllers\Admin\InscripcionController::class, 'desactivar'])->name('admin.inscripciones.desactivar');
 
     Route::get('/admin/solicitudes', [App\Http\Controllers\Admin\InscripcionController::class, 'solicitudes'])->name('admin.solicitudes');

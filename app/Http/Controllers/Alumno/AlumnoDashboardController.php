@@ -51,9 +51,8 @@ class AlumnoDashboardController extends Controller
 
         $cursosDisponibles = collect();
         if (!$inscripcion) {
-            $cursosDisponibles = Curso::where('activo', true)
+            $cursosDisponibles = Curso::proximo()
                 ->where('anio_lectivo', (int) now()->year)
-                ->noFinalizado()
                 ->get();
         }
 
@@ -83,9 +82,8 @@ class AlumnoDashboardController extends Controller
 
         $cursosDisponibles = collect();
         if (!$inscripcion) {
-            $cursosDisponibles = Curso::where('activo', true)
+            $cursosDisponibles = Curso::proximo()
                 ->where('anio_lectivo', (int) now()->year)
-                ->noFinalizado()
                 ->get();
         }
 
@@ -162,8 +160,8 @@ class AlumnoDashboardController extends Controller
 
         $curso = Curso::findOrFail($request->curso_id);
 
-        if ($curso->estado_curso === 'FINALIZADO') {
-            return back()->with('error', 'No es posible inscribirse en un curso finalizado.');
+        if (! $curso->admiteInscripcionPorEstado()) {
+            return back()->with('error', 'Solo es posible inscribirse en cursos con estado Próximo.');
         }
 
         // Generar PDF con datos y firmas digitales
@@ -253,20 +251,15 @@ class AlumnoDashboardController extends Controller
                     ->lockForUpdate()
                     ->findOrFail($request->curso_id);
 
-                if ($curso->estado_curso === 'FINALIZADO') {
+                if (! $curso->admiteInscripcionPorEstado()) {
                     throw ValidationException::withMessages([
-                        'curso_id' => 'No es posible inscribirse en un curso finalizado.',
+                        'curso_id' => 'Solo es posible inscribirse en cursos con estado Próximo.',
                     ]);
                 }
 
-                $inscritosActuales = Inscripcion::query()
-                    ->where('curso_id', $curso->id)
-                    ->where('estado', 'aprobada')
-                    ->count();
-
-                if ($inscritosActuales >= Curso::CUPOS_MAXIMO) {
+                if (! $curso->admiteNuevaInscripcion()) {
                     throw ValidationException::withMessages([
-                        'curso_id' => 'El curso ya alcanzó el límite de 20 alumnos.',
+                        'curso_id' => 'El curso ya alcanzó el límite de ' . Curso::CUPOS_MAXIMO . ' alumnos.',
                     ]);
                 }
 
@@ -288,7 +281,9 @@ class AlumnoDashboardController extends Controller
     public function descargarPdf()
     {
         $alumno            = $this->getAlumno();
-        $cursosDisponibles = Curso::where('activo', true)->where('anio_lectivo', 2026)->noFinalizado()->get();
+        $cursosDisponibles = Curso::proximo()
+            ->where('anio_lectivo', (int) now()->year)
+            ->get();
 
         $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', compact('alumno', 'cursosDisponibles'))
             ->setPaper('a4', 'portrait');
@@ -308,8 +303,8 @@ class AlumnoDashboardController extends Controller
 
         $curso = Curso::findOrFail($request->curso_id);
 
-        if ($curso->estado_curso === 'FINALIZADO') {
-            return back()->with('error', 'No es posible inscribirse en un curso finalizado.');
+        if (! $curso->admiteInscripcionPorEstado()) {
+            return back()->with('error', 'Solo es posible inscribirse en cursos con estado Próximo.');
         }
 
         $existente = Inscripcion::where('alumno_id', $alumno->id)

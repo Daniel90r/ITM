@@ -41,6 +41,39 @@ class Nota extends Model
         });
     }
 
+    /**
+     * Columnas que representan una calificación realmente capturada.
+     * 'promedio' se excluye porque lo calcula el modelo a partir de las otras.
+     */
+    public const COLUMNAS_CALIFICACION = [
+        'laboratorio', 'examen_teorico', 'practica', 'sos', 'conducta',
+    ];
+
+    /**
+     * Una fila de notas cuenta como actividad académica solo si tiene al menos
+     * una calificación capturada. El flujo de captura usa updateOrCreate por alumno,
+     * por lo que pueden existir filas con todas las notas en NULL.
+     */
+    public function scopeConCalificacion($query)
+    {
+        return $query->where(function ($q) {
+            foreach (self::COLUMNAS_CALIFICACION as $columna) {
+                $q->orWhereNotNull($columna);
+            }
+        });
+    }
+
+    public function tieneCalificacion(): bool
+    {
+        foreach (self::COLUMNAS_CALIFICACION as $columna) {
+            if ($this->{$columna} !== null && $this->{$columna} !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function alumno(): BelongsTo
     {
         return $this->belongsTo(Alumno::class);
