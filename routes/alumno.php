@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 // RUTAS: ALUMNO
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'alumno.portal'])->group(function () {
 
     // ALUMNO: Dashboard / Inicio
     Route::get('/alumno/dashboard', [\App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'index'])
