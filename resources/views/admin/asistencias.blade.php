@@ -33,6 +33,20 @@
                             @endforeach
                         </select>
                     </div>
+                    @if($detalleCursos->count())
+                    <div style="min-width:180px;">
+                        <label style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.06em;">Materia / Programa</label>
+                        <select name="detalle_curso_id" onchange="this.form.submit()"
+                                style="width:100%; padding:8px 12px; font-size:13px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:#111827; outline:none; cursor:pointer;">
+                            <option value="">Todas las materias</option>
+                            @foreach($detalleCursos as $dc)
+                            <option value="{{ $dc->id }}" {{ $detalleCursoId == $dc->id ? 'selected' : '' }}>
+                                {{ $dc->materia->nombre }} ({{ $dc->materia->codigo }})
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
                     <div style="min-width:180px;">
                         <label style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.06em;">Docente</label>
                         <select name="maestro_id" onchange="this.form.submit()"
@@ -75,6 +89,7 @@
                             <th style="padding:11px 12px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase;">Fecha</th>
                             <th style="padding:11px 12px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase;">Alumno</th>
                             <th style="padding:11px 12px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase;">Curso</th>
+                            <th style="padding:11px 12px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase;">Materia</th>
                             <th style="padding:11px 12px; text-align:center; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase;">Estado</th>
                             <th style="padding:11px 12px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase;">Docente</th>
                         </tr>
@@ -85,6 +100,7 @@
                             <td style="padding:11px 12px; font-size:13px; color:#6b7280;">{{ \Carbon\Carbon::parse($asistencia->fecha)->format('d/m/Y') }}</td>
                             <td style="padding:11px 12px; font-size:13px; color:#111827;">{{ $asistencia->alumno->nombre_completo }}</td>
                             <td style="padding:11px 12px; font-size:13px; color:#6b7280;">{{ $asistencia->curso->nombre ?? '—' }}</td>
+                            <td style="padding:11px 12px; font-size:13px; color:#6b7280;">{{ $asistencia->detalleCurso->materia->nombre ?? '—' }}</td>
                             <td style="padding:11px 12px; text-align:center;">
                                 @if($asistencia->estado === 'ausente')
                                     <span style="background:#fef2f2; color:#dc2626; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:600;">Ausente</span>
@@ -94,7 +110,7 @@
                                     <span style="background:#f0fdf4; color:#16a34a; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:600;">Presente</span>
                                 @endif
                             </td>
-                            <td style="padding:11px 12px; font-size:13px; color:#6b7280;">{{ $asistencia->curso->detalleCursos->first()?->maestro->nombre_completo ?? '—' }}</td>
+                            <td style="padding:11px 12px; font-size:13px; color:#6b7280;">{{ $asistencia->detalleCurso->maestro->nombre_completo ?? '—' }}</td>
                         </tr>
                         @endforeach
                     </tbody>

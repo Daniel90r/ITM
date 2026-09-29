@@ -8,8 +8,11 @@
 
     <div style="margin-bottom:20px;">
         <h2 style="font-size:18px; font-weight:600; color:#1f2937; margin:0;">
-            Curso {{ $curso->seccion }} — {{ $curso->nombre }} ({{ $curso->nivel }})
+            {{ $detalle->materia->nombre }}@if($detalle->materia->es_opcional) (opcional)@endif
         </h2>
+        <p style="font-size:14px; color:#6b7280; margin:10px 0 0;">
+            <strong>Curso:</strong> {{ $curso->seccion }} — {{ $curso->nombre }} ({{ $curso->nivel }})
+        </p>
         <p style="font-size:14px; color:#6b7280; margin:10px 0 0;">
             <strong>Docente:</strong> {{ $maestro->nombre_completo }}
         </p>

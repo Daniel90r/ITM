@@ -1,24 +1,4 @@
 <x-app-layout>
-@php
-function estadoAsistenciaTexto(string $estado): string
-{
-    return match ($estado) {
-        'ausente' => 'Ausente',
-        'permiso' => 'Ausente con permiso',
-        default => 'Presente',
-    };
-}
-
-function estadoAsistenciaColor(string $estado): string
-{
-    return match ($estado) {
-        'ausente' => '#ef4444',
-        'permiso' => '#f59e0b',
-        default => '#10b981',
-    };
-}
-@endphp
-
 <div style="display:flex; height:100vh; overflow:hidden;">
 
     <x-docente-sidebar :maestro="$maestro" active="asistencia" />
@@ -47,22 +27,40 @@ function estadoAsistenciaColor(string $estado): string
             @endif
 
             <form method="GET" action="{{ route('docente.asistencia') }}" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:18px 20px; margin-bottom:20px;">
-                <h3 style="font-size:14px; font-weight:600; margin:0 0 14px; color:#1f2937;">Seleccionar curso</h3>
+                <h3 style="font-size:14px; font-weight:600; margin:0 0 14px; color:#1f2937;">Seleccionar curso y materia</h3>
 
                 <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
                     <div style="display:flex; flex-direction:column; gap:5px; flex:1 1 280px; min-width:220px;">
                         <label style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.06em;">Curso</label>
                         <select name="curso_id"
+                                onchange="this.form.submit()"
                                 style="background:#ffffff; border:1px solid #d1d5db; border-radius:8px; padding:9px 12px; color:#1f2937; font-size:13px; outline:none; width:100%;"
                                 onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#d1d5db'">
                             <option value="">-- Seleccionar curso --</option>
-                            @foreach($cursos as $curso)
-                            <option value="{{ $curso->id }}" {{ $cursoId == $curso->id ? 'selected' : '' }}>
-                                Curso {{ $curso->seccion ?? '' }} — {{ $curso->nivel }} ({{ $curso->anio_lectivo }})
+                            @foreach($cursos as $opcionCurso)
+                            <option value="{{ $opcionCurso->id }}" {{ $cursoId == $opcionCurso->id ? 'selected' : '' }}>
+                                Curso {{ $opcionCurso->seccion ?? '' }} — {{ $opcionCurso->nivel }} ({{ $opcionCurso->anio_lectivo }})
                             </option>
                             @endforeach
                         </select>
                     </div>
+
+                    @if($curso)
+                    <div style="display:flex; flex-direction:column; gap:5px; flex:1 1 240px; min-width:200px;">
+                        <label style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.06em;">Materia / Programa</label>
+                        <select name="detalle_curso_id"
+                                onchange="this.form.submit()"
+                                style="background:#ffffff; border:1px solid #d1d5db; border-radius:8px; padding:9px 12px; color:#1f2937; font-size:13px; outline:none; width:100%;"
+                                onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#d1d5db'">
+                            <option value="">-- Seleccionar materia --</option>
+                            @foreach($materias as $opcionMateria)
+                            <option value="{{ $opcionMateria->id }}" {{ $detalleCursoId == $opcionMateria->id ? 'selected' : '' }}>
+                                {{ $opcionMateria->materia->nombre }}{{ $opcionMateria->materia->es_opcional ? ' (opcional)' : '' }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
 
                     <div style="display:flex; flex-direction:column; gap:5px; flex:1 1 190px; min-width:160px;">
                         <label style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.06em;">Fecha</label>
@@ -84,16 +82,21 @@ function estadoAsistenciaColor(string $estado): string
                 <div style="width:54px; height:54px; background:#f3f4f6; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 </div>
-                <p style="font-size:15px; font-weight:600; color:#1f2937; margin:0 0 6px;">No tienes cursos asignados</p>
-                <p style="font-size:13px; color:#6b7280; margin:0;">Contacta con el administrador para asignarte cursos.</p>
+                <p style="font-size:15px; font-weight:600; color:#1f2937; margin:0 0 6px;">No tiene materias asignadas actualmente.</p>
+                <p style="font-size:13px; color:#6b7280; margin:0;">Contacta con el administrador para que te asigne un programa.</p>
             </div>
             @elseif(!$curso)
             <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:52px; text-align:center;">
                 <div style="width:54px; height:54px; background:#f3f4f6; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-0 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
                 </div>
                 <p style="font-size:15px; font-weight:600; color:#1f2937; margin:0 0 6px;">Selecciona un curso para registrar asistencia</p>
-                <p style="font-size:13px; color:#6b7280; margin:0;">Solo aparecerán los alumnos inscritos en ese curso.</p>
+                <p style="font-size:13px; color:#6b7280; margin:0;">Solo aparecen los cursos donde tienes alguna materia asignada.</p>
+            </div>
+            @elseif(!$detalle)
+            <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:52px; text-align:center;">
+                <p style="font-size:15px; font-weight:600; color:#1f2937; margin:0 0 6px;">Selecciona la materia que vas a impartir</p>
+                <p style="font-size:13px; color:#6b7280; margin:0;">Cada materia tiene su propio registro de asistencia.</p>
             </div>
             @elseif($alumnos->isEmpty())
             <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:52px; text-align:center;">
@@ -115,27 +118,18 @@ function estadoAsistenciaColor(string $estado): string
 
             <form method="POST" action="{{ route('docente.asistencia.guardar') }}">
                 @csrf
-                <input type="hidden" name="curso_id" value="{{ $curso->id }}">
+                <input type="hidden" name="detalle_curso_id" value="{{ $detalle->id }}">
                 <input type="hidden" name="fecha" value="{{ $fecha }}">
 
                 <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; margin-bottom:20px;">
                     <div style="padding:14px 20px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; border-bottom:1px solid #e5e7eb;">
                         <div>
                             <p style="font-size:14px; font-weight:600; color:#1f2937; margin:0;">
-                                Curso {{ $curso->seccion ?? '' }} — {{ $curso->nivel }} ({{ $curso->anio_lectivo }})
+                                {{ $detalle->materia->nombre }}@if($detalle->materia->es_opcional) <span style="font-size:11px; color:#6b7280; font-weight:500;">(opcional)</span> @endif
                             </p>
                             <p style="font-size:12px; color:#6b7280; margin:6px 0 0;">
-                                {{ $alumnos->count() }} alumnos inscritos · {{ $fecha }}
+                                Curso {{ $curso->seccion ?? '' }} — {{ $curso->nivel }} ({{ $curso->anio_lectivo }}) · {{ $alumnos->count() }} alumnos · {{ $fecha }}
                             </p>
-                            @if($curso->detalleCursos->isNotEmpty())
-                            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
-                                @foreach($curso->detalleCursos as $detalle)
-                                <span style="display:inline-flex; align-items:center; padding:4px 8px; background:#eff6ff; color:#1d4ed8; border-radius:999px; font-size:11px; font-weight:600;">
-                                    {{ $detalle->materia?->nombre ?? 'Materia' }}
-                                </span>
-                                @endforeach
-                            </div>
-                            @endif
                         </div>
 
                         <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end;">
@@ -217,7 +211,7 @@ function estadoAsistenciaColor(string $estado): string
                     </div>
 
                     <div style="padding:12px 20px; display:flex; align-items:center; justify-content:flex-end; gap:10px; border-top:1px solid #e5e7eb; background:#f9fafb;">
-                        <a href="{{ route('docente.asistencia.reporte', ['curso_id' => $curso->id, 'fecha' => $fecha]) }}" target="_blank"
+                        <a href="{{ route('docente.asistencia.reporte', ['detalle_curso_id' => $detalle->id, 'fecha' => $fecha]) }}" target="_blank"
                            style="padding:9px 18px; background:#111827; border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none;">
                             📄 Generar reporte
                         </a>

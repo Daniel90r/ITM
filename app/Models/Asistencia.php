@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Asistencia extends Model
 {
     protected $fillable = [
-        'curso_id', 'alumno_id', 'fecha', 'estado', 'observacion', 'registrado_por',
+        'curso_id', 'detalle_curso_id', 'alumno_id', 'fecha', 'estado', 'observacion', 'registrado_por',
     ];
 
     protected $casts = [
@@ -18,6 +18,11 @@ class Asistencia extends Model
     public function curso(): BelongsTo
     {
         return $this->belongsTo(Curso::class);
+    }
+
+    public function detalleCurso(): BelongsTo
+    {
+        return $this->belongsTo(DetalleCurso::class);
     }
 
     public function alumno(): BelongsTo

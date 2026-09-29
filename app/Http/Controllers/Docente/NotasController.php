@@ -3,68 +3,62 @@
 namespace App\Http\Controllers\Docente;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Docente\Concerns\ResuelveMateriasDelDocente;
 use App\Models\Nota;
-use App\Models\Maestro;
 use App\Models\DetalleCurso;
-use App\Models\Inscripcion;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class NotasController extends Controller
 {
+    use ResuelveMateriasDelDocente;
     // ═══════════════════════════════════════════════════════════════════════════════════════════
     // DOCENTE: REGISTRO DE NOTAS
     // ═══════════════════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * REGLA: la unidad académica es Curso + Materia + Maestro.
+     *
+     * Un curso no pertenece a un maestro; cada materia del curso puede
+     * impartirla alguien distinto. La fuente de verdad es
+     * asignaciones_docentes con estado = 'activa', igual que en el dashboard
+     * y en el registro de asistencia.
+     */
 
     /**
      * Mostrar vista de notas con filtros por curso y materia
      */
     public function index(Request $request)
     {
-        $maestro = Maestro::where('user_id', Auth::id())->firstOrFail();
+        $maestro = $this->maestroAutenticado();
 
-        // ─────────────────────────────────────────────────────────────────────────────────
-        // Obtener cursos y materias asignados al docente
-        // ─────────────────────────────────────────────────────────────────────────────────
-        $detalleCursos = DetalleCurso::with(['curso', 'materia'])
-            ->where('maestro_id', $maestro->id)
-            ->whereHas('curso', fn($q) => $q->where('activo', true))
-            ->get();
+        $detalleCursos = $this->detallesAsignados($maestro);
 
-        $cursos = $detalleCursos->groupBy('curso_id')->map(function ($items) {
-            return [
+        $cursos = $detalleCursos
+            ->groupBy('curso_id')
+            ->map(fn ($items) => [
                 'curso'    => $items->first()->curso,
-                'materias' => $items->map(fn($i) => $i->materia),
-            ];
-        })->values();
+                'materias' => $items->pluck('materia')->values(),
+            ])
+            ->values();
 
         $detalleCursoId    = $request->input('detalle_curso_id');
         $cursoSeleccionado = $request->input('curso_id');
 
-        if ($detalleCursoId && !$cursoSeleccionado) {
+        if ($detalleCursoId && ! $cursoSeleccionado) {
             $dc = $detalleCursos->firstWhere('id', $detalleCursoId);
             $cursoSeleccionado = $dc?->curso_id;
         }
 
-        // ─────────────────────────────────────────────────────────────────────────────────
-        // Obtener alumnos y notas si hay materia seleccionada
-        // ─────────────────────────────────────────────────────────────────────────────────
         $alumnos = collect();
         $notas   = collect();
         $detalle = null;
 
         if ($detalleCursoId) {
-            $detalle = DetalleCurso::with(['curso', 'materia'])
-                ->where('id', $detalleCursoId)
-                ->where('maestro_id', $maestro->id)
-                ->firstOrFail();
+            $detalle = $detalleCursos->firstWhere('id', $detalleCursoId);
 
-            $alumnos = Inscripcion::with('alumno')
-                ->where('curso_id', $detalle->curso_id)
-                ->where('estado', 'aprobada')
-                ->get()
-                ->map(fn($i) => $i->alumno)
-                ->sortBy('apellido');
+            abort_if($detalle === null, 403, 'No tiene esa materia asignada actualmente.');
+
+            $alumnos = $this->alumnosDeLaMateria($detalle);
 
             $notas = Nota::where('detalle_curso_id', $detalleCursoId)
                 ->get()
@@ -83,13 +77,12 @@ class NotasController extends Controller
      */
     public function guardar(Request $request)
     {
-        $maestro = Maestro::where('user_id', Auth::id())->firstOrFail();
+        $maestro = $this->maestroAutenticado();
 
-        // ─────────────────────────────────────────────────────────────────────────────────
-        // Validar datos de entrada
-        // ─────────────────────────────────────────────────────────────────────────────────
+        // ── Validar datos de entrada ──────────────────────────────────────
         $request->validate([
-            'detalle_curso_id'       => 'required|exists:detalle_cursos,id',
+            'detalle_curso_id'       => 'required|integer|exists:detalle_cursos,id',
+            'notas'                  => 'required|array',
             'notas.*.laboratorio'    => 'nullable|numeric|min:0|max:10',
             'notas.*.examen_teorico' => 'nullable|numeric|min:0|max:10',
             'notas.*.practica'       => 'nullable|numeric|min:0|max:10',
@@ -97,25 +90,48 @@ class NotasController extends Controller
             'notas.*.conducta'       => 'nullable|string|max:2',
         ]);
 
-        $detalle = DetalleCurso::where('id', $request->detalle_curso_id)
-            ->where('maestro_id', $maestro->id)
+        // ── Autorización real: la materia debe estar asignada al maestro ──
+        $detalle = DetalleCurso::with(['curso', 'materia'])
+            ->where('id', $request->detalle_curso_id)
             ->firstOrFail();
 
-        // ─────────────────────────────────────────────────────────────────────────────────
-        // Guardar notas de cada alumno
-        // ─────────────────────────────────────────────────────────────────────────────────
+        abort_unless(
+            $detalle->curso->activo,
+            403,
+            'El curso no está activo.'
+        );
+
+        abort_unless(
+            $detalle->esMateriaDelMaestro($maestro->id),
+            403,
+            'No tiene una asignación vigente para esa materia.'
+        );
+
+        $alumnosPermitidos = $this->alumnosDeLaMateria($detalle)->pluck('id');
+
+        // Se valida el lote COMPLETO antes de guardar nada: un alumno
+        // manipulado no debe dejar notas a medias.
+        $idsEnviados = collect(array_keys($request->notas))->map(fn ($id) => (int) $id);
+
+        abort_if(
+            $idsEnviados->diff($alumnosPermitidos)->isNotEmpty(),
+            403,
+            'Uno de los alumnos no corresponde a la materia seleccionada.'
+        );
+
+        // ── Guardar notas de cada alumno ─────────────────────────────────
         foreach ($request->notas as $alumnoId => $valores) {
             Nota::updateOrCreate(
                 [
-                    'alumno_id'        => $alumnoId,
+                    'alumno_id'        => (int) $alumnoId,
                     'detalle_curso_id' => $detalle->id,
                 ],
                 [
-                    'laboratorio'    => $valores['laboratorio']    ?? null,
+                    'laboratorio'    => $valores['laboratorio'] ?? null,
                     'examen_teorico' => $valores['examen_teorico'] ?? null,
-                    'practica'       => $valores['practica']       ?? null,
-                    'sos'            => $valores['sos']            ?? null,
-                    'conducta'       => $valores['conducta']       ?? null,
+                    'practica'       => $valores['practica'] ?? null,
+                    'sos'            => $valores['sos'] ?? null,
+                    'conducta'       => $valores['conducta'] ?? null,
                     'registrado_por' => $maestro->id,
                 ]
             );
