@@ -44,6 +44,7 @@
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
                     <input type="text" id="editTelefono" name="telefono" required maxlength="9"
+                        data-phone-mask
                         inputmode="numeric" placeholder="Ej: 7123-4567"
                         pattern="[267][0-9]{3}-[0-9]{4}" autocomplete="tel"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
@@ -62,22 +63,6 @@
                     @error('dui', 'updateMaestro')
                     <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
                     @enderror
-                </div>
-            </div>
-
-            {{-- Teléfono y DUI --}}
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-                <div>
-                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="editTelefono" name="telefono" maxlength="9" required
-                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
-                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
-                </div>
-                <div>
-                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">DUI <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="editDui" name="dui" maxlength="10" required
-                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
-                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
             </div>
 

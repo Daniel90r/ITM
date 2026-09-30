@@ -1,4 +1,8 @@
-import './modals.js';
+import { inicializarFormatoDui } from './modals.js';
+
+document.addEventListener('DOMContentLoaded', function () {
+    inicializarFormatoDui('#duiNuevoMaestro, #editDui');
+});
 
 function filtrarMaestros() {
     const texto  = document.getElementById('buscadorMaestro').value.toLowerCase().trim();

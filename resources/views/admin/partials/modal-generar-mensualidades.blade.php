@@ -1,6 +1,4 @@
-{{-- ═══════════════════════════════════════════════════════════ --}}
-{{-- MODAL: GENERAR MENSUALIDADES --}}
-{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- Aqui se genera las mensualidades --}}
 <div id="modalGenerar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px;">
 
@@ -158,11 +156,9 @@
 </div>
 
 <script>
-    // ═══════════════════════════════════════════════════════════
     // Alcance de generación con 3 opciones: todos / curso / uno.
     // Reemplaza el toggleAlumno de mensualidades.js (que solo
     // conocía 2 opciones) una vez que el módulo de Vite cargó.
-    // ═══════════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', function () {
 
         function pintarBoton(id, activo) {

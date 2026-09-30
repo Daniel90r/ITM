@@ -88,12 +88,19 @@ class InscripcionController extends Controller
             ->paginate(10);
 
         $conteos = [
-            'pendientes' => Inscripcion::where('estado', 'pendiente')->count(),
-            'aprobadas'  => Inscripcion::where('estado', 'aprobada')->count(),
-            'rechazadas' => Inscripcion::where('estado', 'rechazada')->count(),
+            'pendientes' => Inscripcion::pendiente()->count(),
+            'aprobadas'  => Inscripcion::aprobada()->count(),
+            'rechazadas' => Inscripcion::rechazada()->count(),
         ];
 
         return view('admin.solicitudes', compact('inscripciones', 'conteos'));
+    }
+
+    public function pendientesCount()
+    {
+        return response()->json([
+            'count' => Inscripcion::pendiente()->count(),
+        ]);
     }
 
     public function aprobar($id)

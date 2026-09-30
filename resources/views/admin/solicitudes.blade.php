@@ -1,6 +1,6 @@
 <x-app-layout>
 <div style="display:flex; height:100vh; overflow:hidden;">
-    @include('components.admin-sidebar', ['active' => 'solicitudes'])
+    @include('components.admin-sidebar', ['active' => 'solicitudes', 'solicitudesPendientes' => $conteos['pendientes']])
 
     <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
         <header style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">

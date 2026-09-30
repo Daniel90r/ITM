@@ -49,7 +49,7 @@ function initConfirmaciones() {
             }).then(result => {
                 if (result.isConfirmed) {
                     form.dataset.confirmLocked = 'true';
-                    form.submit();
+                    HTMLFormElement.prototype.submit.call(form);
                 }
             });
         });

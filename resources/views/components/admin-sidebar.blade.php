@@ -1,4 +1,8 @@
-@props(['active' => ''])
+@props(['active' => '', 'solicitudesPendientes' => 0])
+
+{{-- El conteo lo entrega AppServiceProvider (View::composer) o la propia vista
+     que ya lo calculó. Esta vista NUNCA consulta la base de datos. --}}
+@php($solicitudesPendientes = $solicitudesPendientes ?? 0)
 
 <aside style="width:220px; flex-shrink:0; background:#ffffff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; padding:20px 12px; gap:2px; overflow-y:auto;">
 
@@ -47,7 +51,15 @@
 
     <a href="{{ route('admin.solicitudes') }}" class="sidebar-link {{ $active === 'solicitudes' ? 'active' : '' }}">
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-    Solicitudes
+    <span>Solicitudes</span>
+    <span
+        data-solicitudes-badge
+        data-url="{{ route('admin.solicitudes.pendientesCount') }}"
+        data-count="{{ $solicitudesPendientes }}"
+        title="{{ $solicitudesPendientes }} solicitud(es) pendiente(s)"
+        aria-label="{{ $solicitudesPendientes }} solicitud(es) pendiente(s)"
+        style="display:{{ $solicitudesPendientes > 0 ? 'inline-flex' : 'none' }}; margin-left:auto; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#ffffff; font-size:10px; font-weight:700; align-items:center; justify-content:center; flex-shrink:0;"
+    >{{ $solicitudesPendientes }}</span>
     </a>
 
     <a href="{{ route('admin.inscripciones') }}" class="sidebar-link {{ $active === 'inscripciones' ? 'active' : '' }}">

@@ -110,6 +110,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::delete('/inscripciones/{id}', [\App\Http\Controllers\Admin\InscripcionController::class, 'desactivar'])->name('admin.inscripciones.desactivar');
 
     Route::get('/admin/solicitudes', [App\Http\Controllers\Admin\InscripcionController::class, 'solicitudes'])->name('admin.solicitudes');
+    Route::get('/admin/solicitudes/pendientes/count', [App\Http\Controllers\Admin\InscripcionController::class, 'pendientesCount'])->name('admin.solicitudes.pendientesCount');
     Route::post('/admin/solicitudes/{id}/aprobar', [App\Http\Controllers\Admin\InscripcionController::class, 'aprobar'])->name('admin.solicitudes.aprobar');
     Route::post('/admin/solicitudes/{id}/rechazar', [App\Http\Controllers\Admin\InscripcionController::class, 'rechazar'])->name('admin.solicitudes.rechazar');
     Route::post('/admin/solicitudes/{id}/reabrir', [App\Http\Controllers\Admin\InscripcionController::class, 'reabrir'])->name('admin.solicitudes.reabrir');

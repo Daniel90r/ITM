@@ -176,7 +176,15 @@ class TeacherManagementViewTest extends TestCase
     public function test_maestros_js_imports_modals_js(): void
     {
         $content = file_get_contents(resource_path('js/admin/maestros.js'));
-        $this->assertStringContainsString("import './modals.js';", $content);
+
+        // Import NOMBRADO, no de efecto: un `import './modals.js'` no trae el
+        // símbolo al ámbito de maestros.js y la llamada a inicializarFormatoDui
+        // lanzaría ReferenceError en tiempo de ejecución.
+        $this->assertStringContainsString(
+            "import { inicializarFormatoDui } from './modals.js';",
+            $content
+        );
+        $this->assertStringContainsString("inicializarFormatoDui('#duiNuevoMaestro, #editDui');", $content);
     }
 
     public function test_list_view_loads_maestros_js_once(): void

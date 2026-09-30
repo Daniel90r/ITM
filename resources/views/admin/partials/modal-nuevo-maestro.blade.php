@@ -1,6 +1,4 @@
-{{-- ═══════════════════════════════════════════════════════════ --}}
-{{-- MODAL: NUEVO MAESTRO --}}
-{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- Awui generamos un nuevo maestro --}}
 <div id="modalNuevoMaestro" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:520px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px; max-height:90vh; overflow-y:auto;">
 
@@ -47,6 +45,7 @@
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
                     <input type="text" name="telefono" id="telefonoNuevoMaestro" required maxlength="9"
+                        data-phone-mask
                         inputmode="numeric" placeholder="Ej: 7123-4567" value="{{ old('telefono') }}"
                         pattern="[267][0-9]{3}-[0-9]{4}" autocomplete="tel"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
@@ -65,22 +64,6 @@
                     @error('dui', 'storeMaestro')
                     <span style="display:block; color:#dc2626; font-size:11px; margin-top:4px;">{{ $message }}</span>
                     @enderror
-                </div>
-            </div>
-
-            {{-- Teléfono y DUI --}}
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-                <div>
-                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="telefono" id="telefonoNuevoMaestro" value="{{ old('telefono') }}" required placeholder="Ej: 7777-8888" maxlength="9"
-                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
-                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
-                </div>
-                <div>
-                    <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">DUI <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="dui" id="duiNuevoMaestro" value="{{ old('dui') }}" required placeholder="Ej: 00000000-0" maxlength="10"
-                        style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
-                        onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
             </div>
 

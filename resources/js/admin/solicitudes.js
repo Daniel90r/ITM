@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 // FILTROS Y BÚSQUEDA
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 let filtroEstadoActual = 'todos';
 
 function setFiltroEstado(estado, boton) {
@@ -29,9 +27,7 @@ function filtrarSolicitudes() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 // MODAL DETALLE
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 function abrirDetalle(id) {
     const origen = document.getElementById('detalle-' + id);
     const cuerpo = document.getElementById('cuerpoDetalle');
@@ -46,9 +42,7 @@ function cerrarDetalle() {
     document.body.style.overflow = '';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 // MODAL RECHAZO
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 function abrirRechazo(id, nombre) {
     document.getElementById('textoRechazo').textContent = 'Estás rechazando la solicitud de ' + nombre + '. Debes indicar el motivo.';
     document.getElementById('formRechazo').action = '/admin/solicitudes/' + id + '/rechazar';

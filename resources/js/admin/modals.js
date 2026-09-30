@@ -1,3 +1,26 @@
+// ═══════════════════════════════════════════════════════════════
+// FORMATEO DE ENTRADA: DUI (reutilizable)
+// ───────────────────────────────────────────────────────────────
+// La máscara de TELÉFONO no vive aquí: es responsabilidad única de
+// utils/inputMasks.js, que la aplica por delegación a [data-phone-mask]
+// y por tanto cubre también los modales que se crean dinámicamente.
+// Tenerla aquí además creaba dos fuentes de verdad y riesgo de doble binding.
+// ═══════════════════════════════════════════════════════════════
+function formatearDui(e) {
+    let v = e.target.value.replace(/[^0-9]/g, '').slice(0, 9);
+    if (v.length > 8) v = v.slice(0, 8) + '-' + v.slice(8);
+    e.target.value = v;
+}
+
+function inicializarFormatoDui(selector) {
+    document.querySelectorAll(selector).forEach(input => {
+        if (!input.dataset.maskInited) {
+            input.dataset.maskInited = 'true';
+            input.addEventListener('input', formatearDui);
+        }
+    });
+}
+
 // Modal functions for Alumno
 function abrirModalNuevoAlumno() {
     const modal = document.getElementById('modalNuevoAlumno');
@@ -413,3 +436,5 @@ document.addEventListener('keydown', function(e) {
     // Inicializar modal de asignar curso
     inicializarAsignarCursoModal();
 });
+
+export { formatearDui, inicializarFormatoDui, cargarMateriasCurso, inicializarAsignarCursoModal };

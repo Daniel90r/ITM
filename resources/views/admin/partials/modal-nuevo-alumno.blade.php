@@ -84,7 +84,9 @@
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono</label>
-                    <input type="text" name="telefono" placeholder="Ej: 7777-8888" value="{{ old('telefono') }}"
+                    <input type="text" name="telefono" id="telefonoNuevoAlumno" placeholder="Ej: 7777-8888" value="{{ old('telefono') }}"
+                        data-phone-mask
+                        maxlength="9" inputmode="numeric"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
@@ -169,7 +171,9 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Teléfono</label>
-                        <input type="text" name="encargado_telefono" placeholder="Ej: 7777-8888" value="{{ old('encargado_telefono') }}"
+                        <input type="text" name="encargado_telefono" id="encargadoTelefono" placeholder="Ej: 7777-8888" value="{{ old('encargado_telefono') }}"
+                            data-phone-mask
+                            maxlength="9" inputmode="numeric"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                             onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
