@@ -8,6 +8,8 @@
 /.codex
 /.cursor/
 /.idea
+/.kilo/
+/.kilo/worktrees
 /.nova
 /.phpunit.cache
 /.vscode
@@ -19,8 +21,10 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/framework/lsp-*.php
 /storage/pail
 /vendor
+/verify_*.php
 _ide_helper.php
 Homestead.json
 Homestead.yaml
