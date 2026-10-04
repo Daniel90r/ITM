@@ -247,11 +247,17 @@ class CursoProximoInscripcionTest extends TestCase
             ->post(route('alumno.inscribirse'), ['curso_id' => $proximo->id])
             ->assertSessionHas('success');
 
+        // El alumno SOLO solicita: la inscripción nace pendiente e inactiva.
+        // Antes este endpoint creaba la inscripción ya aprobada, lo que
+        // permitía saltarse la autorización administrativa.
         $this->assertDatabaseHas('inscripciones', [
             'alumno_id' => $this->alumno->id,
             'curso_id' => $proximo->id,
-            'estado' => 'aprobada',
+            'estado'   => 'pendiente',
+            'activa'   => false,
         ]);
+
+        $this->assertSame(0, $proximo->inscripciones()->aprobada()->count());
     }
 
     // ── 5. Curso Próximo sin cupo -> no permite inscripción ─────────────────

@@ -25,8 +25,6 @@ Route::middleware(['auth', 'verified', 'alumno.portal'])->group(function () {
     Route::get('/alumno/pagos', [\App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'pagos'])
         ->name('alumno.pagos');
 
-    Route::get('/alumno/inscripcion', [App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'inscripcion'])->name('alumno.inscripcion');
-    Route::post('/alumno/inscribirse', [App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'inscribirse'])->name('alumno.inscribirse');
     Route::get('/alumno/inscripcion/pdf', [App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'descargarPdf'])->name('alumno.inscripcion.pdf');
     Route::post('/alumno/inscripcion/subir', [App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'subirDocumento'])->name('alumno.inscripcion.subir');
 

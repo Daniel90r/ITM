@@ -80,9 +80,19 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         ->name('admin.boletas.pdf');
 
     // ADMINISTRADOR: Mensualidades
+    //
+    // `/admin/mensualidades` es la ruta OFICIAL: es la que resuelven todos los
+    // `route('admin.mensualidades')` del sidebar, del dashboard, de la propia
+    // vista y de las redirecciones del controlador.
     Route::get('/admin/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])
         ->name('admin.mensualidades');
-    Route::get('/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])->name('admin.mensualidades');
+    // `/mensualidades` es el mismo listado en una URL corta. Se conserva para
+    // no romper marcadores ni enlaces ya compartidos, pero NO puede llamarse
+    // igual que la ruta oficial: dos rutas con el mismo nombre hacen fallar
+    // `php artisan route:cache` con
+    // "Another route has already been assigned name [admin.mensualidades]".
+    Route::get('/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])
+        ->name('admin.mensualidades.corta');
     Route::post('/mensualidades/generar', [\App\Http\Controllers\Admin\MensualidadController::class, 'generar'])->name('admin.mensualidades.generar');
     Route::post('/mensualidades/{id}/pagar', [\App\Http\Controllers\Admin\MensualidadController::class, 'pagar'])->name('admin.mensualidades.pagar');
     Route::post('/mensualidades/pagar-lote', [\App\Http\Controllers\Admin\MensualidadController::class, 'pagarLote'])->name('admin.mensualidades.pagarLote');

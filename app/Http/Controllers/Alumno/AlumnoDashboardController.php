@@ -11,9 +11,12 @@ use App\Models\Mensualidad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AlumnoDashboardController extends Controller
 {
@@ -149,7 +152,10 @@ class AlumnoDashboardController extends Controller
             ]);
         }
 
-        // Verificar que no tenga solicitud activa o pendiente
+        // Comprobación rápida ANTES de generar el PDF: si ya no tiene sentido
+        // seguir, no se genera el documento ni se deja un archivo huérfano en
+        // storage. La verificación autoritativa se repite dentro de la
+        // transacción de crearSolicitudPendiente().
         $existente = Inscripcion::where('alumno_id', $alumno->id)
             ->whereIn('estado', ['pendiente', 'aprobada'])
             ->first();
@@ -178,26 +184,45 @@ class AlumnoDashboardController extends Controller
             'fecha'                => now(),
         ])->setPaper('a4', 'portrait');
 
-        // Guardar PDF en storage
-        $filename = 'solicitudes/solicitud-' . $alumno->codigo . '-' . time() . '.pdf';
-        Storage::disk('public')->put($filename, $pdf->output());
+        // Guardar PDF en storage.
+        //
+        // El identificador es un UUID, no time(): dos peticiones dentro del
+        // mismo segundo generaban el MISMO nombre y la segunda sobrescribía el
+        // PDF de la primera, perdiendo el documento ya generado.
+        $filename = 'solicitudes/solicitud-' . $alumno->codigo . '-' . Str::uuid() . '.pdf';
 
-        // Crear inscripción en estado pendiente
-        Inscripcion::create([
-            'alumno_id'         => $alumno->id,
-            'curso_id'          => $request->curso_id,
-            'fecha_inscripcion' => now()->toDateString(),
-            'activa'            => false,
-            'estado'            => 'pendiente',
-            'documento_path'    => $filename,
-            'tomara_ingles'     => $request->boolean('tomara_ingles'),
-            'observacion'       => json_encode([
-                'encargado_nombre'     => $request->encargado_nombre,
-                'encargado_telefono'   => $request->encargado_telefono ?? '—',
-                'encargado_parentesco' => $request->encargado_parentesco,
-                'encargado_dui'        => $request->encargado_dui ?? '—',
-            ]),
-        ]);
+        if (! Storage::disk('public')->put($filename, $pdf->output())) {
+            return back()->with('error', 'No se pudo guardar el documento de la solicitud. Inténtalo de nuevo.');
+        }
+
+        // Crear la SOLICITUD en estado pendiente. Mismo núcleo que usa
+        // inscribirse(): el alumno solicita y el administrador aprueba.
+        //
+        // Si el registro falla (por ejemplo porque otra petición del mismo alumno
+        // se adelantó y ya dejó una solicitud), el PDF que acabamos de generar se
+        // borra para no dejar archivos huérfanos. Solo se toca ESTE archivo: los
+        // de solicitudes anteriores no se ven afectados porque cada uno lleva un
+        // UUID propio.
+        try {
+            $this->crearSolicitudPendiente($alumno->id, (int) $curso->id, [
+                'documento_path'  => $filename,
+                'tomara_ingles'   => $request->boolean('tomara_ingles'),
+                'observacion'     => json_encode([
+                    'encargado_nombre'     => $request->encargado_nombre,
+                    'encargado_telefono'   => $request->encargado_telefono ?? '—',
+                    'encargado_parentesco' => $request->encargado_parentesco,
+                    'encargado_dui'        => $request->encargado_dui ?? '—',
+                ]),
+            ]);
+        } catch (Throwable $e) {
+            // Solo se elimina el archivo de ESTA petición.
+            Storage::disk('public')->delete($filename);
+
+            // Se propaga tal cual: una ValidationException la traduce Laravel al
+            // formulario y cualquier otro fallo sigue siendo un error visible, no
+            // un mensaje amable que oculte un problema real.
+            throw $e;
+        }
 
         return back()->with('success', '¡Solicitud enviada correctamente! El administrador la revisará pronto.');
     }
@@ -239,17 +264,75 @@ class AlumnoDashboardController extends Controller
     {
         $alumno = $this->getAlumno();
 
+        $request->validate(['curso_id' => 'required|exists:cursos,id']);
+
+        // Un alumno NUNCA se auto-aprueba. Este endpoint existe por
+        // compatibilidad con clientes que lo invocan, pero su resultado es
+        // exactamente el mismo que el del formulario: una SOLICITUD pendiente.
+        // La única forma de obtener una inscripción aprobada es que un
+        // administrador la apruebe (ver InscripcionController@aprobar).
+        //
+        // Comprobación rápida con el mensaje que este endpoint siempre mostró.
+        // La verificación autoritativa se repite dentro de la transacción.
         if (Inscripcion::bloqueaNuevaSolicitud($alumno->id)) {
             return back()->with('error', 'Ya tienes una solicitud pendiente o una inscripción aprobada.');
         }
 
-        $request->validate(['curso_id' => 'required|exists:cursos,id']);
-
         try {
-            DB::transaction(function () use ($request, $alumno) {
+            $this->crearSolicitudPendiente($alumno->id, (int) $request->curso_id, verificarCupo: true);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
+
+        return back()->with('success', '¡Solicitud enviada! Quedará pendiente de aprobación por la administración.');
+    }
+
+/**
+     * Núcleo compartido por todos los caminos de inscripción del alumno.
+     *
+     * Deja SIEMPRE una inscripción en estado 'pendiente' e inactiva: el alumno
+     * solicita, el administrador aprueba. Ningún endpoint del portal del alumno
+     * puede producir una inscripción 'aprobada'.
+     *
+     * ORDEN DE BLOQUEOS: primero la fila del ALUMNO, después la del CURSO.
+     * Motivo: la regla que hay que hacer cumplir es "un alumno, como mucho una
+     * solicitud pendiente o una inscripción aprobada", y esa regla es por
+     * alumno, no por curso. Tomando el alumno primero, dos peticiones
+     * simultáneas del mismo alumno quedan serializadas aunque apuntan a cursos
+     * distintos, y la comprobación posterior ya ve el dato recién confirmado.
+     * Ese orden no puede formar un ciclo de interbloqueo: los procedimientos de
+     * administración (InscripcionController@store y @aprobar) solo bloquean el
+     * curso y nunca el alumno, y MaestroController solo toca maestros,
+     * materias y detalle_cursos.
+     *
+     * @param  array<string,mixed>  $atributos  Datos extra (documento_path, etc.).
+     *                                   Se aplican ANTES de los atributos
+     *                                   obligatorios, que siempre ganan.
+     */
+    private function crearSolicitudPendiente(int $alumnoId, int $cursoId, array $atributos = [], bool $verificarCupo = false): Inscripcion
+    {
+        try {
+            return DB::transaction(function () use ($alumnoId, $cursoId, $atributos, $verificarCupo) {
+                // 1. Bloqueo del alumno. En InnoDB, SELECT ... FOR UPDATE es una
+                //    lectura "actual": ve la última fila confirmada, no una
+                //    instantánea obsoleta como la de REPEATABLE READ.
+                $alumno = Alumno::query()
+                    ->lockForUpdate()
+                    ->findOrFail($alumnoId);
+
+                // 2. Bloqueo del curso (orden global alumno -> curso).
                 $curso = Curso::query()
                     ->lockForUpdate()
-                    ->findOrFail($request->curso_id);
+                    ->findOrFail($cursoId);
+
+                // 3. Comprobaciones DESPUÉS de los bloqueos.
+                // Un alumno solo puede tener una solicitud pendiente o una
+                // inscripción aprobada. Reabrir una rechazada es otro flujo.
+                if (Inscripcion::bloqueaNuevaSolicitud($alumno->id)) {
+                    throw ValidationException::withMessages([
+                        'curso_id' => 'Ya tienes una solicitud pendiente o inscripción aprobada.',
+                    ]);
+                }
 
                 if (! $curso->admiteInscripcionPorEstado()) {
                     throw ValidationException::withMessages([
@@ -257,25 +340,59 @@ class AlumnoDashboardController extends Controller
                     ]);
                 }
 
-                if (! $curso->admiteNuevaInscripcion()) {
+                // Aviso temprano de cupo. NO es lo que autoriza la inscripción:
+                // el cupo se vuelve a verificar al aprobar, que es el momento en
+                // que realmente se consume.
+                if ($verificarCupo && ! $curso->admiteNuevaInscripcion()) {
                     throw ValidationException::withMessages([
                         'curso_id' => 'El curso ya alcanzó el límite de ' . Curso::CUPOS_MAXIMO . ' alumnos.',
                     ]);
                 }
 
-                Inscripcion::create([
-                    'alumno_id' => $alumno->id,
-                    'curso_id' => $request->curso_id,
+                // 4. Los atributos obligatorios se aplican al final: aunque
+                //    $atributos trajera 'estado' o 'activa', no pueden alterarlos.
+                return Inscripcion::create(array_merge($atributos, [
+                    'alumno_id'         => $alumno->id,
+                    'curso_id'          => $curso->id,
                     'fecha_inscripcion' => now()->toDateString(),
-                    'activa' => true,
-                    'estado' => 'aprobada',
-                ]);
+                    'activa'            => false,
+                    'estado'            => 'pendiente',
+                ]));
             });
-        } catch (ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
+        } catch (QueryException $e) {
+            // Solo se traduce la violación conocida de la restricción UNIQUE de
+            // inscripciones. Cualquier otro error de base de datos se relanza
+            // para no convertir un fallo real en un mensaje engañoso.
+            if ($this->esViolacionUnicaDeInscripciones($e)) {
+                throw ValidationException::withMessages([
+                    'curso_id' => 'Ya tienes una solicitud o inscripción para este curso.',
+                ]);
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * ¿Esta excepción es exactamente el UNIQUE de inscripciones?
+     *
+     * MySQL devuelve SQLSTATE 23000 con código 1062 (Duplicate entry) y SQLite
+     * el mismo SQLSTATE con el código 19. Se exige que coincidan los dos para no
+     * capturar otros errores de integridad ni fallos de conexión.
+     */
+    private function esViolacionUnicaDeInscripciones(QueryException $e): bool
+    {
+        if ((string) $e->getCode() !== '23000') {
+            return false;
         }
 
-        return back()->with('success', '¡Inscripción realizada correctamente!');
+        $codigoMotor = $e->errorInfo[1] ?? null;
+
+        if (! in_array($codigoMotor, [1062, 19], true)) {
+            return false;
+        }
+
+        return str_contains(strtolower($e->getMessage()), 'inscripciones');
     }
 
     public function descargarPdf()
