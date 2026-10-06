@@ -399,6 +399,36 @@
             max-width: calc(100vw - 125px);
         }
     }
+
+    .boleta-selector {
+        padding: 24px;
+    }
+
+    .boleta-selector-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .boleta-selector-input {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+        min-width: 180px;
+    }
+
+    .boleta-selector-btn {
+        background: #111827;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
 </style>
 
 <div class="boleta-layout">
@@ -413,10 +443,11 @@
             </a>
             <div class="boleta-title-block">
                 <h2 class="boleta-title">Boleta — {{ $alumno->nombre_completo }}</h2>
-                 <p class="boleta-subtitle">{{ $alumno->codigo }} · Ciclo {{ now()->year }}</p>
+                 <p class="boleta-subtitle">{{ $alumno->codigo }} · Ciclo {{ $curso?->anio_lectivo ?? '—' }}</p>
             </div>
+            @if($curso)
             <div style="margin-left:auto;">
-                <a href="{{ route('admin.boletas.pdf', $alumno->id) }}"
+                <a href="{{ route('admin.boletas.pdf', [$alumno->id, 'curso_id' => $curso->id]) }}"
                    class="boleta-pdf-link"
                    style="display:inline-flex; align-items:center; gap:6px; background:#111827; border:none; padding:8px 16px; border-radius:8px; color:#fff; font-size:12px; font-weight:600; cursor:pointer; text-decoration:none;"
                    onmouseover="this.style.background='#374151'" onmouseout="this.style.background='#111827'">
@@ -424,9 +455,12 @@
                     Descargar PDF
                 </a>
             </div>
+            @endif
         </header>
 
         <div class="boleta-content">
+            @if($curso)
+
             <div class="boleta-card boleta-info-card">
                 <div class="boleta-student">
                     <div class="boleta-avatar">
@@ -434,7 +468,7 @@
                     </div>
                     <div style="min-width:0;">
                         <p class="boleta-student-name">{{ $alumno->nombre_completo }}</p>
-                        <p class="boleta-student-meta">Código: {{ $alumno->codigo }} · {{ $alumno->inscripciones->first()?->curso?->nombre ?? '—' }} · {{ $alumno->inscripciones->first()?->curso?->nivel ?? '' }}</p>
+                        <p class="boleta-student-meta">Código: {{ $alumno->codigo }} · {{ $curso?->nombre ?? '—' }} · {{ $curso?->nivel ?? '' }}</p>
                     </div>
                 </div>
                 <div class="boleta-average">
@@ -456,7 +490,8 @@
                     <thead>
                         <tr>
                             <th style="text-align:left;">Materia</th>
-                            <th style="text-align:left;">Maestro</th>
+                            <th style="text-align:left;">Maestro actual</th>
+                            <th style="text-align:left;">Registrado por</th>
                             <th style="text-align:center;">Laboratorio</th>
                             <th style="text-align:center;">Teórico</th>
                             <th style="text-align:center;">Práctico</th>
@@ -465,7 +500,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($alumno->notas as $nota)
+                        @forelse($notas as $nota)
                         @php
                             $p = $nota->promedio;
                             if (!$p)        { $letra = '—';  $color = '#9ca3af'; }
@@ -479,6 +514,9 @@
                             </td>
                             <td style="padding:13px 24px; font-size:13px; color:#6b7280;">
                                 {{ $nota->detalleCurso->maestro->nombre ?? '' }} {{ $nota->detalleCurso->maestro->apellido ?? '' }}
+                            </td>
+                            <td style="padding:13px 24px; font-size:13px; color:#6b7280;">
+                                {{ $nota->maestro->nombre ?? '' }} {{ $nota->maestro->apellido ?? '' }}
                             </td>
                             <td style="padding:13px 24px; text-align:center; font-size:13px; color:#374151;">
                                 {{ $nota->laboratorio ?? '—' }}
@@ -502,20 +540,20 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="boleta-empty">
+                            <td colspan="8" class="boleta-empty">
                                 Sin notas registradas.
                             </td>
                         </tr>
                         @endforelse
                     </tbody>
 
-                    @if($alumno->notas->count() > 0)
+                    @if($notas->count() > 0)
                     <tfoot>
-                        <tr>
-                            <td colspan="5" style="padding:12px 24px; font-size:13px; font-weight:700; color:#ffffff; text-align:left;">
-                                Promedio General
-                            </td>
-                            <td style="padding:12px 24px; text-align:center;">
+                         <tr>
+                             <td colspan="6" style="padding:12px 24px; font-size:13px; font-weight:700; color:#ffffff; text-align:left;">
+                                 Promedio General
+                             </td>
+                             <td style="padding:12px 24px; text-align:center;">
                                 <span class="boleta-grade-pill" style="color:#111827; background:#ffffff;">
                                     {{ $promedio_general ? round($promedio_general) : '—' }}
                                 </span>
@@ -537,24 +575,25 @@
                     @endif
                 </table>
 
-                @forelse($alumno->notas as $nota)
-                @php
-                    $p = $nota->promedio;
-                    if (!$p)        { $letra = '—';  $color = '#9ca3af'; }
-                    elseif($p >= 9) { $letra = 'E';  $color = '#16a34a'; }
-                    elseif($p >= 8) { $letra = 'MB'; $color = '#0284c7'; }
-                    else            { $letra = 'B';  $color = '#d97706'; }
-                @endphp
-                <div class="boleta-grade-card">
-                    <div class="boleta-grade-card-header">
-                        <div style="min-width:0;">
-                            <p class="boleta-grade-card-title">{{ $nota->detalleCurso->materia->nombre ?? '—' }}</p>
-                            <p class="boleta-grade-card-teacher">{{ $nota->detalleCurso->maestro->nombre ?? '' }} {{ $nota->detalleCurso->maestro->apellido ?? '' }}</p>
-                        </div>
-                        <span class="boleta-letter-pill" style="background:{{ $color }};">
-                            {{ $letra }}
-                        </span>
-                    </div>
+                 @forelse($notas as $nota)
+                 @php
+                     $p = $nota->promedio;
+                     if (!$p)        { $letra = '—';  $color = '#9ca3af'; }
+                     elseif($p >= 9) { $letra = 'E';  $color = '#16a34a'; }
+                     elseif($p >= 8) { $letra = 'MB'; $color = '#0284c7'; }
+                     else            { $letra = 'B';  $color = '#d97706'; }
+                 @endphp
+                 <div class="boleta-grade-card">
+                     <div class="boleta-grade-card-header">
+                         <div style="min-width:0;">
+                             <p class="boleta-grade-card-title">{{ $nota->detalleCurso->materia->nombre ?? '—' }}</p>
+                             <p class="boleta-grade-card-teacher">Actual: {{ $nota->detalleCurso->maestro->nombre ?? '' }} {{ $nota->detalleCurso->maestro->apellido ?? '' }}</p>
+                             <p class="boleta-grade-card-teacher">Registrado por: {{ $nota->maestro->nombre ?? '' }} {{ $nota->maestro->apellido ?? '' }}</p>
+                         </div>
+                         <span class="boleta-letter-pill" style="background:{{ $color }};">
+                             {{ $letra }}
+                         </span>
+                     </div>
                     <div class="boleta-grade-card-grid">
                         <div class="boleta-grade-card-item">
                             <p class="boleta-grade-card-label">Laboratorio</p>
@@ -582,9 +621,29 @@
                 <div class="boleta-empty">
                     Sin notas registradas.
                 </div>
-                @endforelse
-            </div>
-        </div>
+                 @endforelse
+                 @else
+                 @if($cursosAprobados && $cursosAprobados->isNotEmpty())
+                 <div class="boleta-selector">
+                     <p class="boleta-selector-title">Seleccionar curso / ciclo</p>
+                     <form method="GET" action="{{ route('admin.boletas.show', ['alumno_id' => $alumno->id]) }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                         @if($cursosAprobados->count() > 1)
+                         <select name="curso_id" class="boleta-selector-input">
+                             <option value="">-- Curso --</option>
+                             @foreach($cursosAprobados as $c)
+                             <option value="{{ $c->id }}" {{ (request('curso_id') == $c->id) ? 'selected' : '' }}>{{ $c->nombre }} ({{ $c->anio_lectivo ?? '—' }})</option>
+                             @endforeach
+                         </select>
+                         @endif
+                         <button type="submit" class="boleta-selector-btn">Aplicar</button>
+                     </form>
+                 </div>
+                 @else
+                 <p class="boleta-empty">El alumno no tiene inscripciones aprobadas.</p>
+                 @endif
+                 @endif
+             </div>
+         </div>
     </div>
 </div>
 </x-app-layout>

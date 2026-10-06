@@ -116,6 +116,7 @@
 </p>
 
 @php
+    $notas = $notas ?? $alumno->notas;
     $materiasBase = [
         'Microsoft Windows','Microsoft Word','Microsoft Excel',
         'Internet','Microsoft PowerPoint','Microsoft Publisher',
@@ -123,20 +124,29 @@
         'HTML','Macromedia Dreamweaver','Mantenimiento de PC','Redes',
     ];
 
-    $notas = $alumno->notas;
-    $notasPorMateria = [];
-    foreach($notas as $nota) {
-        $nombre = $nota->detalleCurso?->materia?->nombre ?? '';
-        if ($nombre) $notasPorMateria[$nombre] = $nota;
+    // Fase 1 — Colisión por nombre: la clave es detalle_curso_id (identificador
+    // estructural estable), NUNCA el nombre de la materia. Así, materias con el
+    // mismo nombre en distintos cursos no se sobreescriben.
+    $notasPorDetalle = [];
+    foreach ($notas as $nota) {
+        if ($nota->detalle_curso_id !== null) {
+            $notasPorDetalle[$nota->detalle_curso_id] = $nota;
+        }
     }
 
-    $filasMateria = $notas->count() > 0
-        ? $notas->map(fn($n) => $n->detalleCurso?->materia?->nombre ?? '—')->toArray()
-        : $materiasBase;
+    // Una fila por cada nota (materia) real; si no hay notas, fallback visual
+    // con las materias-base (sin conducta ni promedio registrados).
+    if ($notas->count() > 0) {
+        $filas = $notas->map->detalle_curso_id->filter()->unique()->values();
+    } else {
+        $filas = collect($materiasBase);
+    }
 
-    $totalFilas = count($filasMateria);
+    $totalFilas = $filas->count();
 
-    // Conducta — distribuir uniformemente en los renglones
+    // Los 4 aspectos de conducta se conservan visualmente (distribuidos uniformemente).
+    // NOTA: el sistema almacena UNA conducta por materia (B/MB/E), no un valor por
+    // aspecto. Por eso la conducta se muestra por fila de materia.
     $conductas = [
         'Responsabilidad',
         'Relaciones Personales',
@@ -145,21 +155,21 @@
     ];
     $numConductas = count($conductas);
 
-    // Calcular en qué fila empieza cada conducta
-    $filasPorConducta = floor($totalFilas / $numConductas);
-    $resto = $totalFilas % $numConductas;
+    $filasPorConducta = $totalFilas > 0 ? floor($totalFilas / $numConductas) : 0;
+    $resto = $totalFilas > 0 ? $totalFilas % $numConductas : 0;
 
-    // Construir array con la fila de inicio y rowspan de cada conducta
     $conducta_map = [];
     $filaActual = 0;
-    foreach($conductas as $ic => $cond) {
+    foreach ($conductas as $ic => $cond) {
         $span = $filasPorConducta + ($ic < $resto ? 1 : 0);
-        $conducta_map[$filaActual] = ['nombre' => $cond, 'span' => $span];
-        $filaActual += $span;
+        if ($span > 0) {
+            $conducta_map[$filaActual] = ['nombre' => $cond, 'span' => $span];
+            $filaActual += $span;
+        }
     }
 
-    $concepto = function($p) {
-        if (!$p) return '';
+    $concepto = $concepto ?? function ($p) {
+        if (! $p) return '';
         if ($p >= 9) return 'E';
         if ($p >= 8) return 'MB';
         if ($p >= 7) return 'B';
@@ -176,14 +186,18 @@
             <th style="width:16%;">Promedio de<br>Calificación</th>
             <th style="width:10%;">Conceptos</th>
             <th style="width:28%;">Aspectos de Conducta</th>
-            <th style="width:14%;">Conceptos</th>
+            <th style="width:14%;">Conducta registrada</th>
         </tr>
     </thead>
     <tbody>
-        @foreach($filasMateria as $i => $nombreMateria)
+        @foreach($filas as $i => $fila)
         @php
-            $nota = $notasPorMateria[$nombreMateria] ?? null;
-            $prom = $nota?->promedio;
+            $esNota = is_int($fila);
+            $nota = $esNota ? ($notasPorDetalle[$fila] ?? null) : null;
+            $nombreMateria = $esNota
+                ? ($nota?->detalleCurso?->materia?->nombre ?? '—')
+                : $fila;
+            $prom = $nota?->promedio ?? null;
             $esPar = ($i % 2 === 0);
             $bg    = $esPar ? '#ffffff' : '#eef2ff';
         @endphp
@@ -194,9 +208,9 @@
 
             @if(isset($conducta_map[$i]))
             @php $cond = $conducta_map[$i]; @endphp
-            <td class="td-conducta" rowspan="{{ $cond['span'] }}">{{ $cond['nombre'] }}</td>
-            <td class="td-concepto-conducta" rowspan="{{ $cond['span'] }}">Excelente</td>
+            <td class="td-conducta" rowspan="{{ $cond['span'] }}" style="background:{{ $bg }};">{{ $cond['nombre'] }}</td>
             @endif
+            <td class="td-concepto-conducta" style="background:{{ $bg }};">{{ $nota->conducta ?? '—' }}</td>
         </tr>
         @endforeach
 
