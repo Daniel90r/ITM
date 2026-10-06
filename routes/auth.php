@@ -7,16 +7,16 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+// Los alumnos/debiles/usuarios no pueden crearse vía auto-registro público.
+// Todo acceso a cuentas de usuario se realiza desde el administrador
+// (Gestión de Alumnos / Maestros). Las rutas GET y POST de /register
+// se retiran deliberadamente; el controlador RegisteredUserController
+// y la vista auth/register se conservan por si se reutilizan.
+
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

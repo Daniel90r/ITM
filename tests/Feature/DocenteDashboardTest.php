@@ -414,7 +414,7 @@ class DocenteDashboardTest extends TestCase
         $route = Route::getRoutes()->getByName('docente.dashboard');
         $middleware = $route->gatherMiddleware();
         $this->assertContains('auth', $middleware);
-        $this->assertContains('verified', $middleware);
+        $this->assertNotContains('verified', $middleware);
         $this->assertContains('role:docente', $middleware);
     }
 }

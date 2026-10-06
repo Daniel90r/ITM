@@ -3,8 +3,10 @@
 use Illuminate\Support\Facades\Route;
 
 // RUTAS: ALUMNO
-
-Route::middleware(['auth', 'verified', 'alumno.portal'])->group(function () {
+//
+// NOTA DE SEGURIDAD (Fase 0): `verified` era un no-op (User no implementa
+// MustVerifyEmail). Se retira; se conservan `auth` y `alumno.portal`.
+Route::middleware(['auth', 'alumno.portal'])->group(function () {
 
     // ALUMNO: Dashboard / Inicio
     Route::get('/alumno/dashboard', [\App\Http\Controllers\Alumno\AlumnoDashboardController::class, 'index'])

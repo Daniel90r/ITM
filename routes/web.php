@@ -9,7 +9,14 @@ Route::get('/', function () {
 });
 
 // Dashboard general: despacha a cada rol hacia su propio panel.
-Route::middleware(['auth', 'verified'])->group(function () {
+//
+// NOTA DE SEGURIDAD (Fase 0): el middleware `verified` se retiró temporalmente
+// de todos los portales. User no implementa MustVerifyEmail y no hay flujo
+// operativo de verificación de correo (se usan correos personales sin
+// verificación), por lo que `verified` era un no-op: mostraba una protección
+// inexistente. Se conserva `auth` (garantizado por EnsureUser) y `role`.
+// (Ver informe al final de este cambio: opción B elegida < A.)
+Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (Request $request) {
 
         /** @var \App\Models\User $usuario */

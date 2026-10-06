@@ -4,10 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
-use Illuminate\Auth\Events\Registered;
-use App\Listeners\CreateAlumnoProfile;
 use App\Models\Inscripcion;
 
 class AppServiceProvider extends ServiceProvider
@@ -16,7 +13,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
 
-        Event::listen(Registered::class, CreateAlumnoProfile::class);
+        // La auto-registro pública está deshabilitada: los alumnos sólo se crean
+        // desde Gestión de Alumnos. Por ello el listener que generaba un perfil
+        // de Alumno a partir del evento `Registered` ya no se registra.
+        // (Mantiene la clase App\Listeners\CreateAlumnoProfile por compat.)
 
         $this->componerConteoDeSolicitudes();
     }

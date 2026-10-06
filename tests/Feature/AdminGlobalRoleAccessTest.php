@@ -58,7 +58,7 @@ class AdminGlobalRoleAccessTest extends TestCase
             $mw = app('router')->gatherRouteMiddleware($ruta);
 
             $this->assertContains('auth', $mw, "{$ruta->uri()} [{$ruta->methods()[0]}] sin auth");
-            $this->assertContains('verified', $mw, "{$ruta->uri()} [{$ruta->methods()[0]}] sin verified");
+            $this->assertNotContains('verified', $mw, "{$ruta->uri()} [{$ruta->methods()[0]}] no debe contener verified");
             $this->assertContains('role:admin', $mw, "{$ruta->uri()} [{$ruta->methods()[0]}] sin role:admin");
 
             $this->assertNotContains('role:alumno', $mw);

@@ -458,7 +458,7 @@ class TeacherAssignmentChangeTest extends TestCase
 
         $this->assertNotNull($route);
         $this->assertContains('auth', $route->gatherMiddleware());
-        $this->assertContains('verified', $route->gatherMiddleware());
+        $this->assertNotContains('verified', $route->gatherMiddleware());
         $this->assertContains('role:admin', $route->gatherMiddleware());
     }
 

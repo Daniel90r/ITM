@@ -275,7 +275,7 @@ class AdminCursosAccesoTest extends TestCase
         $this->assertEquals($alumnosMw, $cursosMw, 'ambas rutas deben tener el mismo middleware');
         $this->assertContains('role:admin', $cursosMw);
         $this->assertContains('auth', $cursosMw);
-        $this->assertContains('verified', $cursosMw);
+        $this->assertNotContains('verified', $cursosMw);
     }
 
     #[Test]

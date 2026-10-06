@@ -3,8 +3,11 @@
 use Illuminate\Support\Facades\Route;
 
 // RUTAS: ADMINISTRADOR
-
-Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
+//
+// NOTA DE SEGURIDAD (Fase 0): se retiró el middleware `verified` del grupo.
+// `verified` era un no-op porque User no implementa MustVerifyEmail y no hay
+// flujo de verificación operativo. Se conserva `auth` y `role:admin`.
+Route::middleware(['auth', 'role:admin'])->group(function () {
 
     // ADMINISTRADOR: Dashboard
     Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
@@ -66,10 +69,16 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         ->name('admin.inscripciones.store');
 
     // ADMINISTRADOR: Notas
+    //
+    // Fase 0: se retira POST /admin/notas (admin.notas.store).
+    // Causa: la columna `notas.registrado_por` es FK de `maestros.id`, pero el
+    // controlador asignaba `auth()->id()` (users.id). Un admin no tiene fila en
+    // `maestros`, por lo que el POST producía un usuario inválido o error de FK,
+    // y la vista admin/notas.blade.php es SOLO lectura (no hay consumidor).
+    // El registro real de notas lo realiza el docente en docente.notas.guardar,
+    // que valida asignación y usa maestro.id como `registrado_por`.
     Route::get('/admin/notas', [\App\Http\Controllers\Admin\NotaController::class, 'index'])
         ->name('admin.notas');
-    Route::post('/admin/notas', [\App\Http\Controllers\Admin\NotaController::class, 'store'])
-        ->name('admin.notas.store');
 
     // ADMINISTRADOR: Boletas
     Route::get('/admin/boletas', [\App\Http\Controllers\Admin\BoletaController::class, 'index'])
