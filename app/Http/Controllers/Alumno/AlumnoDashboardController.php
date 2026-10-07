@@ -83,8 +83,16 @@ class AlumnoDashboardController extends Controller
             ->latest()
             ->first();
 
+        if (! $inscripcion) {
+            $inscripcion = Inscripcion::with('curso')
+                ->where('alumno_id', $alumno->id)
+                ->where('estado', 'rechazada')
+                ->latest()
+                ->first();
+        }
+
         $cursosDisponibles = collect();
-        if (!$inscripcion) {
+        if (! $inscripcion || $inscripcion->estado === 'rechazada') {
             $cursosDisponibles = Curso::proximo()
                 ->where('anio_lectivo', (int) now()->year)
                 ->get();
@@ -204,7 +212,7 @@ class AlumnoDashboardController extends Controller
         // de solicitudes anteriores no se ven afectados porque cada uno lleva un
         // UUID propio.
         try {
-            $this->crearSolicitudPendiente($alumno->id, (int) $curso->id, [
+            $resultado = $this->crearSolicitudPendiente($alumno->id, (int) $curso->id, [
                 'documento_path'  => $filename,
                 'tomara_ingles'   => $request->boolean('tomara_ingles'),
                 'observacion'     => json_encode([
@@ -222,6 +230,12 @@ class AlumnoDashboardController extends Controller
             // formulario y cualquier otro fallo sigue siendo un error visible, no
             // un mensaje amable que oculte un problema real.
             throw $e;
+        }
+
+        // Si fue un reintento de solicitud rechazada, eliminar el PDF anterior
+        // solo después de que la transacción haya confirmado correctamente.
+        if ($resultado['reutilizada'] && $resultado['documento_anterior'] && $resultado['documento_anterior'] !== $filename) {
+            Storage::disk('public')->delete($resultado['documento_anterior']);
         }
 
         return back()->with('success', '¡Solicitud enviada correctamente! El administrador la revisará pronto.');
@@ -305,11 +319,9 @@ class AlumnoDashboardController extends Controller
      * curso y nunca el alumno, y MaestroController solo toca maestros,
      * materias y detalle_cursos.
      *
-     * @param  array<string,mixed>  $atributos  Datos extra (documento_path, etc.).
-     *                                   Se aplican ANTES de los atributos
-     *                                   obligatorios, que siempre ganan.
+     * @return array{inscripcion: Inscripcion, reutilizada: bool, documento_anterior: string|null}
      */
-    private function crearSolicitudPendiente(int $alumnoId, int $cursoId, array $atributos = [], bool $verificarCupo = false): Inscripcion
+    private function crearSolicitudPendiente(int $alumnoId, int $cursoId, array $atributos = [], bool $verificarCupo = false): array
     {
         try {
             return DB::transaction(function () use ($alumnoId, $cursoId, $atributos, $verificarCupo) {
@@ -325,9 +337,18 @@ class AlumnoDashboardController extends Controller
                     ->lockForUpdate()
                     ->findOrFail($cursoId);
 
-                // 3. Comprobaciones DESPUÉS de los bloqueos.
-                // Un alumno solo puede tener una solicitud pendiente o una
-                // inscripción aprobada. Reabrir una rechazada es otro flujo.
+                // 3. Buscar inscripción existente para este alumno+curso.
+                //     Debe hacerse DESPUÉS de los locks de alumno y curso para
+                //     no alterar el orden de bloqueo ya validado.
+                $inscripcionExistente = Inscripcion::where('alumno_id', $alumnoId)
+                    ->where('curso_id', $cursoId)
+                    ->lockForUpdate()
+                    ->first();
+
+                // 4. Validaciones — SIEMPRE antes de cualquier transición.
+                //    Una fila rechazada NO puede reabrirse si el alumno tiene
+                //    otra solicitud pendiente o aprobada, o si el curso ya no
+                //    admite inscripción.
                 if (Inscripcion::bloqueaNuevaSolicitud($alumno->id)) {
                     throw ValidationException::withMessages([
                         'curso_id' => 'Ya tienes una solicitud pendiente o inscripción aprobada.',
@@ -349,15 +370,43 @@ class AlumnoDashboardController extends Controller
                     ]);
                 }
 
-                // 4. Los atributos obligatorios se aplican al final: aunque
-                //    $atributos trajera 'estado' o 'activa', no pueden alterarlos.
-                return Inscripcion::create(array_merge($atributos, [
-                    'alumno_id'         => $alumno->id,
-                    'curso_id'          => $curso->id,
-                    'fecha_inscripcion' => now()->toDateString(),
-                    'activa'            => false,
-                    'estado'            => 'pendiente',
-                ]));
+                // 5. Transición o creación.
+                if ($inscripcionExistente && $inscripcionExistente->estado === 'rechazada') {
+                    $documentoAnterior = $inscripcionExistente->documento_path;
+
+                    $inscripcionExistente->update(array_merge($atributos, [
+                        'estado' => 'pendiente',
+                        'activa' => false,
+                        'motivo_rechazo' => null,
+                        'fecha_inscripcion' => now()->toDateString(),
+                    ]));
+
+                    return [
+                        'inscripcion' => $inscripcionExistente,
+                        'reutilizada' => true,
+                        'documento_anterior' => $documentoAnterior,
+                    ];
+                }
+
+                if (! $inscripcionExistente) {
+                    $nueva = Inscripcion::create(array_merge($atributos, [
+                        'alumno_id'         => $alumno->id,
+                        'curso_id'          => $curso->id,
+                        'fecha_inscripcion' => now()->toDateString(),
+                        'activa'            => false,
+                        'estado'            => 'pendiente',
+                    ]));
+
+                    return [
+                        'inscripcion' => $nueva,
+                        'reutilizada' => false,
+                        'documento_anterior' => null,
+                    ];
+                }
+
+                throw ValidationException::withMessages([
+                    'curso_id' => 'Ya existe una solicitud para este curso.',
+                ]);
             });
         } catch (QueryException $e) {
             // Solo se traduce la violación conocida de la restricción UNIQUE de
@@ -413,7 +462,7 @@ class AlumnoDashboardController extends Controller
         $alumno = $this->getAlumno();
 
         $request->validate([
-            'curso_id'  => 'required|exists:cursos,id',
+            'curso_id' => 'required|exists:cursos,id',
             'documento' => 'required|file|mimes:pdf|max:5120',
             'tomara_ingles' => 'sometimes|boolean',
         ]);
@@ -434,15 +483,20 @@ class AlumnoDashboardController extends Controller
 
         $path = $request->file('documento')->store('solicitudes', 'public');
 
-        Inscripcion::create([
-            'alumno_id'         => $alumno->id,
-            'curso_id'          => $request->curso_id,
-            'fecha_inscripcion' => now()->toDateString(),
-            'activa'            => false,
-            'estado'            => 'pendiente',
-            'documento_path'    => $path,
-            'tomara_ingles'     => $request->boolean('tomara_ingles'),
-        ]);
+        try {
+            $resultado = $this->crearSolicitudPendiente($alumno->id, (int) $request->curso_id, [
+                'documento_path' => $path,
+                'tomara_ingles' => $request->boolean('tomara_ingles'),
+            ]);
+        } catch (Throwable $e) {
+            Storage::disk('public')->delete($path);
+
+            throw $e;
+        }
+
+        if ($resultado['reutilizada'] && $resultado['documento_anterior'] && $resultado['documento_anterior'] !== $path) {
+            Storage::disk('public')->delete($resultado['documento_anterior']);
+        }
 
         return back()->with('success', 'Solicitud enviada correctamente. El administrador la revisará pronto.');
     }

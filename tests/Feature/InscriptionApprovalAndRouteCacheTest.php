@@ -405,7 +405,7 @@ class InscriptionApprovalAndRouteCacheTest extends TestCase
         $metodo = new \ReflectionMethod($controlador, 'crearSolicitudPendiente');
         $metodo->setAccessible(true);
 
-        $inscripcion = $metodo->invoke(
+        $resultado = $metodo->invoke(
             $controlador,
             $this->alumno->id,
             $curso->id,
@@ -413,6 +413,7 @@ class InscriptionApprovalAndRouteCacheTest extends TestCase
             false
         );
 
+        $inscripcion = $resultado['inscripcion'];
         $this->assertSame('pendiente', $inscripcion->estado);
         $this->assertFalse((bool) $inscripcion->activa);
     }
