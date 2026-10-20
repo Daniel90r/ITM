@@ -20,7 +20,7 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="nombre" id="nombreNuevoMaestro" required placeholder="Ej: Carlos"
+                    <input type="text" name="nombre" id="nombreNuevoMaestro" required maxlength="100" placeholder="Ej: Carlos"
                         value="{{ old('nombre') }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
@@ -30,7 +30,7 @@
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Apellido <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="apellido" id="apellidoNuevoMaestro" required placeholder="Ej: Mendoza"
+                    <input type="text" name="apellido" id="apellidoNuevoMaestro" required maxlength="100" placeholder="Ej: Mendoza"
                         value="{{ old('apellido') }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">

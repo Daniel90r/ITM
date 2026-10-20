@@ -8,13 +8,8 @@
         body { font-family: Arial, sans-serif; font-size:11px; color:#1a1a2e; padding:24px 30px; }
 
         .header-table { width:100%; border-collapse:collapse; margin-bottom:10px; }
-        .logo-circle {
-            width:58px; height:58px; border-radius:50%;
-            border:2px solid #1a3a6b;
-            display:inline-block;
-            font-size:9px; color:#1a3a6b; font-weight:bold;
-            text-align:center; padding-top:14px; line-height:1.4;
-        }
+        .header-logo { width:64px; height:auto; vertical-align:middle; }
+        .header-table td { vertical-align:middle; }
         .inst-title { font-size:14px; font-weight:bold; color:#1a3a6b; letter-spacing:1px; text-align:center; }
         .inst-sub   { font-size:11px; font-weight:bold; color:#1a3a6b; text-align:center; }
         .divider { border:none; border-top:2px solid #1a3a6b; margin:10px 0; }
@@ -91,17 +86,22 @@
 <body>
 
 {{-- ENCABEZADO --}}
+@php
+    // Recursos locales fijos: no dependen de URLs ni de archivos enviados por el navegador.
+    $logoInstituto = 'data:image/jpeg;base64,'.base64_encode(file_get_contents(public_path('images/logo_itm.jpg')));
+    $escudoNacional = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/escudo_el_salvador.png')));
+@endphp
 <table class="header-table">
     <tr>
         <td style="width:12%; text-align:center;">
-            <div class="logo-circle">ITM</div>
+            <img class="header-logo" src="{{ $logoInstituto }}" alt="Logotipo del Instituto de Computación de Aguilares">
         </td>
         <td style="width:76%; text-align:center;">
             <div class="inst-title">ITM</div>
             <div class="inst-sub">INSTITUTO DE COMPUTACIÓN DE AGUILARES</div>
         </td>
         <td style="width:12%; text-align:center;">
-            <div class="logo-circle" style="font-size:7px; padding-top:10px;">REPÚBLICA<br>DE EL<br>SALVADOR</div>
+            <img class="header-logo" src="{{ $escudoNacional }}" alt="Escudo Nacional de El Salvador">
         </td>
     </tr>
 </table>
@@ -233,16 +233,20 @@
     Por lo tanto, queda facultado/a para trabajar en los programas recibidos en el periodo de
     <strong>dos años</strong>, el cual se extiende la boleta de calificación en la ciudad de
     Aguilares, Departamento de San Salvador, a los
-    <strong>{{ now()->isoFormat('D') }} días del mes de {{ now()->isoFormat('MMMM YYYY') }}</strong>.
+    <strong>{{ ($fechaBoleta ?? now())->isoFormat('D') }} días del mes de {{ ($fechaBoleta ?? now())->isoFormat('MMMM YYYY') }}</strong>.
 </p>
 
 {{-- FIRMAS --}}
 <table class="firmas-table">
     <tr>
         <td style="width:33%; text-align:center;">
-            <div class="firma-linea">
-                <div class="firma-nombre">Santos David Rodas</div>
+            <div class="firma-linea" @if(!empty($firmaDirector)) style="position:relative;" @endif>
+                @if(!empty($firmaDirector))
+                    <img src="{{ $firmaDirector }}" alt="Firma del Director" style="position:absolute; bottom:100%; left:10%; max-width:80%; max-height:55px;">
+                @endif
+                <div class="firma-nombre">{{ ($boletaEmitida ?? null)?->director_nombre ?? 'Sin boleta emitida' }}</div>
                 <div class="firma-cargo">Director</div>
+                @if(empty($firmaDirector))<div style="font-size:9px; color:#555;">Firma disponible al emitir la boleta.</div>@endif
             </div>
         </td>
         <td style="width:34%; text-align:center;">

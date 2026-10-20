@@ -1,3 +1,5 @@
+import './horarios-curso.js';
+
 function abrirModalCurso() {
     document.getElementById('modalNuevoCurso').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -44,7 +46,8 @@ window.filtrarCursos = filtrarCursos;
 window.limpiarFiltrosCursos = limpiarFiltrosCursos;
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('modalNuevoCurso').addEventListener('click', function(e) {
+    if (document.querySelector('#modalNuevoCurso .horario-error')) abrirModalCurso();
+    document.getElementById('modalNuevoCurso')?.addEventListener('click', function(e) {
         if (e.target === this) cerrarModalCurso();
     });
 });

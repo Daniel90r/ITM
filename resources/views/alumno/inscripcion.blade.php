@@ -1,11 +1,12 @@
 <x-app-layout>
-<div style="display:flex; height:100vh; overflow:hidden;" class="fade-in">
+<div id="portal-alumno" style="display:flex; height:100vh; overflow:hidden;" class="fade-in portal-alumno">
 
     @include('components.alumno-sidebar', ['active' => 'inscripcion'])
 
-    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#ffffff;">
+    <div class="portal-main" style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#ffffff;">
 
-        <header style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <header class="portal-header" style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            @include('alumno.partials.menu-toggle')
             <div style="display:flex; align-items:center; gap:12px;">
                 <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM" style="width:36px; height:36px; border-radius:10px; object-fit:cover;">
                 <div>
@@ -16,7 +17,7 @@
             <span style="font-size:12px; color:#6b7280;">{{ now()->isoFormat('MMMM YYYY') }}</span>
         </header>
 
-        <div style="flex:1; overflow-y:auto; padding:24px;">
+        <div class="portal-content" style="flex:1; overflow-y:auto; padding:24px;">
 
             @if(session('success'))
             <div style="background:#dcfce7; border:1px solid #86efac; color:#16a34a; padding:12px 16px; border-radius:10px; font-size:13px; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
@@ -40,6 +41,10 @@
                     @endforeach
                 </ul>
             </div>
+            @endif
+
+            @if(config('documentos_inscripcion.enabled') && $inscripcion?->documento_path)
+                <p><a class="btn-sm" href="{{ route('alumno.inscripciones.documento', $inscripcion) }}">Descargar documento presentado</a></p>
             @endif
 
             @if($inscripcion && $inscripcion->estado === 'aprobada')

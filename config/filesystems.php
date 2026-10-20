@@ -47,6 +47,15 @@ return [
             'report' => false,
         ],
 
+        'inscripciones' => [
+            'driver' => 'local',
+            // Configurar solo tras verificar publicación HTTP y ACL; no habilita el flujo privado.
+            'root' => env('INSCRIPCION_DOCUMENTOS_ROOT', storage_path('app/private/inscripciones')),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

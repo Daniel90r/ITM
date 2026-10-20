@@ -12,7 +12,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_page_is_displayed(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         $response = $this
             ->actingAs($user)
@@ -23,7 +23,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_information_can_be_updated(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         $response = $this
             ->actingAs($user)
@@ -45,7 +45,7 @@ class ProfileTest extends TestCase
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         $response = $this
             ->actingAs($user)
@@ -63,7 +63,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_page_does_not_render_delete_user_form(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         $this->withoutVite();
         $response = $this

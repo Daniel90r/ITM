@@ -31,6 +31,7 @@ class SolicitudInscripcionTest extends TestCase
             'nombre' => 'Marcos Josue',
             'apellido' => 'Montes Sanchez',
             'codigo' => 'A001',
+            'fecha_nacimiento' => now()->subYears(25)->toDateString(),
         ]);
         $this->curso = Curso::factory()->create([
             'nombre' => 'Curso A',
@@ -182,7 +183,7 @@ public function test_alumno_ya_inscrito_no_puede_ser_aprobado_nuevamente(): void
 
         // Intenta crear nueva solicitud - usa otro alumno para evitar unique constraint
         $otroUser = User::factory()->create(['role' => 'alumno']);
-        $otroAlumno = Alumno::factory()->create(['user_id' => $otroUser->id]);
+        $otroAlumno = Alumno::factory()->create(['user_id' => $otroUser->id, 'fecha_nacimiento' => now()->subYears(25)->toDateString()]);
 
         $solicitud = Inscripcion::create([
             'alumno_id' => $otroAlumno->id,
@@ -211,7 +212,7 @@ public function test_alumno_ya_inscrito_no_puede_ser_aprobado_nuevamente(): void
         // Llenar el curso con 20 alumnos aprobados
         for ($i = 0; $i < 20; $i++) {
             $u = User::factory()->create(['role' => 'alumno']);
-            $a = Alumno::factory()->create(['user_id' => $u->id]);
+            $a = Alumno::factory()->create(['user_id' => $u->id, 'fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::create([
                 'alumno_id' => $a->id,
                 'curso_id' => $this->curso->id,
@@ -251,7 +252,7 @@ public function test_alumno_ya_inscrito_no_puede_ser_aprobado_nuevamente(): void
         // Crear 5 solicitudes pendientes
         for ($i = 0; $i < 5; $i++) {
             $u = User::factory()->create(['role' => 'alumno']);
-            $a = Alumno::factory()->create(['user_id' => $u->id]);
+            $a = Alumno::factory()->create(['user_id' => $u->id, 'fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::create([
                 'alumno_id' => $a->id,
                 'curso_id' => $this->curso->id,
@@ -285,7 +286,7 @@ public function test_alumno_ya_inscrito_no_puede_ser_aprobado_nuevamente(): void
         // Crear 3 solicitudes pendientes
         for ($i = 0; $i < 3; $i++) {
             $u = User::factory()->create(['role' => 'alumno']);
-            $a = Alumno::factory()->create(['user_id' => $u->id]);
+            $a = Alumno::factory()->create(['user_id' => $u->id, 'fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::create([
                 'alumno_id' => $a->id,
                 'curso_id' => $this->curso->id,
@@ -298,7 +299,7 @@ public function test_alumno_ya_inscrito_no_puede_ser_aprobado_nuevamente(): void
         // Crear 2 aprobados
         for ($i = 0; $i < 2; $i++) {
             $u = User::factory()->create(['role' => 'alumno']);
-            $a = Alumno::factory()->create(['user_id' => $u->id]);
+            $a = Alumno::factory()->create(['user_id' => $u->id, 'fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::create([
                 'alumno_id' => $a->id,
                 'curso_id' => $this->curso->id,

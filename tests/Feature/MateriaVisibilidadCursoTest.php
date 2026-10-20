@@ -143,7 +143,6 @@ class MateriaVisibilidadCursoTest extends TestCase
             'laboratorio' => 8,
             'examen_teorico' => 9,
             'practica' => 7,
-            'sos' => 6,
             'conducta' => 'B',
         ];
 
@@ -319,7 +318,6 @@ class MateriaVisibilidadCursoTest extends TestCase
             'laboratorio' => null,
             'examen_teorico' => null,
             'practica' => null,
-            'sos' => null,
             'conducta' => null,
         ]);
 
@@ -342,7 +340,7 @@ class MateriaVisibilidadCursoTest extends TestCase
         $maestroSinNada->update(['maestro_id' => $this->crearMaestro()->id]);
 
         $notaVacia = $this->detalle(Materia::factory()->create(['nombre' => 'Nota vacia', 'activa' => false]));
-        $this->crearNota($notaVacia, ['laboratorio' => null, 'examen_teorico' => null, 'practica' => null, 'sos' => null, 'conducta' => null]);
+        $this->crearNota($notaVacia, ['laboratorio' => null, 'examen_teorico' => null, 'practica' => null, 'conducta' => null]);
 
         $cargados = DetalleCurso::where('curso_id', $this->curso->id)
             ->with(['notas', 'asistencias', 'materia'])

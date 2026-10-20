@@ -42,7 +42,11 @@ class SolicitudesPendientesBadgeTest extends TestCase
         $ids = [];
 
         foreach (range(1, $cantidad) as $i) {
-            $alumno = Alumno::factory()->create();
+            // El contador necesita solicitudes aprobables: una fecha aleatoria
+            // puede crear un menor sin encargado y rechazar correctamente la aprobación.
+            $alumno = Alumno::factory()->create([
+                'fecha_nacimiento' => now()->subYears(20)->toDateString(),
+            ]);
 
             $ids[] = Inscripcion::create([
                 'alumno_id' => $alumno->id,
@@ -228,7 +232,8 @@ class SolicitudesPendientesBadgeTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('admin.solicitudes.aprobar', $ids[0]))
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
         $this->actingAs($this->admin)
             ->getJson(route('admin.solicitudes.pendientesCount'))
@@ -258,7 +263,8 @@ class SolicitudesPendientesBadgeTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('admin.solicitudes.aprobar', $ids[0]))
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
         $this->actingAs($this->admin)
             ->getJson(route('admin.solicitudes.pendientesCount'))

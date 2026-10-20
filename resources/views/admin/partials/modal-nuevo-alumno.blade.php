@@ -33,13 +33,13 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="nombre" id="nombreNuevoAlumno" required placeholder="Ej: Juan Carlos" value="{{ old('nombre') }}"
+                    <input type="text" name="nombre" id="nombreNuevoAlumno" required maxlength="100" placeholder="Ej: Juan Carlos" value="{{ old('nombre') }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Apellido <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="apellido" id="apellidoNuevoAlumno" required placeholder="Ej: Pérez García" value="{{ old('apellido') }}"
+                    <input type="text" name="apellido" id="apellidoNuevoAlumno" required maxlength="100" placeholder="Ej: Pérez García" value="{{ old('apellido') }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
@@ -59,8 +59,10 @@
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Fecha de nacimiento <span style="color:#dc2626;">*</span></label>
                     <input type="date" name="fecha_nacimiento" id="fechaNacNuevoAlumno" required value="{{ old('fecha_nacimiento') }}"
                         onchange="evaluarEdadNuevoAlumno()"
+                        max="{{ now()->subYears(14)->toDateString() }}"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
+                    <p id="fechaNacError" style="display:none; font-size:11px; color:#dc2626; margin:6px 0 0;"></p>
                 </div>
             </div>
 
@@ -234,7 +236,7 @@
                     onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#ffffff'">
                     Limpiar
                 </button>
-                <button type="submit"
+                <button type="submit" id="btnGuardarNuevoAlumno"
                     style="flex:1; padding:10px; background:#3b82f6; border:none; border-radius:10px; font-size:13px; font-weight:600; color:#ffffff; cursor:pointer;"
                     onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
                     Guardar alumno
@@ -260,6 +262,8 @@
         const encApellido   = document.getElementById('encApellido');
         const encParentesco = document.getElementById('encParentesco');
         const encDui        = document.getElementById('encDui');
+        const fechaError = document.getElementById('fechaNacError');
+        const btnGuardar = document.getElementById('btnGuardarNuevoAlumno');
 
         // Sin fecha: ocultar todo
         if (!input.value) {
@@ -268,6 +272,8 @@
             secEnc.style.display = 'none';
             duiAlumno.required = false;
             encNombre.required = encApellido.required = encParentesco.required = encDui.required = false;
+            if (fechaError) { fechaError.style.display = 'none'; fechaError.textContent = ''; }
+            if (btnGuardar) btnGuardar.disabled = false;
             return;
         }
 
@@ -277,6 +283,39 @@
         let edad  = hoy.getFullYear() - fn.getFullYear();
         const m   = hoy.getMonth() - fn.getMonth();
         if (m < 0 || (m === 0 && hoy.getDate() < fn.getDate())) edad--;
+
+        // Validar edad mínima 14 años
+        if (edad < 14) {
+            badge.style.display  = 'none';
+            secDui.style.display = 'none';
+            secEnc.style.display = 'none';
+            duiAlumno.required = false;
+            encNombre.required = encApellido.required = encParentesco.required = encDui.required = false;
+            if (fechaError) {
+                fechaError.style.display = 'block';
+                fechaError.textContent = 'El alumno debe tener al menos 14 años para poder registrarse.';
+            }
+            if (btnGuardar) btnGuardar.disabled = true;
+            return;
+        }
+
+        // Validar fecha futura
+        if (fn > hoy) {
+            badge.style.display  = 'none';
+            secDui.style.display = 'none';
+            secEnc.style.display = 'none';
+            duiAlumno.required = false;
+            encNombre.required = encApellido.required = encParentesco.required = encDui.required = false;
+            if (fechaError) {
+                fechaError.style.display = 'block';
+                fechaError.textContent = 'La fecha de nacimiento debe ser anterior a hoy.';
+            }
+            if (btnGuardar) btnGuardar.disabled = true;
+            return;
+        }
+
+        if (fechaError) { fechaError.style.display = 'none'; fechaError.textContent = ''; }
+        if (btnGuardar) btnGuardar.disabled = false;
 
         const esMayor = edad >= 18;
 

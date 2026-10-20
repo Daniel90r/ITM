@@ -96,7 +96,6 @@ class AdminAcademicRoleAccessTest extends TestCase
             'laboratorio' => 8,
             'examen_teorico' => 9,
             'practica' => 7,
-            'sos' => 10,
             'conducta' => 'B',
             'registrado_por' => $admin->id,
         ]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Alumno;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alumno;
+use App\Services\EncargadoInscripcion;
 use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\Nota;
@@ -39,15 +40,14 @@ class AlumnoDashboardController extends Controller
     {
         $alumno = $this->getAlumno();
 
-        $inscripcion = Inscripcion::with('curso')
-            ->where('alumno_id', $alumno->id)
-            ->where('estado', 'aprobada')
-            ->first();
+        $miCurso = app(\App\Services\ResumenCursoAlumno::class)->consultar($alumno);
+        $inscripcion = $miCurso['vigente'] ? $miCurso['inscripcion'] : null;
 
         $notas = collect();
         if ($inscripcion) {
             $notas = Nota::with(['detalleCurso.materia', 'detalleCurso.maestro'])
                 ->where('alumno_id', $alumno->id)
+                ->whereIn('detalle_curso_id', $miCurso['materias']->pluck('detalle_id'))
                 ->whereHas('detalleCurso', fn($q) => $q->where('curso_id', $inscripcion->curso_id))
                 ->get();
         }
@@ -66,7 +66,7 @@ class AlumnoDashboardController extends Controller
             ->get();
 
         return view('alumno.dashboard', compact(
-            'alumno', 'inscripcion', 'notas', 'cursosDisponibles', 'promedio', 'mensualidades'
+            'alumno', 'inscripcion', 'notas', 'cursosDisponibles', 'promedio', 'mensualidades', 'miCurso'
         ));
     }
 
@@ -98,7 +98,9 @@ class AlumnoDashboardController extends Controller
                 ->get();
         }
 
-        return view('alumno.inscripcion', compact('alumno', 'inscripcion', 'cursosDisponibles'));
+        $estadoEncargado = app(EncargadoInscripcion::class)->inspeccionar($alumno);
+
+        return view('alumno.inscripcion', compact('alumno', 'inscripcion', 'cursosDisponibles', 'estadoEncargado'));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -107,8 +109,11 @@ class AlumnoDashboardController extends Controller
     public function enviarSolicitud(Request $request)
     {
         $alumno = $this->getAlumno();
+        $documentos = app(\App\Services\DocumentosInscripcion::class);
+        $documentos->exigirDocumentoInicial($alumno, (int) $request->input('curso_id'));
 
         $esMayorDeEdad = $alumno->es_mayor_de_edad;
+        $datosOficiales = app(EncargadoInscripcion::class)->exigir($alumno);
 
         $request->validate([
             'curso_id' => 'required|exists:cursos,id',
@@ -122,27 +127,33 @@ class AlumnoDashboardController extends Controller
 
 
             'encargado_nombre' => [
-                $esMayorDeEdad ? 'nullable' : 'required',
+                $esMayorDeEdad ? 'nullable' : 'exclude',
                 'string',
-                'max:255'
+                'max:100'
+            ],
+
+            'encargado_apellido' => [
+                $esMayorDeEdad ? 'nullable' : 'exclude',
+                'string',
+                'max:100'
             ],
 
 
             'encargado_parentesco' => [
-                $esMayorDeEdad ? 'nullable' : 'required',
+                $esMayorDeEdad ? 'nullable' : 'exclude',
                 'string',
                 'max:50'
             ],
 
 
             'encargado_dui' => [
-                $esMayorDeEdad ? 'nullable' : 'required',
+                $esMayorDeEdad ? 'nullable' : 'exclude',
                 'string',
                 'regex:/^\d{8}-\d$/'
             ],
 
 
-            'encargado_telefono' => 'nullable|string|max:20',
+            'encargado_telefono' => $esMayorDeEdad ? 'nullable|string|max:20' : 'exclude',
 
 
             'firma_alumno' => 'required|string',
@@ -152,6 +163,11 @@ class AlumnoDashboardController extends Controller
                 $esMayorDeEdad ? 'nullable' : 'required',
                 'string'
             ],
+        ]);
+
+        $datosEncargado = $datosOficiales ?? $request->only([
+            'encargado_nombre', 'encargado_apellido', 'encargado_telefono',
+            'encargado_parentesco', 'encargado_dui',
         ]);
 
         if ($esMayorDeEdad) {
@@ -179,18 +195,19 @@ class AlumnoDashboardController extends Controller
         }
 
         // Generar PDF con datos y firmas digitales
-        $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', [
-            'alumno'               => $alumno,
-            'curso'                => $curso,
-            'cursosDisponibles'    => collect([$curso]),
-            'encargado_nombre'     => $request->encargado_nombre,
-            'encargado_telefono'   => $request->encargado_telefono,
-            'encargado_parentesco' => $request->encargado_parentesco,
-            'encargado_dui'        => $request->encargado_dui,
-            'firma_alumno'         => $request->firma_alumno,
-            'firma_encargado'      => $request->firma_encargado,
-            'fecha'                => now(),
-        ])->setPaper('a4', 'portrait');
+            $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', [
+                'alumno'               => $alumno,
+                'curso'                => $curso,
+                'cursosDisponibles'    => collect([$curso]),
+                'encargado_nombre'     => ($datosEncargado['encargado_nombre'] ?? null),
+                'encargado_apellido'   => ($datosEncargado['encargado_apellido'] ?? null),
+                'encargado_telefono'   => ($datosEncargado['encargado_telefono'] ?? null),
+                'encargado_parentesco' => ($datosEncargado['encargado_parentesco'] ?? null),
+                'encargado_dui'        => ($datosEncargado['encargado_dui'] ?? null),
+                'firma_alumno'         => $request->firma_alumno,
+                'firma_encargado'      => $request->firma_encargado,
+                'fecha'                => now(),
+            ])->setPaper('a4', 'portrait');
 
         // Guardar PDF en storage.
         //
@@ -199,7 +216,13 @@ class AlumnoDashboardController extends Controller
         // PDF de la primera, perdiendo el documento ya generado.
         $filename = 'solicitudes/solicitud-' . $alumno->codigo . '-' . Str::uuid() . '.pdf';
 
-        if (! Storage::disk('public')->put($filename, $pdf->output())) {
+        if ($documentos->habilitado()) {
+            try {
+                $filename = $documentos->guardar($pdf->output());
+            } catch (\RuntimeException $e) {
+                return back()->with('error', 'No se pudo guardar el documento de la solicitud. Inténtalo de nuevo.');
+            }
+        } elseif (! Storage::disk('public')->put($filename, $pdf->output())) {
             return back()->with('error', 'No se pudo guardar el documento de la solicitud. Inténtalo de nuevo.');
         }
 
@@ -215,16 +238,12 @@ class AlumnoDashboardController extends Controller
             $resultado = $this->crearSolicitudPendiente($alumno->id, (int) $curso->id, [
                 'documento_path'  => $filename,
                 'tomara_ingles'   => $request->boolean('tomara_ingles'),
-                'observacion'     => json_encode([
-                    'encargado_nombre'     => $request->encargado_nombre,
-                    'encargado_telefono'   => $request->encargado_telefono ?? '—',
-                    'encargado_parentesco' => $request->encargado_parentesco,
-                    'encargado_dui'        => $request->encargado_dui ?? '—',
-                ]),
+                'observacion'     => json_encode($datosEncargado),
             ]);
         } catch (Throwable $e) {
             // Solo se elimina el archivo de ESTA petición.
-            Storage::disk('public')->delete($filename);
+            if ($documentos->habilitado()) $documentos->descartarNuevo($filename);
+            else Storage::disk('public')->delete($filename);
 
             // Se propaga tal cual: una ValidationException la traduce Laravel al
             // formulario y cualquier otro fallo sigue siendo un error visible, no
@@ -234,7 +253,10 @@ class AlumnoDashboardController extends Controller
 
         // Si fue un reintento de solicitud rechazada, eliminar el PDF anterior
         // solo después de que la transacción haya confirmado correctamente.
-        if ($resultado['reutilizada'] && $resultado['documento_anterior'] && $resultado['documento_anterior'] !== $filename) {
+        if ($documentos->historialActivo() && $resultado['inscripcion']->fresh()->documento_path !== $filename) {
+            $documentos->descartarNuevo($filename);
+        }
+        if (!$documentos->habilitado() && $resultado['reutilizada'] && $resultado['documento_anterior'] && $resultado['documento_anterior'] !== $filename) {
             Storage::disk('public')->delete($resultado['documento_anterior']);
         }
 
@@ -314,10 +336,9 @@ class AlumnoDashboardController extends Controller
      * alumno, no por curso. Tomando el alumno primero, dos peticiones
      * simultáneas del mismo alumno quedan serializadas aunque apuntan a cursos
      * distintos, y la comprobación posterior ya ve el dato recién confirmado.
-     * Ese orden no puede formar un ciclo de interbloqueo: los procedimientos de
-     * administración (InscripcionController@store y @aprobar) solo bloquean el
-     * curso y nunca el alumno, y MaestroController solo toca maestros,
-     * materias y detalle_cursos.
+     * Administración comparte el orden alumno -> curso -> inscripción al
+     * registrar, aprobar, reabrir y reactivar, para serializar también esos
+     * caminos sin invertir los bloqueos del portal.
      *
      * @return array{inscripcion: Inscripcion, reutilizada: bool, documento_anterior: string|null}
      */
@@ -331,6 +352,19 @@ class AlumnoDashboardController extends Controller
                 $alumno = Alumno::query()
                     ->lockForUpdate()
                     ->findOrFail($alumnoId);
+
+                $datosOficiales = app(EncargadoInscripcion::class)->exigir($alumno);
+                if ($datosOficiales !== null) {
+                    // Si el expediente cambió mientras se generaba el PDF, no guardar
+                    // una solicitud cuyo documento describe otro encargado.
+                    if (isset($atributos['observacion'])
+                        && json_decode($atributos['observacion'], true) !== $datosOficiales) {
+                        throw ValidationException::withMessages([
+                            'encargado' => 'El expediente del encargado cambió. Recarga el formulario antes de firmar y enviar.',
+                        ]);
+                    }
+                    $atributos['observacion'] = json_encode($datosOficiales);
+                }
 
                 // 2. Bloqueo del curso (orden global alumno -> curso).
                 $curso = Curso::query()
@@ -374,6 +408,11 @@ class AlumnoDashboardController extends Controller
                 if ($inscripcionExistente && $inscripcionExistente->estado === 'rechazada') {
                     $documentoAnterior = $inscripcionExistente->documento_path;
 
+                    if (isset($atributos['documento_path']) && app(\App\Services\DocumentosInscripcion::class)->historialActivo()) {
+                        $version = app(\App\Services\HistorialDocumentosInscripcion::class)->registrar($inscripcionExistente, $atributos['documento_path']);
+                        $atributos['documento_path'] = $version->ruta;
+                    }
+
                     $inscripcionExistente->update(array_merge($atributos, [
                         'estado' => 'pendiente',
                         'activa' => false,
@@ -396,6 +435,10 @@ class AlumnoDashboardController extends Controller
                         'activa'            => false,
                         'estado'            => 'pendiente',
                     ]));
+
+                    if (isset($atributos['documento_path']) && app(\App\Services\DocumentosInscripcion::class)->historialActivo()) {
+                        app(\App\Services\HistorialDocumentosInscripcion::class)->registrar($nueva, $atributos['documento_path']);
+                    }
 
                     return [
                         'inscripcion' => $nueva,
@@ -451,7 +494,13 @@ class AlumnoDashboardController extends Controller
             ->where('anio_lectivo', (int) now()->year)
             ->get();
 
-        $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', compact('alumno', 'cursosDisponibles'))
+        $datosEncargado = app(EncargadoInscripcion::class)->exigir($alumno) ?? [];
+        $pdf = Pdf::loadView('alumno.pdf.solicitud-inscripcion', array_merge($datosEncargado, [
+            'alumno' => $alumno,
+            'cursosDisponibles' => $cursosDisponibles,
+            'curso' => null,
+            'fecha' => now(),
+        ]))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('solicitud-inscripcion-' . $alumno->codigo . '.pdf');
@@ -460,6 +509,9 @@ class AlumnoDashboardController extends Controller
     public function subirDocumento(Request $request)
     {
         $alumno = $this->getAlumno();
+        $documentos = app(\App\Services\DocumentosInscripcion::class);
+        $documentos->exigirDocumentoInicial($alumno, (int) $request->input('curso_id'));
+        app(EncargadoInscripcion::class)->exigir($alumno);
 
         $request->validate([
             'curso_id' => 'required|exists:cursos,id',
@@ -481,7 +533,15 @@ class AlumnoDashboardController extends Controller
             return back()->with('error', 'Ya tienes una solicitud pendiente o inscripción activa.');
         }
 
-        $path = $request->file('documento')->store('solicitudes', 'public');
+        if ($documentos->habilitado()) {
+            try {
+                $path = $documentos->guardarSubido($request->file('documento'));
+            } catch (\RuntimeException $e) {
+                return back()->with('error', 'No se pudo guardar el documento. Inténtalo de nuevo.');
+            }
+        } else {
+            $path = $request->file('documento')->store('solicitudes', 'public');
+        }
 
         try {
             $resultado = $this->crearSolicitudPendiente($alumno->id, (int) $request->curso_id, [
@@ -489,12 +549,16 @@ class AlumnoDashboardController extends Controller
                 'tomara_ingles' => $request->boolean('tomara_ingles'),
             ]);
         } catch (Throwable $e) {
-            Storage::disk('public')->delete($path);
+            if ($documentos->habilitado()) $documentos->descartarNuevo($path);
+            else Storage::disk('public')->delete($path);
 
             throw $e;
         }
 
-        if ($resultado['reutilizada'] && $resultado['documento_anterior'] && $resultado['documento_anterior'] !== $path) {
+        if ($documentos->historialActivo() && $resultado['inscripcion']->fresh()->documento_path !== $path) {
+            $documentos->descartarNuevo($path);
+        }
+        if (!$documentos->habilitado() && $resultado['reutilizada'] && $resultado['documento_anterior'] && $resultado['documento_anterior'] !== $path) {
             Storage::disk('public')->delete($resultado['documento_anterior']);
         }
 

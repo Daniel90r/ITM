@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/admin/notas.js',
+                'resources/js/admin/asistencias.js',
                 'resources/js/admin/alumnos.js',
                 'resources/js/admin/mensualidades.js',
                 'resources/js/admin/cursos.js',
@@ -21,9 +22,11 @@ export default defineConfig({
                 'resources/js/admin/maestros.js',
                 'resources/js/admin/modals.js',
                 'resources/js/admin/inscripcion.js',
+                'resources/js/admin/firma-director.js',
                 'resources/js/docente/notas.js',
                 'resources/js/docente/asistencia.js',
-                'resources/js/alumno/inscripcion.js'
+                'resources/js/alumno/inscripcion.js',
+                'resources/js/alumno/portal.js'
             ],
             refresh: true,
         }),

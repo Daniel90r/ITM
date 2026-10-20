@@ -1,9 +1,11 @@
-function abrirModalEditar(id, nombre, apellido, email, cursoId, telefono) {
+function abrirModalEditar(id, nombre, apellido, email, cursoId, telefono, cursoNombre) {
     document.getElementById('editId').value       = id;
     document.getElementById('editNombre').value   = nombre;
     document.getElementById('editApellido').value = apellido;
     document.getElementById('editEmail').value    = email;
-    document.getElementById('editCurso').value    = cursoId;
+    if (document.getElementById('editCursoDisplay')) {
+        document.getElementById('editCursoDisplay').value = cursoNombre || 'Sin curso asignado';
+    }
     document.getElementById('editTelefono').value = telefono ?? '';
     document.getElementById('editPassword').value = '';
     document.getElementById('formEditarAlumno').action = '/admin/alumnos/' + id;

@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pago;
-use App\Models\Mensualidad;
-use Illuminate\Http\Request;
 
 class PagoController extends Controller
 {

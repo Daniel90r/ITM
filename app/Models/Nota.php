@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Nota extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'alumno_id', 'detalle_curso_id',
-        'laboratorio', 'examen_teorico', 'practica', 'sos', 'conducta',
+        'laboratorio', 'examen_teorico', 'practica', 'conducta',
         'promedio', 'registrado_por'
     ];
 
@@ -17,7 +19,6 @@ class Nota extends Model
         'laboratorio'    => 'float',
         'examen_teorico' => 'float',
         'practica'       => 'float',
-        'sos'            => 'float',
     ];
 
     public function calcularPromedio(): ?int
@@ -26,7 +27,6 @@ class Nota extends Model
             $this->laboratorio,
             $this->examen_teorico,
             $this->practica,
-            $this->sos,
         ], fn($n) => !is_null($n));
 
         if (empty($notas)) return null;
@@ -46,7 +46,7 @@ class Nota extends Model
      * 'promedio' se excluye porque lo calcula el modelo a partir de las otras.
      */
     public const COLUMNAS_CALIFICACION = [
-        'laboratorio', 'examen_teorico', 'practica', 'sos', 'conducta',
+        'laboratorio', 'examen_teorico', 'practica', 'conducta',
     ];
 
     /**

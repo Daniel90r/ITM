@@ -23,23 +23,38 @@ class MensualidadController extends Controller
 
     public function index(Request $request)
     {
-        $anioSeleccionado = (int) ($request->query('anio', date('Y')));
+        $filtros = $this->filtros($request);
+        $anioSeleccionado = $filtros['anio'];
 
         $cursos = Curso::where('activo', 1)
             ->with(['inscripciones' => fn($q) => $q
                 ->where('activa', 1)
                 ->where('estado', 'aprobada')
-                ->with('alumno')
+                ->select(['id', 'alumno_id', 'curso_id'])
+                ->with('alumno:id,nombre,apellido,codigo')
             ])
             ->orderBy('nombre')
             ->get();
 
-        $mensualidadesPorAlumno = Mensualidad::where('anio', $anioSeleccionado)
-            ->orderByRaw(
-                "FIELD(mes, 'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre')"
-            )
-            ->get()
+        // Conservar el alcance original: mensualidades por alumno y ciclo,
+        // no por la inscripción del curso donde aparece en el listado.
+        $resumen = $this->mensualidadesFiltradas($filtros)->select('alumno_id')
+            ->selectRaw('COUNT(*) AS registros')
+            ->selectRaw("SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes")
+            ->selectRaw("SUM(CASE WHEN estado = 'Pagado' THEN 1 ELSE 0 END) AS pagadas")
+            ->selectRaw("SUM(CASE WHEN estado = 'Pendiente' THEN monto ELSE 0 END) AS saldo")
             ->groupBy('alumno_id');
+        $consulta = $this->inscripcionesVisibles($filtros)
+            ->leftJoinSub($resumen, 'resumen_mensual', 'resumen_mensual.alumno_id', '=', 'inscripciones.alumno_id')
+            ->select(['inscripciones.alumno_id', 'inscripciones.curso_id', 'cursos.nombre as orden_curso',
+                'alumnos.apellido as orden_apellido', 'alumnos.nombre as orden_nombre'])
+            ->selectRaw('COALESCE(resumen_mensual.registros, 0) AS registros, COALESCE(resumen_mensual.pendientes, 0) AS pendientes, COALESCE(resumen_mensual.pagadas, 0) AS pagadas, COALESCE(resumen_mensual.saldo, 0) AS saldo')
+            ->when(!empty($filtros['mes']) || !empty($filtros['estado']), fn ($q) => $q->where('resumen_mensual.registros', '>', 0));
+        $listado = $consulta->distinct()->with(['alumno:id,nombre,apellido,codigo', 'curso'])
+            ->orderBy('orden_curso')->orderBy('inscripciones.curso_id')
+            ->orderBy('orden_apellido')->orderBy('orden_nombre')->orderBy('inscripciones.alumno_id')
+            ->paginate(25)->appends($filtros);
+        $grupos = $listado->getCollection()->groupBy('curso_id');
 
         $totalPendiente = Mensualidad::where('estado', 'Pendiente')->where('anio', $anioSeleccionado)->sum('monto');
         $totalPagado    = Mensualidad::where('estado', 'Pagado')->where('anio', $anioSeleccionado)->sum('monto');
@@ -53,9 +68,68 @@ class MensualidadController extends Controller
         }
 
         return view('admin.mensualidades', compact(
-            'cursos', 'mensualidadesPorAlumno', 'totalPendiente', 'totalPagado', 'totalAlumnos',
+            'cursos', 'listado', 'grupos', 'filtros', 'totalPendiente', 'totalPagado', 'totalAlumnos',
             'anioSeleccionado', 'aniosDisponibles'
         ) + ['meses' => $this->meses]);
+    }
+
+    public function detalles(Request $request, Curso $curso, Alumno $alumno)
+    {
+        $filtros = $this->filtros($request);
+        abort_unless($this->inscripcionesVisibles($filtros)
+            ->where('inscripciones.curso_id', $curso->id)->where('inscripciones.alumno_id', $alumno->id)->exists(), 404);
+        $consulta = $this->mensualidadesFiltradas($filtros)->where('alumno_id', $alumno->id);
+        // CASE funciona tanto en MySQL como en SQLite y admite los meses históricos numéricos.
+        $orden = 'CASE'; $bindings = [];
+        foreach ($this->meses as $numero => $nombre) {
+            $orden .= ' WHEN mes IN (?, ?, ?) THEN '.(int) $numero;
+            array_push($bindings, $nombre, (string) $numero, (string) (int) $numero);
+        }
+        $mensualidades = $consulta->orderByRaw($orden.' ELSE 13 END', $bindings)->orderBy('id')
+            ->paginate(6, ['*'], 'mensualidad_page')->appends($filtros);
+        return response()->json(['html' => view('admin.partials.mensualidades-detalle', compact('mensualidades', 'curso', 'alumno'))->render()])
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    private function filtros(Request $request): array
+    {
+        $filtros = $request->validate([
+            'anio' => 'nullable|integer', 'q' => 'nullable|string|max:100',
+            'curso_id' => 'nullable|integer|min:1',
+            'mes' => 'nullable|string|in:'.implode(',', $this->meses),
+            'estado' => 'nullable|in:Pendiente,Pagado',
+            'page' => 'nullable|integer|min:1', 'mensualidad_page' => 'nullable|integer|min:1',
+        ]);
+        unset($filtros['page'], $filtros['mensualidad_page']);
+        $filtros['anio'] = (int) ($filtros['anio'] ?? date('Y'));
+        $filtros['q'] = trim($filtros['q'] ?? '');
+        return $filtros;
+    }
+
+    private function mensualidadesFiltradas(array $filtros)
+    {
+        $query = Mensualidad::where('anio', $filtros['anio'])
+            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado));
+        if (!empty($filtros['mes'])) {
+            $numero = array_search($filtros['mes'], $this->meses, true);
+            $query->whereIn('mes', [$filtros['mes'], (string) $numero, (string) (int) $numero]);
+        }
+        return $query;
+    }
+
+    private function inscripcionesVisibles(array $filtros)
+    {
+        $query = Inscripcion::query()->join('cursos', 'cursos.id', '=', 'inscripciones.curso_id')
+            ->join('alumnos', 'alumnos.id', '=', 'inscripciones.alumno_id')
+            ->where('cursos.activo', 1)->where('inscripciones.activa', 1)->where('inscripciones.estado', 'aprobada')
+            ->when($filtros['curso_id'] ?? null, fn ($q, $id) => $q->where('inscripciones.curso_id', $id));
+        foreach (preg_split('/\s+/u', $filtros['q'], -1, PREG_SPLIT_NO_EMPTY) as $termino) {
+            $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';
+            $query->where(fn ($q) => $q->whereRaw("alumnos.nombre LIKE ? ESCAPE '!'", [$patron])
+                ->orWhereRaw("alumnos.apellido LIKE ? ESCAPE '!'", [$patron])
+                ->orWhereRaw("alumnos.codigo LIKE ? ESCAPE '!'", [$patron]));
+        }
+        return $query;
     }
 
     public function generar(Request $request)

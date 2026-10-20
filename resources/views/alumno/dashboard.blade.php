@@ -1,12 +1,13 @@
 <x-app-layout>
 
-<div class="page-layout fade-in alumnos">
+<div id="portal-alumno" class="page-layout fade-in alumnos portal-alumno">
 
     @include('components.alumno-sidebar', ['active' => 'inicio'])
 
-    <div class="main-content">
+    <div class="main-content portal-main">
 
-        <header class="page-header">
+        <header class="page-header portal-header">
+            @include('alumno.partials.menu-toggle')
             <div style="display:flex; align-items:center; gap:12px;">
                 <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM Aguilares" class="sidebar-brand-img">
                 <div>
@@ -17,7 +18,7 @@
             <span style="font-size:12px; color:#6b7280;">{{ now()->isoFormat('MMMM YYYY') }}</span>
         </header>
 
-        <div class="content-body">
+        <div class="portal-content content-body">
 
             @if(session('success'))
             <div class="alert-success">
@@ -71,6 +72,8 @@
                 </div>
             </div>
 
+            @include('alumno.partials.mi-curso')
+
             @if($notas->count() > 0)
             <div class="card">
                 <div class="card-header">
@@ -78,9 +81,9 @@
                     <a href="{{ route('alumno.notas') }}" class="btn-link" style="color:#d97706;">Ver todas</a>
                 </div>
                 @foreach($notas->take(5) as $nota)
-                <div style="display:flex; align-items:center; padding:11px 18px; border-top:1px solid #f3f4f6;">
+                <div class="portal-nota-reciente" style="display:flex; align-items:center; padding:11px 18px; border-top:1px solid #f3f4f6;">
                     <p style="font-size:13px; color:#374151; flex:1; margin:0;">{{ $nota->detalleCurso->materia->nombre }}</p>
-                    <p style="font-size:11px; color:#6b7280; margin:0 16px;">Prof. {{ $nota->detalleCurso->maestro->nombre_completo }}</p>
+                    <p style="font-size:11px; color:#6b7280; margin:0 16px;">Docente: {{ $miCurso['materias']->firstWhere('detalle_id', $nota->detalle_curso_id)['docente'] ?? 'No disponible' }}</p>
                     @php $p = $nota->promedio; @endphp
                     <span class="prom-badge"
                           style="background:{{ $p >= 9 ? '#059669' : ($p >= 7 ? '#d97706' : ($p >= 6 ? '#ea580c' : '#dc2626')) }}; color:#fff;">

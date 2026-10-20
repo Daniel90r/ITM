@@ -191,6 +191,11 @@ class Curso extends Model
         return $this->hasMany(DetalleCurso::class);
     }
 
+    public function horarios(): HasMany
+    {
+        return $this->hasMany(CursoHorario::class)->orderBy('dia_semana')->orderBy('hora_inicio')->orderBy('id');
+    }
+
     public function inscripciones(): HasMany
     {
         return $this->hasMany(Inscripcion::class);

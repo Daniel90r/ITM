@@ -1,9 +1,41 @@
 <x-app-layout>
+@push('styles')
+<style>
+    .alumnos-panel { min-width:0; }
+    .alumnos-scroll { width:100%; overflow-x:auto; }
+    .alumnos-table { width:100%; min-width:1100px; border-collapse:collapse; }
+    .alumnos-table th, .alumnos-table td { vertical-align:middle; line-height:1.45; }
+    .alumnos-table th { white-space:nowrap; }
+    .alumnos-table td:first-child, .alumnos-table td:nth-child(3),
+    .alumnos-table td:nth-child(5), .alumnos-table td:nth-child(6),
+    .alumnos-table td:nth-child(7) { white-space:nowrap; }
+    .alumnos-table td:nth-child(2) { min-width:220px; white-space:normal; }
+    .alumnos-identidad { min-width:190px; max-width:280px; }
+    .alumnos-nombre { min-width:0; font-weight:600; overflow-wrap:anywhere; }
+    .alumnos-table td:nth-child(4) { width:210px; }
+    .alumnos-email { display:block; min-width:150px; max-width:210px; white-space:normal; overflow-wrap:anywhere; }
+    .alumnos-table td:nth-child(5) span,
+    .alumnos-table td:nth-child(6) span { display:inline-flex; align-items:center; white-space:nowrap; }
+    .alumnos-table td:last-child button { display:inline-flex; align-items:center; justify-content:center; min-height:32px; white-space:nowrap; }
+    .alumnos-filtros > * { min-width:0; }
+    @media(max-width:1000px) {
+        .alumnos-filtros { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+        .alumnos-resumen { gap:8px !important; }
+        .alumnos-resumen > div { padding:12px !important; gap:8px !important; }
+    }
+    @media(max-width:600px) {
+        .alumnos-contenido { padding:14px !important; }
+        .alumnos-resumen { grid-template-columns:1fr !important; }
+        .alumnos-filtros { grid-template-columns:minmax(0,1fr) !important; }
+        .alumnos-encabezado { flex-wrap:wrap; gap:10px; }
+    }
+</style>
+@endpush
 <div style="display:flex; height:100vh; overflow:hidden;">
 {{-- Esta es la gestion de alumnos  --}}
     @include('components.admin-sidebar', ['active' => 'alumnos'])
 
-    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
+    <div class="alumnos-panel" style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
 
         <header style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -18,7 +50,9 @@
             <span style="font-size:12px; color:#9ca3af; background:#f3f4f6; padding:6px 12px; border-radius:8px;">{{ now()->isoFormat('MMMM YYYY') }}</span>
         </header>
 
-        <div style="flex:1; overflow-y:auto; padding:24px;">
+        <div class="alumnos-contenido" style="flex:1; min-width:0; overflow-y:auto; padding:24px;">
+
+            @include('admin.partials.alumnos-tabs')
 
             @if(session('success'))
             <div style="background:#dcfce7; border:1px solid #86efac; border-radius:10px; padding:12px 16px; font-size:13px; color:#16a34a; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
@@ -34,7 +68,7 @@
             @endif
 
             {{-- Aqui se muestra las estadísticas --}}
-            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;">
+            <div class="alumnos-resumen" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;">
                 <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:14px;">
                     <div style="width:40px; height:40px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; justify-content:center;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -68,7 +102,7 @@
             <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
 
                 <div style="padding:16px 24px; border-bottom:1px solid #e5e7eb;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                    <div class="alumnos-encabezado" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <div style="width:4px; height:18px; background:#3b82f6; border-radius:2px;"></div>
                             <p style="font-size:14px; font-weight:600; color:#111827; margin:0;">Listado de Alumnos</p>
@@ -81,7 +115,7 @@
                     </div>
 
                     {{-- Buscadores --}}
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:center;">
+                    <div class="alumnos-filtros" style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:center;">
                         <div style="position:relative;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input type="text" id="buscarAlumno" placeholder="Buscar alumno..."
@@ -126,16 +160,17 @@
                     <p id="contadorResultados" style="font-size:12px; color:#9ca3af; margin:8px 0 0; display:none;"></p>
                 </div>
 
-                <table style="width:100%; border-collapse:collapse;">
+                <div class="alumnos-scroll" role="region" aria-label="Listado de alumnos" tabindex="0">
+                <table class="alumnos-table">
                     <thead>
                         <tr style="background:#f8fafc;">
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Matrícula</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Nombre</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Teléfono</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Email</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Curso</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Estado</th>
-                            <th style="padding:11px 24px; text-align:center; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Acciones</th>
+                            <th style="padding:12px 16px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Matrícula</th>
+                            <th style="padding:12px 16px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Nombre</th>
+                            <th style="padding:12px 16px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Teléfono</th>
+                            <th style="padding:12px 16px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Email</th>
+                            <th style="padding:12px 16px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Curso</th>
+                            <th style="padding:12px 16px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Estado</th>
+                            <th style="padding:12px 16px; text-align:center; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tablaAlumnos">
@@ -152,41 +187,42 @@
                             data-anio="{{ $anioLectivo }}"
                             style="border-top:1px solid #f1f5f9; background:{{ $loop->even ? '#f8fafc' : '#ffffff' }};"
                             onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='{{ $loop->even ? '#f8fafc' : '#ffffff' }}'">
-                            <td style="padding:13px 24px; color:#6b7280; font-size:13px; font-family:monospace; font-weight:600;">{{ $alumno->codigo }}</td>
-                            <td style="padding:13px 24px;">
-                                <div style="display:flex; align-items:center; gap:10px;">
+                            <td style="padding:14px 16px; color:#6b7280; font-size:13px; font-family:monospace; font-weight:600;">{{ $alumno->codigo }}</td>
+                            <td style="padding:14px 16px;">
+                                <div class="alumnos-identidad" style="display:flex; align-items:center; gap:10px;">
                                     <div style="width:30px; height:30px; border-radius:50%; background:#3b82f6; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex-shrink:0;">
                                         {{ strtoupper(substr($alumno->nombre,0,1).substr($alumno->apellido,0,1)) }}
                                     </div>
-                                    <span style="font-size:13px; font-weight:500; color:#111827;">{{ $alumno->nombre_completo }}</span>
+                                    <span class="alumnos-nombre" style="font-size:13px; color:#111827;">{{ $alumno->nombre_completo }}</span>
                                 </div>
                             </td>
-                            <td style="padding:13px 24px;">
+                            <td style="padding:14px 16px;">
                                 @if($alumno->telefono)
                                     <span style="font-size:13px; color:#374151;">{{ $alumno->telefono }}</span>
                                 @else
                                     <span style="font-size:12px; color:#9ca3af;">Sin teléfono</span>
                                 @endif
                             </td>
-                            <td style="padding:13px 24px; color:#6b7280; font-size:13px;">{{ $alumno->user->email ?? '—' }}</td>
-                            <td style="padding:13px 24px;">
+                            <td style="padding:14px 16px; color:#6b7280; font-size:13px;"><span class="alumnos-email">{{ $alumno->user->email ?? '—' }}</span></td>
+                            <td style="padding:14px 16px;">
                                 <span style="background:#eff6ff; color:#3b82f6; padding:3px 10px; border-radius:5px; font-size:12px; font-weight:500;">{{ $cursoNombre }}</span>
                             </td>
-                            <td style="padding:13px 24px;">
+                            <td style="padding:14px 16px;">
                                 @if($alumno->activo)
                                     <span style="background:#f0fdf4; color:#16a34a; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600;">● Activo</span>
                                 @else
                                     <span style="background:#fef2f2; color:#dc2626; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600;">● Inactivo</span>
                                 @endif
                             </td>
-                            <td style="padding:13px 24px; text-align:center;">
+                            <td style="padding:14px 16px; text-align:center;">
                                 <button onclick="abrirModalEditar(
                                         {{ $alumno->id }},
                                         '{{ addslashes($alumno->nombre) }}',
                                         '{{ addslashes($alumno->apellido) }}',
                                         '{{ addslashes($alumno->user->email ?? '') }}',
                                         '{{ $cursoId }}',
-                                        '{{ addslashes($alumno->telefono ?? '') }}'
+                                        '{{ addslashes($alumno->telefono ?? '') }}',
+                                        '{{ addslashes($cursoNombre) }}'
                                     )"
                                     style="background:#eff6ff; border:none; color:#3b82f6; cursor:pointer; font-size:12px; font-weight:600; padding:5px 14px; border-radius:6px;"
                                     onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
@@ -197,6 +233,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
 
                 <div id="sinResultados" style="display:none; padding:40px; text-align:center; color:#9ca3af; font-size:13px;">
                     No se encontraron alumnos con los filtros seleccionados.

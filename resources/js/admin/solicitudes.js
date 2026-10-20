@@ -1,30 +1,19 @@
-// FILTROS Y BÚSQUEDA
-let filtroEstadoActual = 'todos';
+// Los filtros consultan todo el listado en el servidor, antes de paginar.
+let temporizadorBusqueda;
 
-function setFiltroEstado(estado, boton) {
-    filtroEstadoActual = estado;
-    document.querySelectorAll('.filtro-estado').forEach(b => b.classList.remove('activo'));
-    boton.classList.add('activo');
-    filtrarSolicitudes();
+function setFiltroEstado(estado) {
+    clearTimeout(temporizadorBusqueda);
+    const form = document.getElementById('filtrosSolicitudes');
+    if (!form) return;
+    document.getElementById('estadoSolicitud').value = estado;
+    form.requestSubmit();
 }
 
 function filtrarSolicitudes() {
-    const q = (document.getElementById('buscarSolicitud')?.value || '').toLowerCase().trim();
-    const filas = document.querySelectorAll('.fila-solicitud');
-    let visibles = 0;
-
-    filas.forEach(fila => {
-        const okEstado = filtroEstadoActual === 'todos' || fila.dataset.estado === filtroEstadoActual;
-        const okBusqueda = !q || (fila.dataset.busqueda || '').includes(q);
-        const mostrar = okEstado && okBusqueda;
-        fila.style.display = mostrar ? '' : 'none';
-        if (mostrar) visibles++;
-    });
-
-    const sinResultados = document.getElementById('sinResultadosSolicitudes');
-    if (sinResultados) {
-        sinResultados.style.display = visibles === 0 ? 'block' : 'none';
-    }
+    clearTimeout(temporizadorBusqueda);
+    temporizadorBusqueda = setTimeout(() => {
+        document.getElementById('filtrosSolicitudes')?.requestSubmit();
+    }, 400);
 }
 
 // MODAL DETALLE
@@ -33,6 +22,12 @@ function abrirDetalle(id) {
     const cuerpo = document.getElementById('cuerpoDetalle');
     if (!origen || !cuerpo) return;
     cuerpo.innerHTML = origen.innerHTML;
+    // Los formularios del detalle se clonan: sus listeners no se copian con HTML.
+    cuerpo.querySelectorAll('form[data-confirm]').forEach(form => {
+        delete form.dataset.confirmInicializado;
+        delete form.dataset.confirmLocked;
+    });
+    window.initConfirmaciones?.();
     document.getElementById('modalDetalle').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
@@ -76,5 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
         modalDetalle.addEventListener('click', function (e) {
             if (e.target === this) cerrarDetalle();
         });
+        if (/^\d+$/.test(modalDetalle.dataset.reabrir || '')) {
+            abrirDetalle(modalDetalle.dataset.reabrir);
+        }
     }
 });

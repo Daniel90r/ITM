@@ -52,7 +52,7 @@ class BoletaIntegridadTest extends TestCase
 
         $detalles = [];
         foreach ($cursos as $i => $c) {
-            $materia = Materia::factory()->create(['nombre' => 'Matemática ' . ($i + 1)]);
+            $materia = Materia::factory()->create(['nombre' => 'Materia Regular A ' . ($i + 1)]);
             $detalles[$c->id] = DetalleCurso::create([
                 'curso_id' => $c->id,
                 'materia_id' => $materia->id,
@@ -143,8 +143,8 @@ class BoletaIntegridadTest extends TestCase
             ->get(route('admin.boletas.show', $f['alumno']->id) . '?curso_id=' . $f['curso']->id);
 
         $response->assertOk();
-        $response->assertSee('Matemática 1');
-        $response->assertDontSee('Matemática 2');
+        $response->assertSee('Materia Regular A 1');
+        $response->assertDontSee('Materia Regular A 2');
     }
 
     #[Test]

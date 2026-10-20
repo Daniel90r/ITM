@@ -107,7 +107,7 @@ class AdminDashboardController extends Controller
         $alumnos = Alumno::with([
             'inscripciones' => fn ($q) => $q->aprobada()->with('curso'),
             'user',
-        ])->get();
+        ])->orderByDesc('created_at')->orderByDesc('id')->get();
 
         $cursos = Curso::where('activo', 1)->orderBy('nombre')->get();
         $totalAlumnos = $alumnos->count();
@@ -173,17 +173,27 @@ class AdminDashboardController extends Controller
         // Determinar mayoría de edad a partir de la fecha de nacimiento (cálculo en servidor,
         // nunca confiar solo en lo que muestre/oculte el frontend)
         $esMayorDeEdad = false;
+        $edad = null;
         if ($request->filled('fecha_nacimiento')) {
             try {
-                $esMayorDeEdad = Carbon::parse($request->fecha_nacimiento)->age >= 18;
+                $fechaNac = Carbon::parse($request->fecha_nacimiento);
+                $edad = $fechaNac->age;
+                $esMayorDeEdad = $edad >= 18;
             } catch (\Exception $e) {
                 $esMayorDeEdad = false;
+                $edad = null;
             }
         }
 
+        if ($edad !== null && $edad < 14) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'fecha_nacimiento' => 'El alumno debe tener al menos 14 años para poder registrarse.',
+            ]);
+        }
+
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
             'fecha_nacimiento' => 'required|date|before:today',
             'sexo' => 'nullable|in:M,F',
             'telefono' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
@@ -198,8 +208,8 @@ class AdminDashboardController extends Controller
                 'unique:alumnos,dui',
             ],
 
-            'encargado_nombre' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
-            'encargado_apellido' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:255'],
+            'encargado_nombre' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:100'],
+            'encargado_apellido' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:100'],
             'encargado_parentesco' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'max:50'],
             'encargado_dui' => [$esMayorDeEdad ? 'nullable' : 'required', 'string', 'regex:/^\d{8}-\d$/'],
             'encargado_telefono' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
@@ -275,8 +285,8 @@ class AdminDashboardController extends Controller
         $alumno = Alumno::findOrFail($id);
 
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
             'telefono' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
             'email' => 'required|email|max:255|unique:users,email,'.$alumno->user_id,
             'password' => 'nullable|min:8|confirmed',
@@ -306,42 +316,8 @@ class AdminDashboardController extends Controller
                 ]);
             }
 
-            // Cambiar de curso SOLO si el curso solicitado difiere del actual
-            $inscripcionActual = Inscripcion::where('alumno_id', $alumno->id)
-                ->where('activa', true)
-                ->where('estado', 'aprobada')
-                ->first();
-
-            if ($request->filled('curso_id') && $request->curso_id != $inscripcionActual?->curso_id) {
-                // Desactivar inscripción vigente
-                if ($inscripcionActual) {
-                    $inscripcionActual->update([
-                        'activa' => 0,
-                        'estado' => 'inactiva',
-                    ]);
-                }
-
-                // Reactivar o crear inscripción al curso destino
-                $existeDestino = Inscripcion::where('alumno_id', $alumno->id)
-                    ->where('curso_id', $request->curso_id)
-                    ->first();
-
-                if ($existeDestino) {
-                    $existeDestino->update([
-                        'activa'           => 1,
-                        'estado'           => 'aprobada',
-                        'fecha_inscripcion' => $existeDestino->fecha_inscripcion,
-                    ]);
-                } else {
-                    Inscripcion::create([
-                        'alumno_id'         => $alumno->id,
-                        'curso_id'          => $request->curso_id,
-                        'fecha_inscripcion' => now()->toDateString(),
-                        'activa'            => 1,
-                        'estado'            => 'aprobada',
-                    ]);
-                }
-            }
+            // No permitir modificar la inscripción desde la edición de datos personales
+            // La asignación a curso debe realizarse únicamente mediante aprobación de solicitud
         });
 
         return redirect()->route('admin.alumnos')->with('success', 'Alumno actualizado correctamente.');
@@ -370,7 +346,7 @@ class AdminDashboardController extends Controller
     public function storeMateria(Request $request)
     {
         $request->validate([
-            'nombre' => ['required', 'string', 'max:255', function ($attribute, $value, $fail) {
+            'nombre' => ['required', 'string', 'max:100', function ($attribute, $value, $fail) {
                 $normalizado = $this->normalizarNombreMateria($value);
                 if (Materia::whereRaw('UPPER(REPLACE(nombre, " ", "")) = ?', [strtoupper(str_replace(' ', '', $normalizado))])->exists()) {
                     $fail('Ya existe una materia con ese nombre.');
@@ -406,10 +382,6 @@ class AdminDashboardController extends Controller
     {
         $normalizado = $this->normalizarNombreMateria($nombre);
         $palabras = array_values(array_filter(explode(' ', $normalizado)));
-
-        if (empty($palabras)) {
-            $palabras = array_values(array_filter(explode(' ', $normalizado)));
-        }
 
         $iniciales = '';
         foreach ($palabras as $p) {
@@ -468,7 +440,7 @@ class AdminDashboardController extends Controller
     public function siguienteCodigoMateria(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'required|string|max:100',
         ]);
 
         $codigo = $this->generarCodigoMateria($request->nombre);

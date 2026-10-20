@@ -93,8 +93,8 @@ class MaestroController extends Controller
     public function siguienteCodigoMaestro(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
         ]);
 
         $codigo = $this->generarCodigoMaestro($request->nombre, $request->apellido);

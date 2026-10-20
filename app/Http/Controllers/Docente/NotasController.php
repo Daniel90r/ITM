@@ -86,7 +86,6 @@ class NotasController extends Controller
             'notas.*.laboratorio'    => 'nullable|numeric|min:0|max:10',
             'notas.*.examen_teorico' => 'nullable|numeric|min:0|max:10',
             'notas.*.practica'       => 'nullable|numeric|min:0|max:10',
-            'notas.*.sos'            => 'nullable|numeric|min:0|max:10',
             'notas.*.conducta'       => 'nullable|string|max:2',
         ]);
 
@@ -130,7 +129,6 @@ class NotasController extends Controller
                     'laboratorio'    => $valores['laboratorio'] ?? null,
                     'examen_teorico' => $valores['examen_teorico'] ?? null,
                     'practica'       => $valores['practica'] ?? null,
-                    'sos'            => $valores['sos'] ?? null,
                     'conducta'       => $valores['conducta'] ?? null,
                     'registrado_por' => $maestro->id,
                 ]
