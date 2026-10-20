@@ -21,7 +21,7 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombres <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="editNombre" name="nombre" required
+                    <input type="text" id="editNombre" name="nombre" required maxlength="100"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     @error('nombre', 'updateMaestro')
@@ -30,7 +30,7 @@
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Apellidos <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="editApellido" name="apellido" required
+                    <input type="text" id="editApellido" name="apellido" required maxlength="100"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     @error('apellido', 'updateMaestro')

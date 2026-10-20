@@ -1,4 +1,3 @@
-import './bootstrap';
 import './admin/alertas';
 import './admin/solicitudesBadge';
 import './utils/inputMasks';

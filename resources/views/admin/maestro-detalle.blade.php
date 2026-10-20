@@ -1,12 +1,65 @@
 <x-app-layout>
-<div style="display:flex; height:100vh; overflow:hidden;">
+@push('styles')
+<style>
+    #maestro-programas .programas-lista { display:grid; gap:14px; padding:20px; }
+    #maestro-programas .programa-tarjeta { min-width:0; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+    #maestro-programas .programa-cabecera { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:20px; }
+    #maestro-programas .programa-datos { flex:1; min-width:0; }
+    #maestro-programas .programa-nombre { margin:0; font-size:16px; line-height:1.4; font-weight:600; color:#111827; overflow-wrap:anywhere; }
+    #maestro-programas .programa-codigo { display:inline-block; margin-top:6px; padding:2px 7px; border:1px solid #e5e7eb; border-radius:5px; background:#f9fafb; color:#6b7280; font-family:monospace; font-size:11px; overflow-wrap:anywhere; }
+    #maestro-programas .programa-contexto { display:flex; flex-wrap:wrap; gap:8px 24px; margin:14px 0 0; }
+    #maestro-programas .programa-contexto dt { margin-bottom:3px; font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:#9ca3af; }
+    #maestro-programas .programa-contexto dd { margin:0; font-size:13px; line-height:1.5; color:#374151; overflow-wrap:anywhere; }
+    #maestro-programas .programa-acciones { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; max-width:320px; }
+    #maestro-programas .programa-acciones form { display:flex; margin:0; }
+    #maestro-programas .programa-boton { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:8px 12px; border:1px solid; border-radius:8px; font-family:inherit; font-size:12px; line-height:18px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    #maestro-programas .programa-boton-cambiar { background:#eff6ff; border-color:#bfdbfe; color:#2563eb; }
+    #maestro-programas .programa-boton-cambiar:hover { background:#dbeafe; }
+    #maestro-programas .programa-boton-quitar { background:#ffffff; border-color:#fecaca; color:#dc2626; }
+    #maestro-programas .programa-boton-quitar:hover { background:#fef2f2; }
+    #maestro-programas .programa-boton:focus-visible,
+    #maestro-programas .programa-historial summary:focus-visible { outline:2px solid #3b82f6; outline-offset:3px; }
+    #maestro-programas .programa-bloqueado { display:inline-flex; align-items:center; gap:5px; padding:4px 8px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb; color:#6b7280; font-size:11px; font-weight:500; white-space:nowrap; }
+    #maestro-programas .programa-aviso { flex-basis:100%; margin:0; font-size:11px; line-height:1.5; text-align:right; color:#9ca3af; }
+    #maestro-programas .programa-aviso-error { color:#dc2626; }
+    #maestro-programas .programa-historial { padding:0 20px; border-top:1px solid #f1f5f9; }
+    #maestro-programas .programa-historial summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; cursor:pointer; list-style:none; font-size:12px; color:#374151; font-weight:500; }
+    #maestro-programas .programa-historial summary::-webkit-details-marker { display:none; }
+    #maestro-programas .historial-indicador { display:inline-flex; align-items:center; gap:8px; color:#9ca3af; font-size:11px; font-weight:400; white-space:nowrap; }
+    #maestro-programas .historial-flecha { transition:transform .15s; }
+    #maestro-programas .programa-historial[open] .historial-flecha { transform:rotate(180deg); }
+    #maestro-programas .historial-contenido { overflow-x:auto; margin-bottom:16px; border:1px solid #e5e7eb; border-radius:8px; }
+    @media (max-width:1000px) {
+        #maestro-programas .programa-cabecera { flex-direction:column; gap:16px; }
+        #maestro-programas .programa-acciones { justify-content:flex-start; max-width:none; }
+        #maestro-programas .programa-aviso { text-align:left; }
+    }
+    @media (max-width:767px) {
+        #maestro-programas { flex-direction:column; height:100dvh !important; }
+        #maestro-programas > aside { width:100% !important; max-height:150px; border-right:0 !important; border-bottom:1px solid #e5e7eb; }
+        #maestro-programas > .maestro-contenido { min-height:0; }
+        #maestro-programas .maestro-header { flex-wrap:wrap; gap:12px; }
+        #maestro-programas .maestro-resumen > div { flex-wrap:wrap; gap:16px; }
+        #maestro-programas .maestro-resumen p { overflow-wrap:anywhere; }
+        #maestro-programas .programas-lista { padding:12px; gap:12px; }
+        #maestro-programas .programa-cabecera { padding:16px; }
+        #maestro-programas .programa-historial { padding:0 16px; }
+    }
+    @media (max-width:480px) {
+        #maestro-programas .programa-acciones { display:grid; grid-template-columns:1fr; width:100%; }
+        #maestro-programas .programa-boton { width:100%; }
+        #maestro-programas .programa-bloqueado { justify-self:start; }
+    }
+</style>
+@endpush
+<div id="maestro-programas" style="display:flex; height:100vh; overflow:hidden;">
 
     @include('components.admin-sidebar', ['active' => 'maestros'])
 
-    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
+    <div class="maestro-contenido" style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
 
         {{-- Header --}}
-        <header style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <header class="maestro-header" style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div style="width:40px; height:40px; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
                     <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM" style="width:100%; height:100%; object-fit:cover;">
@@ -51,7 +104,7 @@
         <div style="flex:1; overflow-y:auto; padding:24px;">
 
             {{-- Datos básicos y acciones --}}
-            <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:24px; margin-bottom:24px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+            <div class="maestro-resumen" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:24px; margin-bottom:24px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div style="flex:1;">
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:600px;">
@@ -101,17 +154,7 @@
                 </div>
 
                 @if($maestro->detalleCursos->isNotEmpty())
-                <table style="width:100%; border-collapse:collapse;">
-                    <thead>
-                        <tr style="background:#f9fafb; border-bottom:1px solid #e5e7eb;">
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Curso</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Nivel / Sección</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Programa / Materia</th>
-                            <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Código</th>
-                            <th style="padding:11px 24px; text-align:center; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div class="programas-lista">
                         @foreach($maestro->detalleCursos as $detalle)
                         @php
                             $asignacionesActivas = $detalle->asignacionesDocentes->where('estado', 'activa');
@@ -124,52 +167,71 @@
                             $puedeCambiarMaestro = $esCoherente && $maestrosDisponibles->isNotEmpty();
                             $historialInconsistente = !$esCoherente;
                         @endphp
-                        <tr style="border-top:1px solid #f1f5f9;">
-                            <td style="padding:13px 24px; color:#111827; font-size:13px;">{{ $detalle->curso?->nombre ?? '—' }}</td>
-                            <td style="padding:0 24px; color:#6b7280; font-size:13px;">
-                                {{ $detalle->curso?->nivel ?? '—' }}
-                                @if($detalle->curso?->seccion)
-                                    / {{ $detalle->curso->seccion }}
-                                @endif
-                            </td>
-                            <td style="padding:0 24px; color:#111827; font-size:13px;">{{ $detalle->materia?->nombre ?? '—' }}</td>
-                            <td style="padding:0 24px; color:#6b7280; font-size:13px; font-family:monospace;">{{ $detalle->materia?->codigo ?? '—' }}</td>
-                            <td style="padding:13px 24px; text-align:center;">
+                        <article class="programa-tarjeta" aria-labelledby="programa-nombre-{{ $detalle->id }}">
+                            <div class="programa-cabecera">
+                                <div class="programa-datos">
+                                    <h3 class="programa-nombre" id="programa-nombre-{{ $detalle->id }}">{{ $detalle->materia?->nombre ?? '—' }}</h3>
+                                    <span class="programa-codigo">Código: {{ $detalle->materia?->codigo ?? '—' }}</span>
+                                    <dl class="programa-contexto">
+                                        <div>
+                                            <dt>Curso</dt>
+                                            <dd>{{ $detalle->curso?->nombre ?? '—' }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Nivel / Sección</dt>
+                                            <dd>
+                                                {{ $detalle->curso?->nivel ?? '—' }}
+                                                @if($detalle->curso?->seccion)
+                                                    / {{ $detalle->curso->seccion }}
+                                                @endif
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                                <div class="programa-acciones">
                                 @if($historialInconsistente)
-                                    <span style="font-size:11px; color:#dc2626; display:block; margin-bottom:6px;">Historial inconsistente. Revise la asignación.</span>
+                                    <span class="programa-aviso programa-aviso-error">Historial inconsistente. Revise la asignación.</span>
                                 @elseif($esCoherente && !$maestrosDisponibles->isNotEmpty())
-                                    <span style="font-size:11px; color:#9ca3af; display:block; margin-bottom:6px;">No hay otro maestro activo disponible.</span>
+                                    <span class="programa-aviso">No hay otro maestro activo disponible.</span>
                                 @endif
 
                                 @if($puedeCambiarMaestro)
                                     <button type="button"
                                         onclick="abrirModalCambiarMaestro(@js(route('admin.maestros.asignaciones.cambiar', [$maestro->id, $detalle->id])), @js($detalle->id), @js($detalle->curso?->nombre ?? '—'), @js($detalle->materia?->nombre ?? '—'))"
-                                        style="background:#eff6ff; border:none; padding:6px 14px; border-radius:6px; color:#3b82f6; font-size:12px; font-weight:600; cursor:pointer; margin-bottom:6px; display:block; width:100%;">
+                                        class="programa-boton programa-boton-cambiar">
                                         Cambiar maestro
                                     </button>
                                 @endif
 
                                 @if($puedeDesasignar)
-                                    <form method="POST" action="{{ route('admin.maestros.desasignar', [$maestro->id, $detalle->id]) }}" style="display:inline-block;">
+                                    <form method="POST" action="{{ route('admin.maestros.desasignar', [$maestro->id, $detalle->id]) }}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('¿Está seguro de desasignar este programa del maestro?')"
-                                            style="background:#fef2f2; border:none; padding:6px 14px; border-radius:6px; color:#dc2626; font-size:12px; font-weight:600; cursor:pointer;">
+                                            class="programa-boton programa-boton-quitar">
                                             Desasignar
                                         </button>
                                     </form>
                                 @else
-                                    <span style="font-size:11px; color:#dc2626; display:block;">No eliminable</span>
+                                    <span class="programa-bloqueado" title="No se puede desasignar este programa.">
+                                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                                        No eliminable
+                                    </span>
                                 @endif
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="5" style="background:#fafbfc; padding:10px 24px;">
-                                <details style="margin-top:4px;">
-                                    <summary style="cursor:pointer; font-size:12px; color:#374151; font-weight:600;">Ver historial docente</summary>
+                                </div>
+                            </div>
+                                <details class="programa-historial">
+                                    <summary>
+                                        <span>Ver historial docente</span>
+                                        <span class="historial-indicador">
+                                            {{ $asignacionesTotal }} registro(s)
+                                            <svg class="historial-flecha" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                        </span>
+                                    </summary>
                                     @if($detalle->asignacionesDocentes->isNotEmpty())
-                                    <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:11px;">
+                                    <div class="historial-contenido" role="region" aria-label="Historial docente de {{ $detalle->materia?->nombre ?? '—' }}" tabindex="0">
+                                    <table style="width:100%; min-width:640px; border-collapse:collapse; font-size:12px;">
                                         <thead>
                                             <tr style="background:#f9fafb; border-bottom:1px solid #e5e7eb;">
                                                 <th style="padding:6px 10px; text-align:left; color:#6b7280; font-weight:600;">Maestro</th>
@@ -223,15 +285,14 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+                                    </div>
                                     @else
                                     <p style="margin-top:8px; font-size:12px; color:#9ca3af;">No existe historial docente para este programa.</p>
                                     @endif
                                 </details>
-                            </td>
-                        </tr>
+                        </article>
                         @endforeach
-                    </tbody>
-                </table>
+                </div>
                 @else
                 <div style="padding:40px; text-align:center; color:#9ca3af; font-size:13px;">
                     Este maestro no tiene programas asignados.

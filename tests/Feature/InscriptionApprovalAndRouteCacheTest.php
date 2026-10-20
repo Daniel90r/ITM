@@ -27,6 +27,7 @@ use PHPUnit\Framework\Attributes\Test;
 class InscriptionApprovalAndRouteCacheTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\ConEncargadoOficial;
 
     private User $alumnoUser;
 
@@ -37,6 +38,8 @@ class InscriptionApprovalAndRouteCacheTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('public');
+        Storage::fake('inscripciones');
 
         $this->alumnoUser = User::factory()->create(['role' => 'alumno']);
 
@@ -46,6 +49,7 @@ class InscriptionApprovalAndRouteCacheTest extends TestCase
             'apellido' => 'Montes',
             'codigo'   => 'A001',
         ]);
+        $this->prepararEncargadoOficial($this->alumno);
 
         $this->adminUser = User::factory()->create(['role' => 'admin']);
     }
@@ -155,7 +159,8 @@ class InscriptionApprovalAndRouteCacheTest extends TestCase
             ->post(route('alumno.inscripcion.enviar'), [
                 'curso_id'             => $curso->id,
                 'alumno_dui'           => '12345678-9',
-                'encargado_nombre'     => 'Rosa Montes',
+                'encargado_nombre'     => 'Rosa',
+                'encargado_apellido'   => 'Montes',
                 'encargado_telefono'   => '7777-8888',
                 'encargado_parentesco' => 'Madre',
                 'encargado_dui'        => '98765432-1',
@@ -311,7 +316,7 @@ class InscriptionApprovalAndRouteCacheTest extends TestCase
         return array_merge([
             'curso_id'             => null,
             'alumno_dui'           => '12345678-9',
-            'encargado_nombre'     => 'Rosa Montes',
+            'encargado_nombre' => 'Rosa', 'encargado_apellido' => 'Montes',
             'encargado_telefono'   => '7777-8888',
             'encargado_parentesco' => 'Madre',
             'encargado_dui'        => '98765432-1',

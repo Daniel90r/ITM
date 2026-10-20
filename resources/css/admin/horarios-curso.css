@@ -1,0 +1,27 @@
+.horario-semanal { min-width:0; padding:16px; border:1px solid #e5e7eb; border-radius:12px; background:#f9fafb; }
+.horario-semanal legend { padding:0 6px; color:#1f2937; font-size:14px; font-weight:700; }
+.horario-ayuda, .horario-vacio { font-size:12px; color:#64748b; line-height:1.5; margin:0 0 12px; }
+.horario-bloque { display:grid; grid-template-columns:minmax(0,1.2fr) repeat(2,minmax(0,1fr)) auto; gap:10px; align-items:end; padding:12px 0; border-bottom:1px solid #e5e7eb; }
+.horario-bloque > div { min-width:0; }
+.horario-bloque label { display:block; color:#475569; font-size:11px; font-weight:600; margin-bottom:5px; }
+.horario-bloque :is(select,input) { width:100%; min-width:0; height:44px; padding:8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#1f2937; font-size:13px; }
+.horario-semanal button { min-height:44px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+.horario-quitar { padding:8px 10px; background:#fff; border:1px solid #fecaca; color:#b91c1c; }
+.horario-agregar { padding:8px 14px; margin-top:12px; border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8; }
+.horario-semanal :is(input,select,button):focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }
+.horario-semanal:disabled button { cursor:not-allowed; opacity:.5; }
+.horario-aviso, .horario-error { font-size:12px; color:#92400e; background:#fffbeb; padding:10px; border-radius:8px; margin-bottom:12px; }
+.horario-error { color:#b91c1c; background:#fef2f2; }
+.curso-form-modal { max-height:calc(100vh - 32px); max-height:calc(100dvh - 32px); overflow-y:auto; }
+.curso-form-modal [style*="width:4px"] { width:4px !important; flex-shrink:0; }
+.curso-horarios-edicion > div:last-child { min-width:0; }
+@media(max-width:600px) {
+    .horario-bloque { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .horario-bloque .horario-dia, .horario-bloque .horario-quitar { grid-column:1 / -1; }
+    .horario-bloque :is(select,input) { font-size:16px; }
+    .curso-form-modal { padding:18px !important; margin:12px !important; }
+    .curso-form-modal [style*="grid-column: span 2"] { grid-column:auto !important; }
+    .curso-horarios-edicion form > div[style*="grid-template-columns"] { min-width:0; }
+    .curso-form-modal :is(input,select), .curso-horarios-edicion form :is(input,select) { font-size:16px !important; min-height:44px; max-width:100%; }
+}
+@media(max-width:380px) { .horario-bloque { grid-template-columns:minmax(0,1fr); } .horario-bloque > * { grid-column:1 !important; } }

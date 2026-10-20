@@ -10,6 +10,17 @@ class Inscripcion extends Model
 {
     use HasFactory;
     protected $table = 'inscripciones';
+    // Las tareas CLI que usan Eloquent comparten la barrera de las peticiones HTTP.
+    public function save(array $options = [])
+    {
+        return app(\App\Services\ControlTransicionDocumental::class)->operacion(fn () => parent::save($options));
+    }
+
+    public function delete()
+    {
+        return app(\App\Services\ControlTransicionDocumental::class)->operacion(fn () => parent::delete());
+    }
+
     protected $fillable = [
         'alumno_id', 'curso_id', 'fecha_inscripcion',
         'activa', 'estado', 'documento_path', 'observacion', 'motivo_rechazo', 'tomara_ingles'
@@ -23,6 +34,21 @@ class Inscripcion extends Model
     public function curso(): BelongsTo
     {
         return $this->belongsTo(Curso::class);
+    }
+
+    public function reactivacion(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ReactivacionInscripcion::class);
+    }
+
+    public function documentos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DocumentoInscripcion::class)->orderBy('version');
+    }
+
+    public function documentoVigente(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DocumentoInscripcion::class)->where('vigente', '1');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════

@@ -481,7 +481,6 @@ class TeacherAssignmentChangeTest extends TestCase
             'laboratorio' => 8,
             'examen_teorico' => 7,
             'practica' => 9,
-            'sos' => 8,
             'registrado_por' => $data['oldMaestro']->id,
         ]);
 
@@ -505,7 +504,6 @@ class TeacherAssignmentChangeTest extends TestCase
         $this->assertEquals(8, $notaActualizada->laboratorio);
         $this->assertEquals(7, $notaActualizada->examen_teorico);
         $this->assertEquals(9, $notaActualizada->practica);
-        $this->assertEquals(8, $notaActualizada->sos);
         $this->assertEquals($promedioAntes, $notaActualizada->promedio);
         $this->assertEquals($data['oldMaestro']->id, $notaActualizada->registrado_por);
     }

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Curso;
 use App\Models\Materia;
 use App\Models\DetalleCurso;
-use App\Models\Alumno;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -23,8 +22,9 @@ class SeccionController extends Controller
 
     public function store(Request $request)
     {
+        $horarios = app(\App\Services\HorariosCurso::class)->validar($request);
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'required|string|max:100',
             'seccion' => 'required|string|max:2',
             'nivel' => 'required|string|in:Matutino,Vespertino',
             'anio_lectivo' => 'required|integer|min:2020|max:2099',
@@ -41,7 +41,7 @@ class SeccionController extends Controller
             ],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $horarios) {
             $curso = Curso::create([
                 'nombre' => $validated['nombre'],
                 'seccion' => strtoupper($validated['seccion']),
@@ -53,6 +53,8 @@ class SeccionController extends Controller
             ]);
 
             $materiasActivas = Materia::where('activa', true)->get();
+
+            app(\App\Services\HorariosCurso::class)->guardar($curso, $horarios);
 
             foreach ($materiasActivas as $materia) {
                 DetalleCurso::firstOrCreate(
@@ -147,9 +149,10 @@ class SeccionController extends Controller
     public function update(Request $request, $id)
     {
         $curso = Curso::findOrFail($id);
+        $horarios = app(\App\Services\HorariosCurso::class)->validar($request);
 
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'required|string|max:100',
             'nivel' => 'required|string|in:Matutino,Vespertino',
             'seccion' => 'required|string|max:2',
             'anio_lectivo' => 'required|integer|min:2020|max:2099',
@@ -199,7 +202,14 @@ class SeccionController extends Controller
             }
         }
 
-        $curso->update($datos);
+        DB::transaction(function () use ($id, $datos, $horarios) {
+            $curso = Curso::lockForUpdate()->findOrFail($id);
+            if ($curso->estado_curso === Curso::ESTADO_FINALIZADO) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['estado' => 'Un curso finalizado no puede modificarse.']);
+            }
+            $curso->update($datos);
+            app(\App\Services\HorariosCurso::class)->guardar($curso, $horarios);
+        });
 
         return redirect()->route('admin.cursos')->with('success', 'Curso actualizado correctamente.');
     }

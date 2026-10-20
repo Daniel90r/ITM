@@ -1,6 +1,6 @@
 {{-- Aqui generamos un nuevo curso --}}
 <div id="modalNuevoCurso" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
-    <div style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px;">
+    <div class="curso-form-modal" style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(0,0,0,0.12); margin:20px;">
 
         {{-- Header --}}
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
@@ -20,7 +20,7 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre <span style="color:#dc2626;">*</span></label>
-                    <input type="text" name="nombre" required placeholder="Ej: Curso A"
+                    <input type="text" name="nombre" required maxlength="100" placeholder="Ej: Curso A"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
@@ -70,6 +70,7 @@
              </div>
 
              {{-- Botones --}}
+            @include('admin.partials.horario-semanal', ['curso' => null])
             <div style="display:flex; gap:10px; padding-top:4px;">
                 <button type="button" onclick="cerrarModalCurso()"
                     style="flex:1; padding:10px; background:#f3f4f6; border:none; border-radius:10px; font-size:13px; font-weight:600; color:#374151; cursor:pointer;"

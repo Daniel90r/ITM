@@ -58,7 +58,7 @@ class TeacherAssignmentChangeInterfaceTest extends TestCase
         ]);
 
         $materia = Materia::create([
-            'nombre' => 'Matematicas',
+            'nombre' => 'Materia Regular C',
             'codigo' => 'MAT00001',
             'descripcion' => 'Basica',
             'activa' => true,

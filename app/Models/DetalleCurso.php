@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DetalleCurso extends Model
 {
+    use HasFactory;
     protected $fillable = ['curso_id', 'materia_id', 'maestro_id'];
 
     protected $casts = [

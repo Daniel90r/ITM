@@ -1,12 +1,13 @@
 <x-app-layout>
 
-<div class="page-layout fade-in alumnos">
+<div id="portal-alumno" class="page-layout fade-in alumnos portal-alumno">
 
     @include('components.alumno-sidebar', ['active' => 'notas'])
 
-    <div class="main-content">
+    <div class="main-content portal-main">
 
-        <header class="page-header">
+        <header class="page-header portal-header">
+            @include('alumno.partials.menu-toggle')
             <div style="display:flex; align-items:center; gap:12px;">
                 <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM Aguilares" class="sidebar-brand-img">
                 <div>
@@ -17,7 +18,7 @@
             <span style="font-size:12px; color:#6b7280;">{{ now()->isoFormat('MMMM YYYY') }}</span>
         </header>
 
-        <div class="content-body fade-in">
+        <div class="portal-content content-body fade-in">
 
             <div class="card">
                 <div class="card-header">
@@ -30,8 +31,9 @@
                 </div>
 
                 @if($notas->count() > 0)
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
+                <p class="portal-table-hint">Desliza la tabla para consultar todas las calificaciones.</p>
+                <div class="portal-table-scroll" role="region" aria-label="Calificaciones por materia" tabindex="0" style="overflow-x:auto;">
+                    <table class="data-table portal-notas-table">
                         <thead>
                             <tr>
                                 <th style="padding:10px 16px; text-align:left; color:#6b7280; font-weight:500; font-size:11px; text-transform:uppercase;">Materia</th>

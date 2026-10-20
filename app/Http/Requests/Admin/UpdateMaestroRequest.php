@@ -21,8 +21,8 @@ class UpdateMaestroRequest extends FormRequest
         $ignoreUserId = $maestro && $maestro->user_id ? $maestro->user_id : 0;
 
         return [
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:100'],
+            'apellido' => ['required', 'string', 'max:100'],
             'telefono' => ['required', 'string', 'size:9', 'regex:/^[267][0-9]{3}-[0-9]{4}$/'],
             'dui' => ['required', 'string', 'size:10', 'regex:/^[0-9]{8}-[0-9]$/', 'unique:maestros,dui,'.$ignoreMaestroId],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$ignoreUserId],
@@ -35,10 +35,10 @@ class UpdateMaestroRequest extends FormRequest
         return [
             'nombre.required' => 'El nombre es obligatorio.',
             'nombre.string' => 'El nombre debe ser texto.',
-            'nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
+            'nombre.max' => 'El nombre no puede tener más de 100 caracteres.',
             'apellido.required' => 'El apellido es obligatorio.',
             'apellido.string' => 'El apellido debe ser texto.',
-            'apellido.max' => 'El apellido no puede tener más de 255 caracteres.',
+            'apellido.max' => 'El apellido no puede tener más de 100 caracteres.',
             'telefono.required' => 'El teléfono es obligatorio.',
             'telefono.string' => 'El teléfono debe ser texto.',
             'telefono.regex' => 'El teléfono debe tener el formato salvadoreño ####-#### y comenzar con 2, 6 ó 7.',

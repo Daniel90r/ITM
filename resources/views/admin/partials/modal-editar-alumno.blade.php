@@ -21,13 +21,13 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre Completo <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="editNombre" name="nombre" required
+                    <input type="text" id="editNombre" name="nombre" required maxlength="100"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
                 <div>
                     <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Apellido Completo <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="editApellido" name="apellido" required
+                    <input type="text" id="editApellido" name="apellido" required maxlength="100"
                         style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
                 </div>
@@ -44,17 +44,11 @@
                     onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
             </div>
 
-            {{-- Curso --}}
+            {{-- Curso (solo lectura) --}}
             <div>
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Curso / Sección</label>
-                <select id="editCurso" name="curso_id"
-                    style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box; cursor:pointer;"
-                    onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
-                    <option value="">Sin curso asignado</option>
-                    @foreach($cursos as $curso)
-                    <option value="{{ $curso->id }}">{{ $curso->nombre }} — {{ $curso->nivel }}</option>
-                    @endforeach
-                </select>
+                <input type="text" id="editCursoDisplay" readonly
+                    style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;">
             </div>
 
             {{-- Separador cuenta --}}

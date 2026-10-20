@@ -8,6 +8,15 @@ use Illuminate\Support\Facades\Route;
 // `verified` era un no-op porque User no implementa MustVerifyEmail y no hay
 // flujo de verificación operativo. Se conserva `auth` y `role:admin`.
 Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/reportes', [\App\Http\Controllers\Admin\ReporteController::class, 'index'])->name('admin.reportes');
+    Route::get('/admin/reportes/{tipo}', [\App\Http\Controllers\Admin\ReporteController::class, 'index'])
+        ->whereIn('tipo', array_keys(\App\Services\ReportesAdministrativos::TIPOS))->name('admin.reportes.show');
+    Route::get('/admin/solicitudes/{inscripcion}/documento', [\App\Http\Controllers\DocumentoInscripcionController::class, 'show'])
+        ->whereNumber('inscripcion')->name('admin.solicitudes.documento');
+    Route::get('/admin/solicitudes/{inscripcion}/documentos', [\App\Http\Controllers\DocumentoInscripcionController::class, 'historial'])
+        ->whereNumber('inscripcion')->name('admin.solicitudes.documentos');
+    Route::get('/admin/solicitudes/{inscripcion}/documentos/{documento}', [\App\Http\Controllers\DocumentoInscripcionController::class, 'version'])
+        ->whereNumber('inscripcion')->whereNumber('documento')->name('admin.solicitudes.documentos.version');
 
     // ADMINISTRADOR: Dashboard
     Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
@@ -16,6 +25,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // ADMINISTRADOR: Alumnos
     Route::get('/admin/alumnos', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'alumnos'])
         ->name('admin.alumnos');
+    Route::get('/admin/alumnos/encargados', [\App\Http\Controllers\Admin\EncargadoController::class, 'index'])
+        ->name('admin.encargados.index');
     Route::post('/admin/alumnos', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'storeAlumno'])
         ->name('admin.alumnos.store');
     Route::post('/admin/alumnos/siguiente-codigo', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'siguienteCodigo'])
@@ -83,6 +94,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // ADMINISTRADOR: Boletas
     Route::get('/admin/boletas', [\App\Http\Controllers\Admin\BoletaController::class, 'index'])
         ->name('admin.boletas');
+    Route::post('/admin/boletas/emitir', [\App\Http\Controllers\Admin\BoletaController::class, 'emitir'])
+        ->name('admin.boletas.emitir');
+    Route::get('/admin/boletas/preview/{alumno}/{curso}', [\App\Http\Controllers\Admin\BoletaController::class, 'preview'])
+        ->name('admin.boletas.preview');
     Route::get('/admin/boletas/{alumno_id}', [\App\Http\Controllers\Admin\BoletaController::class, 'show'])
         ->name('admin.boletas.show');
     Route::get('/boletas/{id}/pdf', [\App\Http\Controllers\Admin\BoletaController::class, 'generarPdf'])
@@ -95,6 +110,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // vista y de las redirecciones del controlador.
     Route::get('/admin/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])
         ->name('admin.mensualidades');
+    Route::get('/admin/mensualidades/cursos/{curso}/alumnos/{alumno}', [\App\Http\Controllers\Admin\MensualidadController::class, 'detalles'])
+        ->whereNumber('curso')->whereNumber('alumno')->name('admin.mensualidades.detalles');
     // `/mensualidades` es el mismo listado en una URL corta. Se conserva para
     // no romper marcadores ni enlaces ya compartidos, pero NO puede llamarse
     // igual que la ruta oficial: dos rutas con el mismo nombre hacen fallar
@@ -133,11 +150,23 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/solicitudes/{id}/aprobar', [App\Http\Controllers\Admin\InscripcionController::class, 'aprobar'])->name('admin.solicitudes.aprobar');
     Route::post('/admin/solicitudes/{id}/rechazar', [App\Http\Controllers\Admin\InscripcionController::class, 'rechazar'])->name('admin.solicitudes.rechazar');
     Route::post('/admin/solicitudes/{id}/reabrir', [App\Http\Controllers\Admin\InscripcionController::class, 'reabrir'])->name('admin.solicitudes.reabrir');
+    Route::post('/admin/solicitudes/{id}/reactivar', [App\Http\Controllers\Admin\InscripcionController::class, 'reactivar'])->whereNumber('id')->name('admin.solicitudes.reactivar');
 
     Route::put('/admin/alumnos/{id}', [App\Http\Controllers\Admin\AdminDashboardController::class, 'updateAlumno'])->name('admin.alumnos.update');
 
     // ADMINISTRADOR: Asistencias
     Route::get('/admin/asistencias', [App\Http\Controllers\Admin\AsistenciaController::class, 'index'])
         ->name('admin.asistencias');
+    Route::get('/admin/asistencias/alumnos/{alumno}/detalle', [App\Http\Controllers\Admin\AsistenciaController::class, 'detalles'])
+        ->whereNumber('alumno')->name('admin.asistencias.detalles');
 
+    // ADMINISTRADOR: Directores
+    Route::get('/admin/directores', [\App\Http\Controllers\Admin\DirectorController::class, 'index'])
+        ->name('admin.directores.index');
+    Route::post('/admin/directores', [\App\Http\Controllers\Admin\DirectorController::class, 'store'])
+        ->name('admin.directores.store');
+    Route::patch('/admin/directores/{director}/firma', [\App\Http\Controllers\Admin\DirectorController::class, 'updateFirma'])
+        ->name('admin.directores.firma.update');
+    Route::get('/admin/directores/{director}/firma', [\App\Http\Controllers\Admin\DirectorController::class, 'showFirma'])
+        ->name('admin.directores.firma.show');
 });

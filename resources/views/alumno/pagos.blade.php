@@ -1,13 +1,14 @@
 <x-app-layout>
 
 
-<div style="display:flex; height:100vh; overflow:hidden;" class="fade-in">
+<div id="portal-alumno" style="display:flex; height:100vh; overflow:hidden;" class="fade-in portal-alumno">
 
     @include('components.alumno-sidebar', ['active' => 'pagos'])
 
-    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#ffffff;">
+    <div class="portal-main" style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#ffffff;">
 
-        <header style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <header class="portal-header" style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            @include('alumno.partials.menu-toggle')
             <div style="display:flex; align-items:center; gap:12px;">
                 <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM Aguilares" style="width:36px; height:36px; border-radius:10px; object-fit:cover;">
                 <div>
@@ -18,7 +19,7 @@
             <span style="font-size:12px; color:#6b7280;">{{ now()->isoFormat('MMMM YYYY') }}</span>
         </header>
 
-        <div style="flex:1; overflow-y:auto; padding:24px;" class="fade-in">
+        <div class="portal-content fade-in" style="flex:1; overflow-y:auto; padding:24px;">
 
             <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden;">
                 <div style="padding:14px 18px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between;">
@@ -35,7 +36,7 @@
                 @if($mensualidades->count() > 0)
                 <div>
                     @foreach($mensualidades as $m)
-                    <div style="display:flex; align-items:center; padding:13px 18px; border-top:1px solid #f3f4f6;"
+                    <div class="portal-pago" style="display:flex; align-items:center; padding:13px 18px; border-top:1px solid #f3f4f6;"
                          onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
                         <div style="width:34px; height:34px; border-radius:8px; background:{{ $m->estado === 'pagado' ? '#dcfce7' : '#fee2e2' }}; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-right:14px;">
                             @if($m->estado === 'pagado')

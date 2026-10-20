@@ -64,6 +64,12 @@
                     </div>
                 </div>
                 <div>
+                    <div style="margin-bottom:12px;">
+                        <strong style="font-size:12px; color:#475569;">Horario semanal</strong>
+                        @foreach(app(\App\Services\HorariosCurso::class)->lineas($curso) as $linea)
+                            <p style="font-size:13px; color:#334155; margin:4px 0;">{{ $linea }}</p>
+                        @endforeach
+                    </div>
                     <strong style="font-size:11px; color:#9ca3af; display:block; margin-bottom:4px;">Estado</strong>
                     @switch($curso->estado_curso)
                         @case('PROXIMO')

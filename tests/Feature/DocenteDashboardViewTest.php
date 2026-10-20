@@ -172,7 +172,7 @@ class DocenteDashboardViewTest extends TestCase
     {
         $docente = $this->crearDocente();
         $curso = $this->crearCurso('C', 'Décimo Primer Grado', 'Media', 2025);
-        $materia = $this->crearMateria('Matemáticas', 'MAT00001');
+        $materia = $this->crearMateria('Materia Regular A', 'MAT00001');
         $detalle = $this->crearDetalle($docente, $curso, $materia);
         $this->crearAsignacion($detalle, $docente, 'activa');
 
@@ -205,7 +205,7 @@ class DocenteDashboardViewTest extends TestCase
     {
         $docente = $this->crearDocente();
         $curso = $this->crearCurso();
-        $materia = $this->crearMateria('Lenguaje y Comunicación', 'MAT-LC-001');
+        $materia = $this->crearMateria('Materia Regular D', 'MAT-LC-001');
         $detalle = $this->crearDetalle($docente, $curso, $materia);
         $this->crearAsignacion($detalle, $docente, 'activa');
 
@@ -213,7 +213,7 @@ class DocenteDashboardViewTest extends TestCase
             ->get(route('docente.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Lenguaje y Comunicación', false);
+        $response->assertSee('Materia Regular D', false);
         $response->assertSee('MAT-LC-001', false);
     }
 

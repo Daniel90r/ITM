@@ -8,8 +8,11 @@ use App\Models\Alumno;
 use App\Models\Curso;
 use App\Models\Materia;
 use App\Models\DetalleCurso;
+use App\Services\EncargadoInscripcion;
+use App\Services\ReactivarInscripcion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class InscripcionController extends Controller
@@ -39,6 +42,11 @@ class InscripcionController extends Controller
 
         try {
             DB::transaction(function () use ($request) {
+                // Compartir el bloqueo por alumno con solicitudes, aprobación y reactivación.
+                Alumno::lockForUpdate()->findOrFail($request->alumno_id);
+                if (Inscripcion::bloqueaNuevaSolicitud((int) $request->alumno_id)) {
+                    throw ValidationException::withMessages(['alumno_id' => 'El alumno ya tiene una solicitud pendiente o una inscripción aprobada.']);
+                }
                 $curso = Curso::query()
                     ->lockForUpdate()
                     ->findOrFail($request->curso_id);
@@ -52,7 +60,7 @@ class InscripcionController extends Controller
                 $inscritosActuales = Inscripcion::query()
                     ->where('curso_id', $curso->id)
                     ->where('estado', 'aprobada')
-                    ->count();
+                    ->lockForUpdate()->get(['id'])->count();
 
                 if ($inscritosActuales >= Curso::CUPOS_MAXIMO) {
                     throw ValidationException::withMessages([
@@ -81,19 +89,44 @@ class InscripcionController extends Controller
         return redirect()->route('admin.inscripciones')->with('success', 'Inscripción desactivada correctamente.');
     }
 
-    public function solicitudes()
+    public function solicitudes(Request $request)
     {
-        $inscripciones = Inscripcion::with(['alumno', 'curso'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
+        $validated = $request->validate([
+            'estado' => 'nullable|in:todos,pendiente,aprobada,rechazada,inactiva,otros',
+            'q' => 'nullable|string|max:100',
+        ]);
+        $estadoFiltro = $validated['estado'] ?? 'todos';
+        $busqueda = trim($validated['q'] ?? '');
+        $estadosConocidos = ['pendiente', 'aprobada', 'rechazada', 'inactiva'];
+        // Los contadores son globales y proceden de la misma tabla que el listado.
+        $porEstado = Inscripcion::selectRaw('estado, COUNT(*) AS cantidad')->groupBy('estado')->pluck('cantidad', 'estado');
         $conteos = [
-            'pendientes' => Inscripcion::pendiente()->count(),
-            'aprobadas'  => Inscripcion::aprobada()->count(),
-            'rechazadas' => Inscripcion::rechazada()->count(),
+            'pendientes' => (int) $porEstado->get('pendiente', 0),
+            'aprobadas' => (int) $porEstado->get('aprobada', 0),
+            'rechazadas' => (int) $porEstado->get('rechazada', 0),
+            'inactivas' => (int) $porEstado->get('inactiva', 0),
+            'total' => (int) $porEstado->sum(),
         ];
+        $conteos['otros'] = $conteos['total'] - $conteos['pendientes'] - $conteos['aprobadas'] - $conteos['rechazadas'] - $conteos['inactivas'];
 
-        return view('admin.solicitudes', compact('inscripciones', 'conteos'));
+        $consulta = Inscripcion::with(['alumno', 'curso']);
+        $reactivacionDisponible = Schema::hasTable('reactivaciones_inscripcion');
+        if ($reactivacionDisponible) $consulta->with('reactivacion.administrador');
+        if (in_array($estadoFiltro, $estadosConocidos, true)) {
+            $consulta->where('estado', $estadoFiltro);
+        } elseif ($estadoFiltro === 'otros') {
+            $consulta->where(fn ($query) => $query->whereNotIn('estado', $estadosConocidos)->orWhereNull('estado'));
+        }
+        foreach (preg_split('/\s+/u', $busqueda, -1, PREG_SPLIT_NO_EMPTY) as $termino) {
+            $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';
+            $consulta->whereHas('alumno', fn ($query) => $query
+                ->whereRaw("nombre LIKE ? ESCAPE '!'", [$patron])
+                ->orWhereRaw("apellido LIKE ? ESCAPE '!'", [$patron])
+                ->orWhereRaw("codigo LIKE ? ESCAPE '!'", [$patron]));
+        }
+        $inscripciones = $consulta->orderByDesc('created_at')->orderByDesc('id')->paginate(10)->withQueryString();
+
+        return view('admin.solicitudes', compact('inscripciones', 'conteos', 'estadoFiltro', 'busqueda', 'reactivacionDisponible'));
     }
 
     public function pendientesCount()
@@ -113,15 +146,32 @@ class InscripcionController extends Controller
 
         try {
             DB::transaction(function () use ($inscripcion) {
+                // Mismo orden de bloqueos que el portal y la reactivación.
+                $alumno = Alumno::lockForUpdate()->findOrFail($inscripcion->alumno_id);
+                // También para solicitudes antiguas: validar el expediente actual.
+                // El JSON y el PDF históricos se conservan, pero no autorizan crear,
+                // vincular ni modificar encargados. Si falta el vínculo, Administración
+                // debe regularizarlo antes de aprobar.
+                app(EncargadoInscripcion::class)->exigir($alumno);
+
                 $curso = Curso::query()
                     ->lockForUpdate()
                     ->findOrFail($inscripcion->curso_id);
+
+                $inscripcion = Inscripcion::lockForUpdate()->findOrFail($inscripcion->id);
+                if ($inscripcion->estado !== 'pendiente') {
+                    throw ValidationException::withMessages(['inscripcion' => 'Solo se pueden aprobar solicitudes pendientes.']);
+                }
+                if (Inscripcion::where('alumno_id', $alumno->id)->where('id', '!=', $inscripcion->id)
+                    ->whereIn('estado', ['pendiente', 'aprobada'])->exists()) {
+                    throw ValidationException::withMessages(['inscripcion' => 'El alumno ya tiene otra inscripción pendiente o aprobada.']);
+                }
 
                 $inscritosActuales = Inscripcion::query()
                     ->where('curso_id', $curso->id)
                     ->where('estado', 'aprobada')
                     ->where('id', '!=', $inscripcion->id)
-                    ->count();
+                    ->lockForUpdate()->get(['id'])->count();
 
                 if ($inscritosActuales >= Curso::CUPOS_MAXIMO) {
                     throw ValidationException::withMessages([
@@ -161,6 +211,8 @@ class InscripcionController extends Controller
                         ['updated_at']
                     );
                 }
+
+
 
                 $inscripcion->update(['estado' => 'aprobada', 'activa' => 1]);
             });
@@ -203,19 +255,38 @@ class InscripcionController extends Controller
             return back()->with('error', 'Solo se pueden reabrir solicitudes rechazadas.');
         }
 
-        // Antes de reabrir: sin otra aprobada y sin otra pendiente.
-        if (Inscripcion::tieneAprobada($inscripcion->alumno_id)) {
-            return back()->with('error', 'El alumno ya tiene una inscripción aprobada.');
+        return DB::transaction(function () use ($inscripcion) {
+            Alumno::lockForUpdate()->findOrFail($inscripcion->alumno_id);
+            Curso::lockForUpdate()->findOrFail($inscripcion->curso_id);
+            $inscripcion = Inscripcion::lockForUpdate()->findOrFail($inscripcion->id);
+            if ($inscripcion->estado !== 'rechazada') {
+                return back()->with('error', 'Solo se pueden reabrir solicitudes rechazadas.');
+            }
+            // Antes de reabrir: sin otra aprobada y sin otra pendiente.
+            if (Inscripcion::tieneAprobada($inscripcion->alumno_id)) {
+                return back()->with('error', 'El alumno ya tiene una inscripción aprobada.');
+            }
+
+            if (Inscripcion::tienePendiente($inscripcion->alumno_id, $inscripcion->id)) {
+                return back()->with('error', 'El alumno ya tiene una solicitud pendiente.');
+            }
+
+            // RECHAZADA → PENDIENTE (vuelve a revisión, sin asignar al curso aún).
+            // Al reabrir se limpia el motivo del rechazo previo.
+            $inscripcion->update(['estado' => 'pendiente', 'activa' => 0, 'motivo_rechazo' => null]);
+
+            return back()->with('success', 'Solicitud reabierta correctamente.');
+        });
+    }
+
+    public function reactivar(Request $request, int $id, ReactivarInscripcion $reactivar)
+    {
+        $validated = $request->validate(['motivo_reactivacion' => 'required|string|min:10|max:500']);
+        try {
+            $reactivar->ejecutar($id, $request->user(), $validated['motivo_reactivacion']);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput($request->only('motivo_reactivacion', 'reactivacion_contexto'));
         }
-
-        if (Inscripcion::tienePendiente($inscripcion->alumno_id, $inscripcion->id)) {
-            return back()->with('error', 'El alumno ya tiene una solicitud pendiente.');
-        }
-
-        // RECHAZADA → PENDIENTE (vuelve a revisión, sin asignar al curso aún).
-        // Al reabrir se limpia el motivo del rechazo previo.
-        $inscripcion->update(['estado' => 'pendiente', 'activa' => 0, 'motivo_rechazo' => null]);
-
-        return back()->with('success', 'Solicitud reabierta correctamente.');
+        return back()->with('success', 'Inscripción reactivada correctamente. Se conservó su historial académico.');
     }
 }

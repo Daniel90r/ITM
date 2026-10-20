@@ -56,6 +56,7 @@ function initFirma(canvasId, dataId) {
     canvas.addEventListener('touchstart', iniciar,   { passive: false });
     canvas.addEventListener('touchmove',  dibujar,   { passive: false });
     canvas.addEventListener('touchend',   terminar);
+    canvas.addEventListener('touchcancel', terminar);
 }
 
 function limpiarFirma(canvasId, dataId) {
@@ -73,6 +74,9 @@ function limpiarFirma(canvasId, dataId) {
 }
 
 function enviarSolicitud() {
+    const formulario = document.getElementById('formInscripcion');
+    if (!formulario || formulario.dataset.encargadoBloqueado === '1') return;
+
     const firmaAlumnoInput = document.getElementById('firmaAlumnoData');
     const firmaEncargadoInput = document.getElementById('firmaEncargadoData');
     const curso = document.querySelector('.curso-radio:checked');
@@ -96,12 +100,7 @@ function enviarSolicitud() {
     }
 
 
-    const formulario = document.getElementById('formInscripcion');
-
-
-    if (formulario) {
-        formulario.submit();
-    }
+    if (formulario.reportValidity()) formulario.submit();
 }
 
 window.limpiarFirma = limpiarFirma;

@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\Test;
 class CursoProximoInscripcionTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\ConEncargadoOficial;
 
     private User $alumnoUser;
     private Alumno $alumno;
@@ -29,6 +30,7 @@ class CursoProximoInscripcionTest extends TestCase
             'apellido' => 'Montes',
             'codigo' => 'A001',
         ]);
+        $this->prepararEncargadoOficial($this->alumno);
     }
 
     private function crearCurso(string $nombre, array $attrs = []): Curso
@@ -208,7 +210,7 @@ class CursoProximoInscripcionTest extends TestCase
             ->post(route('alumno.inscripcion.enviar'), [
                 'curso_id' => $activo->id,
                 'alumno_dui' => '12345678-9',
-                'encargado_nombre' => 'Maria Montes',
+                'encargado_nombre' => 'Maria', 'encargado_apellido' => 'Montes',
                 'encargado_parentesco' => 'Madre',
                 'encargado_dui' => '87654321-9',
                 'encargado_telefo' => '70000000',
@@ -536,7 +538,7 @@ class CursoProximoInscripcionTest extends TestCase
             ->post(route('alumno.inscripcion.enviar'), [
                 'curso_id' => $inactivo->id,
                 'alumno_dui' => '12345678-9',
-                'encargado_nombre' => 'Maria Montes',
+                'encargado_nombre' => 'Maria', 'encargado_apellido' => 'Montes',
                 'encargado_parentesco' => 'Madre',
                 'encargado_dui' => '87654321-9',
                 'encargado_telefono' => '70000000',

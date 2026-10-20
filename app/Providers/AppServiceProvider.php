@@ -9,6 +9,13 @@ use App\Models\Inscripcion;
 
 class AppServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->scoped(\App\Services\ControlTransicionDocumental::class);
+        $this->app->scoped(\App\Services\AutorizacionTransicionDocumental::class);
+        $this->app->singleton(\App\Contracts\RegistroConsumosIndependiente::class, \App\Services\RegistroConsumosNoDisponible::class);
+    }
+
     public function boot(): void
     {
         Schema::defaultStringLength(191);

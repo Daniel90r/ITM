@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 class InscripcionReintentoTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\ConEncargadoOficial;
 
     private User $alumnoUser;
     private User $admin;
@@ -33,6 +34,7 @@ class InscripcionReintentoTest extends TestCase
             'user_id' => $this->alumnoUser->id,
             'codigo' => 'ALU-REINT-001',
         ]);
+        $this->prepararEncargadoOficial($this->alumno);
 
         $this->cursoA = Curso::factory()->create([
             'nombre' => 'Curso A',
@@ -316,7 +318,7 @@ class InscripcionReintentoTest extends TestCase
                 'curso_id' => $this->cursoA->id,
                 'tomara_ingles' => false,
                 'alumno_dui' => '12345678-9',
-                'encargado_nombre' => 'Encargado',
+                'encargado_nombre' => 'Encargado', 'encargado_apellido' => 'Test',
                 'encargado_parentesco' => 'Padre',
                 'encargado_dui' => '12345678-9',
                 'encargado_telefono' => '7777-8888',
@@ -367,7 +369,7 @@ class InscripcionReintentoTest extends TestCase
                 'curso_id' => $this->cursoA->id,
                 'tomara_ingles' => false,
                 'alumno_dui' => '12345678-9',
-                'encargado_nombre' => 'Encargado',
+                'encargado_nombre' => 'Encargado', 'encargado_apellido' => 'Test',
                 'encargado_parentesco' => 'Padre',
                 'encargado_dui' => '12345678-9',
                 'encargado_telefono' => '7777-8888',
@@ -430,7 +432,7 @@ class InscripcionReintentoTest extends TestCase
                 'curso_id' => $this->cursoA->id,
                 'tomara_ingles' => false,
                 'alumno_dui' => '12345678-9',
-                'encargado_nombre' => 'Encargado',
+                'encargado_nombre' => 'Encargado', 'encargado_apellido' => 'Test',
                 'encargado_parentesco' => 'Padre',
                 'encargado_dui' => '12345678-9',
                 'encargado_telefono' => '7777-8888',

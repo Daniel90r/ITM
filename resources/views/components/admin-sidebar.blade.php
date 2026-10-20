@@ -24,6 +24,10 @@
     </a>
 
     {{-- GESTIÓN --}}
+    <a href="{{ route('admin.reportes') }}" class="sidebar-link {{ $active === 'reportes' ? 'active' : '' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v18h17M8 17v-5m5 5V7m5 10V4"/></svg>
+        Reportes
+    </a>
     <p style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:.1em; font-weight:600; padding:10px 8px 3px; margin:0;">GESTIÓN</p>
 
     <a href="{{ route('admin.alumnos') }}" class="sidebar-link {{ $active === 'alumnos' ? 'active' : '' }}">
@@ -34,6 +38,11 @@
     <a href="{{ route('admin.maestros') }}" class="sidebar-link {{ $active === 'maestros' ? 'active' : '' }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-0 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Maestros
+    </a>
+
+    <a href="{{ route('admin.directores.index') }}" class="sidebar-link {{ $active === 'directores' ? 'active' : '' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M15 11h6v6h-6z"/></svg>
+        Directores
     </a>
 
     {{-- ACADÉMICO --}}

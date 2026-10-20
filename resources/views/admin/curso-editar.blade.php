@@ -1,5 +1,5 @@
 <x-app-layout>
-<div style="display:flex; height:100vh; overflow:hidden;">
+<div class="curso-horarios-edicion" style="display:flex; height:100vh; overflow:hidden;">
 
     @include('components.admin-sidebar', ['active' => 'cursos'])
 
@@ -34,7 +34,7 @@
 
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre</label>
-                        <input type="text" name="nombre" value="{{ old('nombre', $curso->nombre) }}" required
+                        <input type="text" name="nombre" value="{{ old('nombre', $curso->nombre) }}" required maxlength="100"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
@@ -50,7 +50,7 @@
 
                     <div>
                         <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Sección</label>
-                        <input type="text" name="seccion" value="{{ old('seccion', $curso->seccion) }}" required
+                        <input type="text" name="seccion" value="{{ old('seccion', $curso->seccion) }}" required maxlength="20"
                             style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
                             onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
                     </div>
@@ -104,6 +104,7 @@
                         @endif
                     </div>
 
+                    @include('admin.partials.horario-semanal', ['curso' => $curso])
                      <div style="display:flex; gap:10px; padding-top:4px;">
             <a href="{{ route('admin.cursos') }}"
                            style="flex:1; padding:10px; border-radius:10px; background:#f3f4f6; color:#374151; font-size:13px; font-weight:600; border:none; cursor:pointer; text-align:center; text-decoration:none;"
@@ -121,4 +122,7 @@
         </div>
     </div>
 </div>
+@push('scripts')
+@vite('resources/js/admin/cursos.js')
+@endpush
 </x-app-layout>

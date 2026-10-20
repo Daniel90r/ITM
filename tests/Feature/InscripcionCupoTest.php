@@ -46,7 +46,7 @@ class InscripcionCupoTest extends TestCase
     public function no_se_puede_aprobar_inscripcion_si_curso_ya_tiene_20_aprobadas(): void
     {
         for ($i = 0; $i < 20; $i++) {
-            $alumno = Alumno::factory()->create();
+            $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::factory()->create([
                 'alumno_id' => $alumno->id,
                 'curso_id' => $this->curso->id,
@@ -54,7 +54,7 @@ class InscripcionCupoTest extends TestCase
             ]);
         }
 
-        $nuevoAlumno = Alumno::factory()->create();
+        $nuevoAlumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $nuevoAlumno->id,
             'curso_id' => $this->curso->id,
@@ -75,7 +75,7 @@ class InscripcionCupoTest extends TestCase
     public function pendientes_no_ocupan_cupo(): void
     {
         for ($i = 0; $i < 20; $i++) {
-            $alumno = Alumno::factory()->create();
+            $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::factory()->create([
                 'alumno_id' => $alumno->id,
                 'curso_id' => $this->curso->id,
@@ -83,7 +83,7 @@ class InscripcionCupoTest extends TestCase
             ]);
         }
 
-        $nuevoAlumno = Alumno::factory()->create();
+        $nuevoAlumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $nuevoAlumno->id,
             'curso_id' => $this->curso->id,
@@ -104,7 +104,7 @@ class InscripcionCupoTest extends TestCase
     public function rechazadas_no_ocupan_cupo(): void
     {
         for ($i = 0; $i < 20; $i++) {
-            $alumno = Alumno::factory()->create();
+            $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::factory()->create([
                 'alumno_id' => $alumno->id,
                 'curso_id' => $this->curso->id,
@@ -112,7 +112,7 @@ class InscripcionCupoTest extends TestCase
             ]);
         }
 
-        $nuevoAlumno = Alumno::factory()->create();
+        $nuevoAlumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $nuevoAlumno->id,
             'curso_id' => $this->curso->id,
@@ -133,7 +133,7 @@ class InscripcionCupoTest extends TestCase
     public function con_19_aprobadas_se_puede_aprobar_una_mas(): void
     {
         for ($i = 0; $i < 19; $i++) {
-            $alumno = Alumno::factory()->create();
+            $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::factory()->create([
                 'alumno_id' => $alumno->id,
                 'curso_id' => $this->curso->id,
@@ -141,7 +141,7 @@ class InscripcionCupoTest extends TestCase
             ]);
         }
 
-        $nuevoAlumno = Alumno::factory()->create();
+        $nuevoAlumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $nuevoAlumno->id,
             'curso_id' => $this->curso->id,
@@ -162,7 +162,7 @@ class InscripcionCupoTest extends TestCase
     public function con_20_aprobadas_se_rechaza_la_numero_21(): void
     {
         for ($i = 0; $i < 20; $i++) {
-            $alumno = Alumno::factory()->create();
+            $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
             Inscripcion::factory()->create([
                 'alumno_id' => $alumno->id,
                 'curso_id' => $this->curso->id,
@@ -170,7 +170,7 @@ class InscripcionCupoTest extends TestCase
             ]);
         }
 
-        $nuevoAlumno = Alumno::factory()->create();
+        $nuevoAlumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $nuevoAlumno->id,
             'curso_id' => $this->curso->id,
@@ -190,7 +190,7 @@ class InscripcionCupoTest extends TestCase
     #[Test]
     public function una_inscripcion_aprobada_no_se_duplica(): void
     {
-        $alumno = Alumno::factory()->create();
+        $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $alumno->id,
             'curso_id' => $this->curso->id,
@@ -210,7 +210,7 @@ class InscripcionCupoTest extends TestCase
     #[Test]
     public function tomara_ingles_se_asigna_unicamente_al_aprobar(): void
     {
-        $alumno = Alumno::factory()->create();
+        $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $alumno->id,
             'curso_id' => $this->curso->id,
@@ -233,7 +233,7 @@ class InscripcionCupoTest extends TestCase
     #[Test]
     public function si_solicitud_es_rechazada_ingles_no_se_asigna(): void
     {
-        $alumno = Alumno::factory()->create();
+        $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $alumno->id,
             'curso_id' => $this->curso->id,
@@ -260,7 +260,7 @@ class InscripcionCupoTest extends TestCase
     {
         $this->ingles->update(['activa' => false]);
 
-        $alumno = Alumno::factory()->create();
+        $alumno = Alumno::factory()->create(['fecha_nacimiento' => now()->subYears(25)->toDateString()]);
         $solicitud = Inscripcion::factory()->create([
             'alumno_id' => $alumno->id,
             'curso_id' => $this->curso->id,
