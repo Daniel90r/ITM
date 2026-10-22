@@ -169,4 +169,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.directores.firma.update');
     Route::get('/admin/directores/{director}/firma', [\App\Http\Controllers\Admin\DirectorController::class, 'showFirma'])
         ->name('admin.directores.firma.show');
+
+    // ADMINISTRADOR: Copias de seguridad
+    Route::get('/admin/respaldos', [\App\Http\Controllers\Admin\RespaldoController::class, 'index'])
+        ->name('admin.respaldos');
+    Route::post('/admin/respaldos', [\App\Http\Controllers\Admin\RespaldoController::class, 'store'])
+        ->middleware('throttle:6,1')->name('admin.respaldos.store');
+    Route::get('/admin/respaldos/{archivo}/descargar', [\App\Http\Controllers\Admin\RespaldoController::class, 'descargar'])
+        ->where('archivo', '[A-Za-z0-9_\-.]+')->name('admin.respaldos.descargar');
+    Route::delete('/admin/respaldos/{archivo}', [\App\Http\Controllers\Admin\RespaldoController::class, 'destroy'])
+        ->where('archivo', '[A-Za-z0-9_\-.]+')->name('admin.respaldos.destroy');
 });
