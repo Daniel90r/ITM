@@ -51,21 +51,21 @@
             <div class="card-grid-3">
                 <div class="stat-card">
                     <div class="stat-icon-box icon-box-amber">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1 2 2H6a2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+                        <x-icono nombre="inscripciones" tamano="16" stroke="#3b82f6" />
                     </div>
                     <p style="font-size:24px; font-weight:700; color:#1f2937; margin:0 0 4px;">{{ $inscripcion ? 'Inscrito' : 'Sin sección' }}</p>
                     <p style="font-size:12px; color:#6b7280; margin:0;">Estado de inscripción</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon-box icon-box-amber">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 0 0 0-2 2v16a2 0 0 0 2 2h12a2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <x-icono nombre="boletas" tamano="16" stroke="#f59e0b" />
                     </div>
                     <p style="font-size:24px; font-weight:700; color:#1f2937; margin:0 0 4px;">{{ $notas->count() }}</p>
                     <p style="font-size:12px; color:#6b7280; margin:0;">Notas registradas</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon-box icon-box-amber">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        <x-icono nombre="mensualidades" tamano="16" stroke="#f59e0b" />
                     </div>
                     <p style="font-size:24px; font-weight:700; color:#1f2937; margin:0 0 4px;">—</p>
                     <p style="font-size:12px; color:#6b7280; margin:0;">Pagos pendientes</p>

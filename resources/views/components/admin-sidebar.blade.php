@@ -19,29 +19,29 @@
     <p style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:.1em; font-weight:600; padding:10px 8px 3px; margin:0;">PRINCIPAL</p>
 
     <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ $active === 'dashboard' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <x-icono nombre="panel" />
         Panel principal
     </a>
 
     {{-- GESTIÓN --}}
     <a href="{{ route('admin.reportes') }}" class="sidebar-link {{ $active === 'reportes' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v18h17M8 17v-5m5 5V7m5 10V4"/></svg>
+        <x-icono nombre="reportes" />
         Reportes
     </a>
     <p style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:.1em; font-weight:600; padding:10px 8px 3px; margin:0;">GESTIÓN</p>
 
     <a href="{{ route('admin.alumnos') }}" class="sidebar-link {{ $active === 'alumnos' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <x-icono nombre="alumnos" />
         Alumnos
     </a>
 
     <a href="{{ route('admin.maestros') }}" class="sidebar-link {{ $active === 'maestros' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-0 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <x-icono nombre="maestros" />
         Maestros
     </a>
 
     <a href="{{ route('admin.directores.index') }}" class="sidebar-link {{ $active === 'directores' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M15 11h6v6h-6z"/></svg>
+        <x-icono nombre="directores" />
         Directores
     </a>
 
@@ -49,17 +49,17 @@
     <p style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:.1em; font-weight:600; padding:10px 8px 3px; margin:0;">ACADÉMICO</p>
 
     <a href="{{ route('admin.materias') }}" class="sidebar-link {{ $active === 'materias' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6.5"/></svg>
+        <x-icono nombre="materias" />
         Materias
     </a>
 
     <a href="{{ route('admin.cursos') }}" class="sidebar-link {{ $active === 'cursos' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <x-icono nombre="cursos" />
         Cursos
     </a>
 
     <a href="{{ route('admin.solicitudes') }}" class="sidebar-link {{ $active === 'solicitudes' ? 'active' : '' }}">
-    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+    <x-icono nombre="solicitudes" />
     <span>Solicitudes</span>
     <span
         data-solicitudes-badge
@@ -72,22 +72,22 @@
     </a>
 
     <a href="{{ route('admin.inscripciones') }}" class="sidebar-link {{ $active === 'inscripciones' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        <x-icono nombre="inscripciones" />
         Alumnos inscritos
     </a>
 
     <a href="{{ route('admin.asistencias') }}" class="sidebar-link {{ $active === 'asistencias' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-0 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+        <x-icono nombre="asistencias" />
         Asistencias
     </a>
 
     <a href="{{ route('admin.notas') }}" class="sidebar-link {{ $active === 'notas' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <x-icono nombre="notas" />
         Notas
     </a>
 
     <a href="{{ route('admin.boletas') }}" class="sidebar-link {{ $active === 'boletas' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <x-icono nombre="boletas" />
         Boletas
     </a>
 
@@ -95,12 +95,12 @@
     <p style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:.1em; font-weight:600; padding:10px 8px 3px; margin:0;">FINANZAS</p>
 
     <a href="{{ route('admin.mensualidades') }}" class="sidebar-link {{ $active === 'mensualidades' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <x-icono nombre="mensualidades" />
         Mensualidades
     </a>
 
     <a href="{{ route('admin.pagos') }}" class="sidebar-link {{ $active === 'pagos' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <x-icono nombre="pagos" />
         Pagos
     </a>
 
@@ -108,7 +108,7 @@
     <p style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:.1em; font-weight:600; padding:10px 8px 3px; margin:0;">SISTEMA</p>
 
     <a href="{{ route('admin.respaldos') }}" class="sidebar-link {{ $active === 'respaldos' ? 'active' : '' }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <x-icono nombre="respaldos" />
         Copias de seguridad
     </a>
 
