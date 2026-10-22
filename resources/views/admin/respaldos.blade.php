@@ -85,7 +85,10 @@
                                     <td style="padding:12px 18px; text-align:right; white-space:nowrap;">
                                         <a href="{{ route('admin.respaldos.descargar', $respaldo['nombre']) }}" style="display:inline-block; background:#eff6ff; color:#2563eb; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; text-decoration:none;">Descargar</a>
                                         <form method="POST" action="{{ route('admin.respaldos.destroy', $respaldo['nombre']) }}" style="display:inline;"
-                                              onsubmit="return confirm('¿Eliminar la copia {{ $respaldo['nombre'] }}? Esta acción no se puede deshacer.');">
+                                              data-confirm="Se eliminará la copia {{ $respaldo['nombre'] }}. Esta acción no se puede deshacer."
+                                              data-confirm-titulo="¿Eliminar copia de seguridad?"
+                                              data-confirm-boton="Sí, eliminar"
+                                              data-confirm-tipo="peligro">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" style="background:#fef2f2; color:#dc2626; border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; margin-left:6px;">Eliminar</button>
