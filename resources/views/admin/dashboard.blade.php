@@ -34,15 +34,15 @@
              al tocar esas partaes nosllevara a la parte que correponde  --}}
             <div class="card-grid-4">
                 @foreach([
-                    [$totalAlumnos,'Alumnos inscritos','#dbeafe','#1d4ed8','M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', route('admin.alumnos')],
-                    [$totalMaestros,'Maestros activos','#fef3c7','#b45309','M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5', route('admin.maestros')],
-                    [$totalMaterias,'Materias activas','#d1fae5','#065f46','M4 19.5A2.5 2.5 0 0 1 6.5 17H20', route('admin.materias')],
-                    [$pagosPendientes,'Pagos pendientes','#fee2e2','#991b1b','M12 1v22', route('admin.pagos')],
-                ] as [$val,$label,$bg,$color,$path,$href])
+                    [$totalAlumnos,'Alumnos inscritos','#dbeafe','#1d4ed8','alumnos', route('admin.alumnos')],
+                    [$totalMaestros,'Maestros activos','#fef3c7','#b45309','maestros', route('admin.maestros')],
+                    [$totalMaterias,'Materias activas','#d1fae5','#065f46','materias', route('admin.materias')],
+                    [$pagosPendientes,'Pagos pendientes','#fee2e2','#991b1b','pagos', route('admin.pagos')],
+                ] as [$val,$label,$bg,$color,$icono,$href])
                 <a href="{{ $href }}" style="text-decoration:none;">
                     <div class="stat-card-white">
                         <div class="stat-icon-box" style="background:{{ $bg }};">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="{{ $color }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $path }}"/><circle cx="9" cy="7" r="4"/></svg>
+                            <x-icono :nombre="$icono" tamano="18" :stroke="$color" />
                         </div>
                         <p style="font-size:26px; font-weight:700; color:#0f172a; margin:0 0 4px;">{{ $val }}</p>
                         <p style="font-size:12px; color:#64748b; margin:0;">{{ $label }}</p>
