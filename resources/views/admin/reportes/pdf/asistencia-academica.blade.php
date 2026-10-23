@@ -1,0 +1,4 @@
+        <table class="academica">
+            <tr><td><span class="etiqueta">CURSO</span><br>{{ $detalle->curso->nombre }} · {{ $detalle->curso->seccion }} · {{ $detalle->curso->anio_lectivo }}</td><td><span class="etiqueta">MATERIA</span><br>{{ $detalle->materia->nombre }}</td><td><span class="etiqueta">DOCENTE</span><br>{{ $docente }}</td></tr>
+            <tr><td><span class="etiqueta">HORARIO DEL CURSO</span><br>{{ implode('; ', $horarios) }}</td><td><span class="etiqueta">MES / MESES REGISTRADOS</span><br>{{ $fechas->map(fn ($f) => \Carbon\Carbon::parse($f)->locale('es')->translatedFormat('F Y'))->unique()->implode(', ') ?: 'Sin registros en el período' }}</td><td><span class="etiqueta">PERÍODO CONSULTADO</span><br>{{ $filtros['fecha_desde'] ?? 'Sin límite inicial' }} a {{ $filtros['fecha_hasta'] ?? 'Sin límite final' }}</td></tr>
+        </table>

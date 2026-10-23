@@ -1,12 +1,12 @@
+@php($staffResponsive = auth()->check() && in_array(auth()->user()->role, ['admin', 'docente'], true) && request()->routeIs('admin.*', 'docente.*') && !request()->routeIs('docente.asistencia.reporte'))
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>ITM Aguilares — {{ config('app.name', 'Sistema Académico') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logo_itm.jpg') }}">
-    <link rel="shortcut icon" href="{{ asset('images/logo_itm.jpg') }}">
+    <title>ITM Aguilares</title>
+    <x-institutional-favicon />
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=dm-sans:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -22,8 +22,14 @@
             text-security: disc;
         }
     </style>
+    @if($staffResponsive)
+        <style>{!! file_get_contents(resource_path('css/staff/responsive.css')) !!}</style>
+    @endif
 </head>
-<body class="font-sans" style="background:#0f172a; margin:0;">
+<body class="font-sans{{ $staffResponsive ? ' itm-staff' : '' }}" style="background:#0f172a; margin:0;">
+    @if($staffResponsive)
+        @include('components.staff-mobile-bar')
+    @endif
     {{ $slot }}
     @stack('scripts')
     <script>
@@ -50,6 +56,9 @@
             }
         });
     </script>
+    @if($staffResponsive)
+        <script>{!! file_get_contents(resource_path('js/staff/responsive.js')) !!}</script>
+    @endif
 </body>
 </html>
 <style>

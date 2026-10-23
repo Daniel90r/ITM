@@ -8,7 +8,8 @@
     {{-- ───────────────────────────────────────────────────────────────────────────────────────── --}}
     {{-- DOCENTE: SIDEBAR --}}
     {{-- ───────────────────────────────────────────────────────────────────────────────────────── --}}
-    <aside class="sidebar sidebar-scroll">
+    <aside id="staff-navigation" data-staff-sidebar aria-label="Docente" class="sidebar sidebar-scroll">
+    @include('components.staff-menu-close')
 
         <div class="sidebar-brand">
             <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM Aguilares" class="sidebar-brand-img">

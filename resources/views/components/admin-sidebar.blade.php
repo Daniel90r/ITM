@@ -4,7 +4,8 @@
      que ya lo calculó. Esta vista NUNCA consulta la base de datos. --}}
 @php($solicitudesPendientes = $solicitudesPendientes ?? 0)
 
-<aside style="width:220px; flex-shrink:0; background:#ffffff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; padding:20px 12px; gap:2px; overflow-y:auto;">
+<aside id="staff-navigation" data-staff-sidebar aria-label="Administración" style="width:220px; flex-shrink:0; background:#ffffff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; padding:20px 12px; gap:2px; overflow-y:auto;">
+    @include('components.staff-menu-close')
 
     {{-- Logo --}}
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #e5e7eb; flex-shrink:0;">

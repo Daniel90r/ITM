@@ -4,8 +4,7 @@
     .boleta-layout { display:flex; height:100vh; overflow:hidden; }
     .boleta-layout .boleta-main { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc; }
     .boleta-layout .boleta-header { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:18px 24px; background:#fff; border-bottom:1px solid #e5e7eb; }
-    .boleta-layout .boleta-heading { display:flex; align-items:center; gap:12px; min-width:0; }
-    .boleta-layout .boleta-back { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; flex-shrink:0; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:9px; color:#4b5563; }
+    .boleta-layout .boleta-heading { display:flex; flex-wrap:wrap; align-items:center; gap:12px; min-width:0; }
     .boleta-layout .boleta-title { margin:0; font-size:18px; font-weight:700; color:#111827; }
     .boleta-layout .boleta-subtitle { margin:4px 0 0; font-size:12px; color:#6b7280; }
     .boleta-layout .boleta-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-left:auto; }
@@ -105,9 +104,7 @@
     <main class="boleta-main">
         <header class="boleta-header">
             <div class="boleta-heading">
-                <a class="boleta-back" href="{{ route('admin.boletas') }}" aria-label="Volver a Boletas" title="Volver a Boletas">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                </a>
+                <x-boton-regreso :href="route('admin.boletas')">Volver a Boletas</x-boton-regreso>
                 <div><h1 class="boleta-title">Boleta de notas</h1><p class="boleta-subtitle">Vista previa · Ciclo {{ $curso?->anio_lectivo ?? '—' }}</p></div>
             </div>
             @if($curso)

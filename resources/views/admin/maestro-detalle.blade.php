@@ -59,8 +59,8 @@
     <div class="maestro-contenido" style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
 
         {{-- Header --}}
-        <header class="maestro-header" style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <div style="display:flex; align-items:center; gap:12px;">
+        <header class="maestro-header" style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
                 <div style="width:40px; height:40px; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
                     <img src="{{ asset('images/logo_itm.jpg') }}" alt="ITM" style="width:100%; height:100%; object-fit:cover;">
                 </div>
@@ -69,17 +69,13 @@
                     <p style="font-size:12px; color:#6b7280; margin:0;">{{ $maestro->nombre_completo }} — {{ $maestro->codigo }}</p>
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
                 @if($maestro->activo)
                     <span style="font-size:12px; color:#16a34a; background:#f0fdf4; padding:6px 12px; border-radius:8px;">● Activo</span>
                 @else
                     <span style="font-size:12px; color:#dc2626; background:#fef2f2; padding:6px 12px; border-radius:8px;">● Inactivo</span>
                 @endif
-                <a href="{{ route('admin.maestros') }}"
-                    style="font-size:12px; color:#6b7280; text-decoration:none; padding:6px 12px; border-radius:8px; background:#f3f4f6;"
-                    onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
-                    ← Regresar
-                </a>
+                <x-boton-regreso :href="route('admin.maestros')">Volver a Maestros</x-boton-regreso>
             </div>
         </header>
 

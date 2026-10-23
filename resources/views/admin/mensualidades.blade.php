@@ -131,6 +131,7 @@
                 <div><h1>Mensualidades</h1><p class="mp-muted">Control de pagos · Cuota mensual $25.00</p></div>
             </div>
             <div class="mp-header-actions">
+                <a class="mp-btn" href="{{ route('admin.mensualidades.historial.index') }}">Historial por alumno</a>
                 <label class="mp-cycle-label" for="cicloMensualidades">Ciclo</label>
                 <select id="cicloMensualidades" class="mp-control mp-cycle" name="anio" form="mensualidadesFiltros" onchange="this.form.requestSubmit()">
                     @foreach($aniosDisponibles as $a)<option value="{{ $a }}" @selected($a == $anioSeleccionado)>{{ $a }} {{ $a == date('Y') ? '(actual)' : '' }}</option>@endforeach
@@ -173,7 +174,8 @@
                             <div class="mp-student-row {{ $ins->registros ? 'con-mensualidades' : 'sin-mensualidades' }}">
                                 <div class="mp-student-identity">
                                     <span class="mp-student-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($ins->alumno->nombre, 0, 1).mb_substr($ins->alumno->apellido, 0, 1)) }}</span>
-                                    <div class="mp-student-info"><h3 class="mp-student-name">{{ $ins->alumno->nombre_completo }}</h3><p class="mp-student-code"><span>{{ $ins->alumno->codigo }}</span>@if($ins->registros)<span class="mp-mobile-balance" title="Pendiente en los resultados"><strong>${{ number_format($ins->saldo, 2) }}</strong> pendiente</span>@endif</p></div>
+                                    <div class="mp-student-info"><h3 class="mp-student-name">{{ $ins->alumno->nombre_completo }}</h3><p class="mp-student-code"><span>{{ $ins->alumno->codigo }}</span>@if($ins->registros)<span class="mp-mobile-balance" title="Pendiente en los resultados"><strong>${{ number_format($ins->saldo, 2) }}</strong> pendiente</span>@endif</p>
+                                    <a class="mp-btn" href="{{ route('admin.mensualidades.historial.show', ['alumno' => $ins->alumno_id, 'anio' => $anioSeleccionado]) }}">Ver historial anual</a></div>
                                 </div>
                                 <div class="mp-student-right">
                                     @if($ins->registros)

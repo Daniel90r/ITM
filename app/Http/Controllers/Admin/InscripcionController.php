@@ -10,6 +10,7 @@ use App\Models\Materia;
 use App\Models\DetalleCurso;
 use App\Services\EncargadoInscripcion;
 use App\Services\ReactivarInscripcion;
+use App\Services\ConsultaSolicitudesInscripcion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -89,15 +90,11 @@ class InscripcionController extends Controller
         return redirect()->route('admin.inscripciones')->with('success', 'Inscripción desactivada correctamente.');
     }
 
-    public function solicitudes(Request $request)
+    public function solicitudes(Request $request, ConsultaSolicitudesInscripcion $solicitudes)
     {
-        $validated = $request->validate([
-            'estado' => 'nullable|in:todos,pendiente,aprobada,rechazada,inactiva,otros',
-            'q' => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validate(ConsultaSolicitudesInscripcion::REGLAS);
         $estadoFiltro = $validated['estado'] ?? 'todos';
         $busqueda = trim($validated['q'] ?? '');
-        $estadosConocidos = ['pendiente', 'aprobada', 'rechazada', 'inactiva'];
         // Los contadores son globales y proceden de la misma tabla que el listado.
         $porEstado = Inscripcion::selectRaw('estado, COUNT(*) AS cantidad')->groupBy('estado')->pluck('cantidad', 'estado');
         $conteos = [
@@ -109,22 +106,8 @@ class InscripcionController extends Controller
         ];
         $conteos['otros'] = $conteos['total'] - $conteos['pendientes'] - $conteos['aprobadas'] - $conteos['rechazadas'] - $conteos['inactivas'];
 
-        $consulta = Inscripcion::with(['alumno', 'curso']);
         $reactivacionDisponible = Schema::hasTable('reactivaciones_inscripcion');
-        if ($reactivacionDisponible) $consulta->with('reactivacion.administrador');
-        if (in_array($estadoFiltro, $estadosConocidos, true)) {
-            $consulta->where('estado', $estadoFiltro);
-        } elseif ($estadoFiltro === 'otros') {
-            $consulta->where(fn ($query) => $query->whereNotIn('estado', $estadosConocidos)->orWhereNull('estado'));
-        }
-        foreach (preg_split('/\s+/u', $busqueda, -1, PREG_SPLIT_NO_EMPTY) as $termino) {
-            $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';
-            $consulta->whereHas('alumno', fn ($query) => $query
-                ->whereRaw("nombre LIKE ? ESCAPE '!'", [$patron])
-                ->orWhereRaw("apellido LIKE ? ESCAPE '!'", [$patron])
-                ->orWhereRaw("codigo LIKE ? ESCAPE '!'", [$patron]));
-        }
-        $inscripciones = $consulta->orderByDesc('created_at')->orderByDesc('id')->paginate(10)->withQueryString();
+        $inscripciones = $solicitudes->consulta($validated)->paginate(10)->withQueryString();
 
         return view('admin.solicitudes', compact('inscripciones', 'conteos', 'estadoFiltro', 'busqueda', 'reactivacionDisponible'));
     }

@@ -33,12 +33,24 @@ class ReportesAdministrativosTest extends TestCase
         return $this->get(route('admin.reportes.show', ['tipo' => $tipo] + $filtros))->assertOk();
     }
 
-    public function test_portada_sidebar_y_seis_reportes_vacios_son_legibles(): void
+    public function test_portada_con_cinco_tarjetas_y_seis_reportes_disponibles(): void
     {
-        $this->get(route('admin.reportes'))->assertOk()->assertSee('Selecciona un reporte')
+        $respuesta = $this->get(route('admin.reportes'))->assertOk()->assertSee('Selecciona un reporte')
             ->assertSee('sidebar-link active', false)->assertSee('Menú de administración');
+        $dom = new \DOMDocument;
+        @$dom->loadHTML('<?xml encoding="UTF-8">'.$respuesta->getContent());
+        $xpath = new \DOMXPath($dom);
+        $tarjetas = $xpath->query('//nav[@aria-label="Tipos de reporte"]/a');
+        $this->assertSame(5, $tarjetas->length);
+        foreach (['alumnos', 'cursos', 'asistencias', 'mensualidades', 'maestros'] as $i => $tipo) {
+            $tarjeta = $tarjetas->item($i);
+            $this->assertSame(route('admin.reportes.show', $tipo), $tarjeta->getAttribute('href'));
+            $this->assertStringContainsString(ReportesAdministrativos::TIPOS[$tipo], $tarjeta->textContent);
+            $this->assertSame(sprintf('%02d', $i + 1), trim($tarjeta->getElementsByTagName('span')->item(0)->textContent));
+        }
+        $respuesta->assertDontSee('href="'.route('admin.reportes.show', 'calificaciones').'"', false);
         foreach (ReportesAdministrativos::TIPOS as $tipo => $titulo) {
-            $this->reporte($tipo)->assertSee($titulo)->assertSee('No hay registros para los filtros seleccionados.')
+            $this->reporte($tipo)->assertSee($titulo)->assertSee($tipo === 'cursos' ? 'No hay cursos con inscripciones actualmente aprobadas' : ($tipo === 'alumnos' ? 'No hay alumnos inscritos para el año' : ($tipo === 'mensualidades' ? 'No hay mensualidades para el año' : 'No hay registros para los filtros seleccionados.')))
                 ->assertSee('scope="col"', false)->assertHeader('Cache-Control', 'no-store, private');
         }
     }
@@ -112,7 +124,7 @@ class ReportesAdministrativosTest extends TestCase
         Curso::factory()->create(['estado' => 'ACTIVO', 'fecha_fin' => now()->addDay()]);
         $this->reporte('cursos', ['estado' => 'FINALIZADO'])->assertViewHas('reporte', fn ($r) =>
             $r['filas']->total() === 1 && $r['filas'][0][1] === $c->estado_curso
-            && $r['filas'][0][3] === Curso::CUPOS_MAXIMO && $r['filas'][0][4] === $c->inscritos_count && $r['filas'][0][5] === 0);
+            && $r['filas'][0][5] === Curso::CUPOS_MAXIMO && $r['filas'][0][4] === $c->inscritos_count && $r['filas'][0][6] === 0);
         $this->reporte('cursos', ['curso_id' => $c->id, 'estado' => 'ACTIVO'])->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 0);
     }
 
@@ -139,7 +151,7 @@ class ReportesAdministrativosTest extends TestCase
         $this->reporte('calificaciones')->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 1);
     }
 
-    public function test_asistencias_solo_fechas_registradas_y_filtros_inclusivos(): void
+    public function test_asistencias_solo_fechas_registradas_y_periodo_mensual(): void
     {
         $d = DetalleCurso::factory()->create();
         $a = Alumno::factory()->create();
@@ -147,11 +159,11 @@ class ReportesAdministrativosTest extends TestCase
             Asistencia::create(['curso_id' => $d->curso_id, 'detalle_curso_id' => $d->id, 'alumno_id' => $a->id,
                 'registrado_por' => $d->maestro_id, 'fecha' => $fecha, 'estado' => $estado]);
         }
-        $this->reporte('asistencias')->assertViewHas('reporte', fn ($r) => $r['resumen'] === [
+        $this->reporte('asistencias', ['modalidad'=>'mensual','mes'=>10,'anio'=>2026])->assertViewHas('reporte', fn ($r) => $r['resumen'] === [
             'Registros' => 3, 'Presentes' => 1, 'Ausentes' => 1, 'Permisos' => 1]);
-        $this->reporte('asistencias', ['curso_id' => $d->curso_id, 'fecha_desde' => '2026-10-03', 'fecha_hasta' => '2026-10-03', 'estado' => 'ausente'])
+        $this->reporte('asistencias', ['curso_id' => $d->curso_id, 'modalidad'=>'mensual','mes'=>10,'anio'=>2026, 'estado' => 'ausente'])
             ->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 1 && $r['resumen']['Ausentes'] === 1);
-        $this->reporte('asistencias', ['fecha_desde' => '2026-10-02', 'fecha_hasta' => '2026-10-02'])
+        $this->reporte('asistencias', ['modalidad'=>'mensual','mes'=>11,'anio'=>2026])
             ->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 0);
     }
 
@@ -235,7 +247,7 @@ class ReportesAdministrativosTest extends TestCase
 
     public function test_pagina_resumen_total_escape_html_y_consultas_de_solo_lectura(): void
     {
-        Curso::factory()->count(26)->create();
+        Curso::factory()->count(26)->create()->each(fn ($c) => Inscripcion::factory()->create(['curso_id'=>$c->id,'estado'=>'aprobada']));
         $a = Alumno::factory()->create(['nombre' => '<script>alert(1)</script>']);
         Inscripcion::factory()->create(['alumno_id' => $a->id, 'estado' => 'aprobada']);
         DB::connection()->beforeExecuting(function (string $sql): void {
@@ -246,5 +258,91 @@ class ReportesAdministrativosTest extends TestCase
             ->assertDontSee($a->dui)->assertDontSee($a->direccion)->assertDontSee($a->telefono);
         $this->reporte('cursos', ['page' => 2])->assertViewHas('reporte', fn ($r) =>
             $r['filas']->total() === 27 && count($r['filas']) === 2 && $r['resumen']['Cursos'] === 27);
+    }
+
+    public function test_menu_y_paginas_independientes_conservan_urls(): void
+    {
+        $menu = $this->get('/admin/reportes')->assertOk()->assertViewIs('admin.reportes.index')
+            ->assertDontSee('<form method="GET"', false)->assertDontSee('25 por página')
+            ->assertSee(route('admin.solicitudes'), false);
+        foreach (ReportesAdministrativos::TIPOS as $tipo => $titulo) {
+            $this->assertSame(url('/admin/reportes/'.$tipo), route('admin.reportes.show', $tipo));
+            if ($tipo === 'calificaciones') {
+                $menu->assertDontSee(route('admin.reportes.show', $tipo), false);
+            } else {
+                $menu->assertSee(route('admin.reportes.show', $tipo), false);
+            }
+            $pagina = $this->reporte($tipo)->assertViewIs('admin.reportes.'.$tipo)
+                ->assertSee('Reporte de '.$titulo)->assertSee('Volver a Reportes')
+                ->assertDontSee('aria-label="Tipos de reporte"', false);
+            if ($tipo === 'calificaciones') {
+                $pagina->assertDontSee('>Descargar PDF<', false);
+            }
+        }
+    }
+
+    public function test_enlaces_pdf_y_paginacion_conservan_filtros_sin_exportar_page(): void
+    {
+        Curso::factory()->count(26)->create(['fecha_inicio' => null, 'fecha_fin' => null])->each(fn ($c) => Inscripcion::factory()->create(['curso_id'=>$c->id,'estado'=>'aprobada']));
+        foreach (['cursos' => ['estado' => 'SIN_FECHAS'], 'maestros' => ['estado' => 'activo'],
+            'mensualidades' => ['anio' => 2026, 'mes' => 10, 'estado' => 'Pendiente']] as $tipo => $filtros) {
+            $pagina = $this->reporte($tipo, $filtros + ['page' => 2]);
+            $this->assertEquals($tipo === 'cursos' ? $filtros + ['modalidad'=>'anual','anio'=>now('America/El_Salvador')->year] : $filtros, $pagina->viewData('filtros'));
+            $pagina->assertSee(e(route('admin.reportes.'.$tipo.'.pdf', $pagina->viewData('filtros'))), false);
+        }
+        $this->reporte('cursos', ['estado' => 'SIN_FECHAS'])->assertSee('estado=SIN_FECHAS', false)
+            ->assertSee('page=2', false);
+    }
+
+    public function test_materia_asistencia_filtra_historial_y_valida_pertenencia(): void
+    {
+        $d = DetalleCurso::factory()->create();
+        $otra = DetalleCurso::factory()->create(['curso_id' => $d->curso_id]);
+        $alumno = Alumno::factory()->create();
+        foreach ([$d, $otra] as $detalle) Asistencia::create([
+            'alumno_id' => $alumno->id, 'curso_id' => $detalle->curso_id,
+            'detalle_curso_id' => $detalle->id, 'fecha' => '2026-10-01',
+            'estado' => 'ausente', 'registrado_por' => $detalle->maestro_id,
+        ]);
+        $f = ['curso_id' => $d->curso_id, 'detalle_curso_id' => $d->id,
+            'modalidad'=>'mensual','mes'=>10,'anio'=>2026];
+        $pagina = $this->reporte('asistencias', $f)->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 1)
+            ->assertSee('PDF histórico mensual');
+        $pagina->assertSee(e(route('admin.asistencias.pdf', $pagina->viewData('filtros'))), false);
+        $paginaEstado = $this->reporte('asistencias', $f + ['estado' => 'ausente'])
+            ->assertSee('estado=ausente', false)
+            ->assertViewHas('filtros', fn ($v) => $v['estado'] === 'ausente');
+        $paginaEstado->assertSee(e(route('admin.asistencias.pdf', $paginaEstado->viewData('filtros'))), false);
+        $this->reporte('asistencias', $f + ['estado' => 'presente'])
+            ->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 0);
+        $this->reporte('asistencias', array_replace($f, ['mes' => 11]))
+            ->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 0);
+        $ajeno = DetalleCurso::factory()->create();
+        $this->getJson(route('admin.reportes.show', ['tipo' => 'asistencias',
+            'curso_id' => $d->curso_id, 'detalle_curso_id' => $ajeno->id]))->assertUnprocessable();
+        $this->getJson(route('admin.reportes.show', ['tipo' => 'asistencias',
+            'detalle_curso_id' => $d->id]))->assertUnprocessable();
+        // El PDF se obtiene desde el mismo enlace de la nueva página sin alterar su alcance.
+        $this->get(route('admin.asistencias.pdf', $f))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_asistencias_carga_materias_reales_del_curso_y_explica_vacios(): void
+    {
+        $sinMaterias = Curso::factory()->create();
+        $this->reporte('asistencias')->assertSee('Selecciona un curso')
+            ->assertDontSee('href="'.route('admin.asistencias.pdf'), false);
+        $this->reporte('asistencias', ['curso_id' => $sinMaterias->id])
+            ->assertSee('Este curso no tiene materias asignadas')
+            ->assertSee('Sin materias asignadas')->assertViewHas('detalleCursos', fn ($d) => $d->isEmpty());
+        $detalle = DetalleCurso::factory()->create();
+        $otro = DetalleCurso::factory()->create();
+        $this->reporte('asistencias', ['curso_id' => $detalle->curso_id])
+            ->assertSee($detalle->materia->nombre)
+            ->assertViewHas('detalleCursos', fn ($d) => $d->pluck('id')->all() === [$detalle->id])
+            ->assertSee('form.requestSubmit()', false)
+            ->assertSee("materia.value = ''", false)
+            ->assertSee("descarga.removeAttribute('href')", false);
+        $this->getJson(route('admin.reportes.show', ['tipo' => 'asistencias',
+            'curso_id' => $detalle->curso_id, 'detalle_curso_id' => $otro->id]))->assertUnprocessable();
     }
 }

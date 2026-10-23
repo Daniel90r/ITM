@@ -125,11 +125,7 @@
 
             {{-- Barra: volver + título + buscador de alumnos --}}
             <div style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; align-items:center; gap:14px; flex-shrink:0; flex-wrap:wrap;">
-                <button type="button" onclick="volverACursos()"
-                    style="background:none; border:1px solid #e5e7eb; color:#6b7280; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;"
-                    onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
-                    ← Cursos
-                </button>
+                <x-boton-regreso onclick="volverACursos()">Volver a Cursos</x-boton-regreso>
 
                 <div style="display:flex; align-items:center; gap:8px;">
                     <h3 id="tituloCurso" style="font-size:15px; font-weight:700; color:#111827; margin:0;"></h3>

@@ -1,0 +1,22 @@
+# EJEMPLO: no incluido por Apache activo. No aplicar sin autorización.
+# Definir DOCUMENTAL_PUBLIC_ROOT con la raíz REAL del disco public, sin barra final.
+# Ejemplo de preparación (no usar literalmente en producción):
+# Define DOCUMENTAL_PUBLIC_ROOT "C:/entorno-aislado/storage-public"
+# Incluir globalmente, cubriendo todos los VirtualHost/Alias que publiquen ese disco.
+
+# Defensa por directorio físico: también cubre Alias alternativos.
+<Directory "${DOCUMENTAL_PUBLIC_ROOT}/solicitudes">
+    AllowOverride None
+    Options None
+    Require all denied
+</Directory>
+
+# Defensa por URL: también cubre la junction public/storage de Windows.
+# El límite de segmento no bloquea /storage/solicitudes-publicas.
+<LocationMatch "(?i)^/storage/solicitudes(?:/|$)">
+    Require all denied
+</LocationMatch>
+
+# Ninguna excepción por método, IP local, cookie ni extensión.
+# Laravel descarga leyendo el archivo en PHP; no necesita acceso HTTP estático.
+# No activar compatibilidad de marcadores mediante una excepción a este bloqueo.
