@@ -111,6 +111,11 @@
                 <img class="reporte-logo" src="{{ asset('images/logo_itm.jpg') }}" alt="ITM">
                 <div>
                     <h1>Reportes de asistencia</h1>
+                    @if($cursoId && $detalleCursoId)
+                        <a class="reporte-boton" href="{{ route('admin.asistencias.pdf', $filtros) }}">Descargar PDF</a>
+                    @else
+                        <p class="reporte-descripcion">Selecciona curso y materia para descargar el Control de Asistencia PDF.</p>
+                    @endif
                     <p class="reporte-descripcion">Consulta la asistencia de los alumnos por curso, materia, docente y período.</p>
                 </div>
             </div>

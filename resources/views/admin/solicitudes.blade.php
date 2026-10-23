@@ -83,6 +83,8 @@
                         <p style="font-size:14px; font-weight:600; color:#111827; margin:0;">Solicitudes</p>
                     </div>
 
+                    <a href="{{ route('admin.reportes.inscripciones.pdf', ['estado' => $estadoFiltro, 'q' => $busqueda]) }}" style="font-size:12px; color:#111827; text-decoration:underline;">Descargar PDF</a>
+                    <x-reportes-visualizar-pdf :href="route('admin.reportes.visor', ['tipo' => 'inscripciones', 'estado' => $estadoFiltro, 'q' => $busqueda])" />
                     {{-- Filtros --}}
                     <form method="GET" action="{{ route('admin.solicitudes') }}" id="filtrosSolicitudes" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <input type="hidden" name="estado" id="estadoSolicitud" value="{{ $estadoFiltro }}">

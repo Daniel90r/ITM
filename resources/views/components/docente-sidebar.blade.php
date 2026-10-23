@@ -1,6 +1,7 @@
 @props(['maestro' => \App\Models\Maestro::where('user_id', auth()->id())->first(), 'active' => ''])
 
-<aside style="width:220px; flex-shrink:0; background:#ffffff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; padding:20px 12px; gap:2px;">
+<aside id="staff-navigation" data-staff-sidebar aria-label="Docente" style="width:220px; flex-shrink:0; background:#ffffff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; padding:20px 12px; gap:2px;">
+    @include('components.staff-menu-close')
 
     {{-- Logo --}}
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #e5e7eb;">

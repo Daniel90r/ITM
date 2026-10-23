@@ -803,7 +803,13 @@ class BoletaEmissionControllerTest extends TestCase
 
         $response->assertOk();
         // El botón debe estar habilitado (no disabled)
-        $response->assertDontSee('disabled');
+        // Comprobar el control, no palabras presentes en CSS o JavaScript compartido.
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $botones = $xpath->query('//button[contains(concat(" ", normalize-space(@class), " "), " boleta-emitir ")]');
+        $this->assertSame(1, $botones->length);
+        $this->assertFalse($botones->item(0)->hasAttribute('disabled'));
         $response->assertSee('Emitir boleta');
     }
 

@@ -89,6 +89,40 @@ class AsistenciaController extends Controller
             ->header('Cache-Control', 'private, no-store');
     }
 
+    public function pdf(Request $request, \App\Services\ControlAsistenciaPdf $informe)
+    {
+        $periodo = app(\App\Services\PeriodoAsistencia::class)->validar($request);
+        $request->validate([
+            'curso_id' => 'required|integer|exists:cursos,id',
+            'detalle_curso_id' => 'required|integer|exists:detalle_cursos,id',
+            'fecha_hasta' => ['nullable', 'date_format:Y-m-d', ...($request->filled('fecha_desde') ? ['after_or_equal:fecha_desde'] : [])],
+        ]);
+        $filtros = $this->filtros($request);
+        $detalle = DetalleCurso::with(['curso', 'materia'])->findOrFail($filtros['detalle_curso_id']);
+        abort_unless((int) $detalle->curso_id === (int) $filtros['curso_id'], 422, 'La materia no corresponde al curso seleccionado.');
+        abort_if(isset($filtros['maestro_id']) && (int) $detalle->maestro_id !== (int) $filtros['maestro_id'], 422,
+            'El docente seleccionado no corresponde a la materia.');
+        $estado = $request->validate(['estado' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Services\FiltrosHistoricosAsistencia::ESTADOS))]]);
+        $filtros = array_merge($filtros, array_filter($estado, fn ($v) => $v !== null && $v !== ''));
+        if ($periodo) $filtros = array_merge($filtros, $periodo);
+        $filtrado = !empty($filtros['estado']);
+        $servicio = $filtrado ? app(\App\Services\AsistenciaHistoricaPdf::class) : $informe;
+        $datos = !empty($filtros['modalidad'])
+            ? app(\App\Services\AsistenciasPeriodo::class)->datos($detalle, $filtros)
+            : $servicio->datos($detalle, $filtros, $this->consultaFiltrada($filtros));
+        $vista = !empty($filtros['modalidad']) ? 'admin.reportes.pdf.asistencia-periodo' : ($filtrado ? 'admin.reportes.pdf.asistencia-filtrada' : 'admin.reportes.pdf.asistencia');
+        $prefijo = !empty($filtros['modalidad']) ? 'asistencia-'.$filtros['modalidad'].'-' : ($filtrado ? 'asistencias-historicas-'.$filtros['estado'].'-' : 'control-asistencia-');
+        if (!empty($filtros['modalidad'])) $filtros = app(\App\Services\PeriodoAsistencia::class)->conFechas($filtros);
+        $emitido = now()->timezone('America/El_Salvador');
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($vista, $datos + compact('filtros', 'emitido'))
+            ->setPaper('letter', 'landscape')->setOption('isRemoteEnabled', false);
+        $pdf->render();
+        $font = $pdf->getDomPDF()->getFontMetrics()->getFont('DejaVu Sans');
+        $pdf->getDomPDF()->getCanvas()->page_text(650, 591, 'Página {PAGE_NUM} / {PAGE_COUNT}', $font, 7);
+        return $pdf->download($prefijo.$detalle->curso_id.'-'.$detalle->id.'-'.$emitido->format('Y-m-d-His').'.pdf')
+            ->header('Cache-Control', 'private, no-store');
+    }
+
     private function filtros(Request $request): array
     {
         $validated = $request->validate([
@@ -108,12 +142,8 @@ class AsistenciaController extends Controller
 
     private function consultaFiltrada(array $filtros): Builder
     {
-        $consulta = Asistencia::query()
-            ->when($filtros['curso_id'] ?? null, fn ($q, $id) => $q->where('curso_id', $id))
-            ->when($filtros['detalle_curso_id'] ?? null, fn ($q, $id) => $q->where('detalle_curso_id', $id))
-            ->when($filtros['maestro_id'] ?? null, fn ($q, $id) => $q->whereHas('detalleCurso', fn ($dc) => $dc->where('maestro_id', $id)))
-            ->when($filtros['fecha_desde'] ?? null, fn ($q, $fecha) => $q->whereDate('fecha', '>=', $fecha))
-            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $fecha) => $q->whereDate('fecha', '<=', $fecha));
+        $consulta = app(\App\Services\FiltrosHistoricosAsistencia::class)->aplicar(Asistencia::query(), $filtros)
+            ->when($filtros['maestro_id'] ?? null, fn ($q, $id) => $q->whereHas('detalleCurso', fn ($dc) => $dc->where('maestro_id', $id)));
 
         foreach (preg_split('/\s+/u', $filtros['q'] ?? '', -1, PREG_SPLIT_NO_EMPTY) as $termino) {
             $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';
