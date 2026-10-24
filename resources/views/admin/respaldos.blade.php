@@ -38,19 +38,27 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
                     </div>
                     <div>
-                        <p style="font-size:14px; font-weight:600; color:#111827; margin:0 0 4px;">Respaldo de la base de datos</p>
+                        <p style="font-size:14px; font-weight:600; color:#111827; margin:0 0 4px;">Respaldo completo del sistema</p>
                         <p style="font-size:13px; color:#6b7280; margin:0; line-height:1.5;">
-                            Guarda en un archivo .sql la información de alumnos, docentes, cursos, inscripciones, notas, asistencias, boletas, mensualidades y pagos.
+                            Genera un archivo .zip con la base de datos (.sql) y los documentos, firmas y otros archivos almacenados por la aplicación.
                             Las sesiones activas y los datos temporales no se incluyen.
                         </p>
                     </div>
                 </div>
-                <form method="POST" action="{{ route('admin.respaldos.store') }}" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.textContent='Generando…';">
+                <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end;">
+                <form method="POST" action="{{ route('admin.respaldos.completa') }}" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.textContent='Generando…';">
                     @csrf
                     <button type="submit" style="background:#111827; border:none; padding:10px 18px; border-radius:8px; color:#ffffff; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
-                        + Generar copia de seguridad
+                        + Generar copia completa
                     </button>
                 </form>
+                <form method="POST" action="{{ route('admin.respaldos.store') }}" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.textContent='Generando…';">
+                    @csrf
+                    <button type="submit" style="background:#f3f4f6; border:1px solid #e5e7eb; padding:10px 14px; border-radius:8px; color:#374151; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">
+                        Generar copia de seguridad (solo SQL)
+                    </button>
+                </form>
+                </div>
             </div>
 
             {{-- Listado --}}
@@ -63,7 +71,7 @@
                 @if($respaldos->isEmpty())
                     <div style="padding:40px 20px; text-align:center;">
                         <p style="font-size:14px; font-weight:600; color:#374151; margin:0 0 4px;">Todavía no hay copias de seguridad</p>
-                        <p style="font-size:13px; color:#6b7280; margin:0;">Use el botón «Generar copia de seguridad» para crear la primera.</p>
+                        <p style="font-size:13px; color:#6b7280; margin:0;">Use el botón «Generar copia completa» para crear la primera.</p>
                     </div>
                 @else
                     <div style="overflow-x:auto;">
@@ -102,16 +110,6 @@
                 @endif
             </div>
 
-            {{-- Recomendaciones --}}
-            <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:14px; padding:16px 20px;">
-                <p style="font-size:13px; font-weight:600; color:#92400e; margin:0 0 6px;">Recomendaciones</p>
-                <ul style="font-size:13px; color:#78350f; margin:0; padding-left:18px; line-height:1.7;">
-                    <li>Genere una copia al menos una vez por semana y siempre antes de actualizar el sistema.</li>
-                    <li>Descargue cada copia y guárdela fuera del servidor (memoria USB o almacenamiento institucional en la nube).</li>
-                    <li>Para restaurar, importe el archivo .sql en phpMyAdmin (pestaña «Importar») sobre la base de datos del sistema.</li>
-                    <li>Los documentos de inscripción y las firmas se guardan como archivos aparte; respalde también la carpeta storage/app desde el administrador de archivos.</li>
-                </ul>
-            </div>
         </div>
     </div>
 </div>
