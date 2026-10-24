@@ -31,7 +31,26 @@ class RespaldoController extends Controller
         Log::info('Copia de seguridad generada', ['archivo' => $nombre, 'usuario_id' => auth()->id()]);
 
         return redirect()->route('admin.respaldos')
-            ->with('success', "Copia de seguridad generada: {$nombre}. Descárgala y guárdala fuera del servidor.");
+            ->with('success', "Copia de la base de datos generada: {$nombre}. Descárgala y guárdala fuera del servidor.");
+    }
+
+    public function storeCompleto(RespaldoBaseDatos $respaldos)
+    {
+        set_time_limit(300);
+
+        try {
+            $nombre = $respaldos->generarCompleto();
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()->route('admin.respaldos')
+                ->with('error', 'No se pudo generar la copia completa. Inténtalo de nuevo o revisa el registro del sistema.');
+        }
+
+        Log::info('Copia completa generada', ['archivo' => $nombre, 'usuario_id' => auth()->id()]);
+
+        return redirect()->route('admin.respaldos')
+            ->with('success', "Copia completa generada: {$nombre}. Incluye base de datos y archivos. Descárgala y guárdala fuera del servidor.");
     }
 
     public function descargar(RespaldoBaseDatos $respaldos, string $archivo)
@@ -41,7 +60,7 @@ class RespaldoController extends Controller
         Log::info('Copia de seguridad descargada', ['archivo' => $archivo, 'usuario_id' => auth()->id()]);
 
         return Storage::disk('local')->download($respaldos->ruta($archivo), $archivo, [
-            'Content-Type' => 'application/sql',
+            'Content-Type' => str_ends_with($archivo, '.zip') ? 'application/zip' : 'application/sql',
             'Cache-Control' => 'no-store, private',
         ]);
     }

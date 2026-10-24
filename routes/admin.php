@@ -204,6 +204,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.respaldos');
     Route::post('/admin/respaldos', [\App\Http\Controllers\Admin\RespaldoController::class, 'store'])
         ->middleware('throttle:6,1')->name('admin.respaldos.store');
+    Route::post('/admin/respaldos/completa', [\App\Http\Controllers\Admin\RespaldoController::class, 'storeCompleto'])
+        ->middleware('throttle:6,1')->name('admin.respaldos.completa');
     Route::get('/admin/respaldos/{archivo}/descargar', [\App\Http\Controllers\Admin\RespaldoController::class, 'descargar'])
         ->where('archivo', '[A-Za-z0-9_\-.]+')->name('admin.respaldos.descargar');
     Route::delete('/admin/respaldos/{archivo}', [\App\Http\Controllers\Admin\RespaldoController::class, 'destroy'])

@@ -24,7 +24,7 @@ class RespaldoBaseDatos
 {
     public const CARPETA = 'respaldos';
 
-    public const PATRON_ARCHIVO = '/^respaldo-itm-\d{4}-\d{2}-\d{2}_\d{6}(-\d+)?\.sql$/';
+    public const PATRON_ARCHIVO = '/^respaldo-itm-\d{4}-\d{2}-\d{2}_\d{6}(-\d+)?\.(sql|zip)$/';
 
     /**
      * Tablas cuyo contenido es temporal o sensible (sesiones activas, tokens de
@@ -67,6 +67,94 @@ class RespaldoBaseDatos
         }
 
         return $nombre;
+    }
+
+    /** Crea un ZIP con el SQL y los archivos de los discos de la aplicación. */
+    public function generarCompleto(): string
+    {
+        if (! class_exists(\ZipArchive::class)) {
+            throw new \RuntimeException('La extensión ZIP de PHP no está habilitada.');
+        }
+
+        $disco = Storage::disk('local');
+        $disco->makeDirectory(self::CARPETA);
+        $base = 'respaldo-itm-' . now()->format('Y-m-d_His');
+        $nombre = $base . '.zip';
+        for ($i = 2; $disco->exists(self::CARPETA . '/' . $nombre); $i++) {
+            $nombre = "{$base}-{$i}.zip";
+        }
+
+        $destino = $disco->path(self::CARPETA . '/' . $nombre);
+        $temporalZip = $destino . '.parcial';
+        $temporalSql = tempnam(sys_get_temp_dir(), 'itm-respaldo-');
+        if ($temporalSql === false) {
+            throw new \RuntimeException('No se pudo preparar el archivo SQL temporal.');
+        }
+
+        try {
+            $archivoSql = fopen($temporalSql, 'wb');
+            if ($archivoSql === false) throw new \RuntimeException('No se pudo crear el archivo SQL temporal.');
+            try {
+                $this->escribir($archivoSql);
+            } finally {
+                fclose($archivoSql);
+            }
+
+            $zip = new \ZipArchive();
+            if ($zip->open($temporalZip, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                throw new \RuntimeException('No se pudo crear el archivo ZIP.');
+            }
+            try {
+                if (! $zip->addFile($temporalSql, 'base-de-datos.sql')) {
+                    throw new \RuntimeException('No se pudo agregar la base de datos al ZIP.');
+                }
+                if (! $zip->addFromString('LEEME.txt', "Respaldo completo ITM Aguilares\n\n"
+                    . "base-de-datos.sql contiene la base de datos.\n"
+                    . "archivos/ contiene los archivos guardados por la aplicación.\n"
+                    . "Para restaurar, importe base-de-datos.sql en phpMyAdmin y recupere los archivos conservando sus carpetas.\n"
+                    . "Mantenga este respaldo en un lugar seguro: contiene datos personales y documentos.\n")) {
+                    throw new \RuntimeException('No se pudo agregar la guía de restauración al ZIP.');
+                }
+                $this->agregarArchivosDeDisco($zip, 'local', 'archivos/local', true);
+                $this->agregarArchivosDeDisco($zip, 'public', 'archivos/public');
+                $this->agregarArchivosDeDisco($zip, 'inscripciones', 'archivos/inscripciones', false, 'local');
+            } finally {
+                if (! $zip->close()) throw new \RuntimeException('No se pudo finalizar el contenido del ZIP.');
+            }
+
+            if (! rename($temporalZip, $destino)) {
+                throw new \RuntimeException('No se pudo finalizar el archivo ZIP.');
+            }
+        } catch (Throwable $e) {
+            @unlink($temporalZip);
+            throw $e;
+        } finally {
+            @unlink($temporalSql);
+        }
+
+        return $nombre;
+    }
+
+    private function agregarArchivosDeDisco(\ZipArchive $zip, string $disco, string $prefijo, bool $excluirRespaldos = false, ?string $evitarDuplicadoCon = null): void
+    {
+        $almacenamiento = Storage::disk($disco);
+        $raiz = realpath($almacenamiento->path(''));
+        $raizDuplicada = $evitarDuplicadoCon ? realpath(Storage::disk($evitarDuplicadoCon)->path('')) : false;
+
+        foreach ($almacenamiento->allFiles() as $ruta) {
+            $ruta = str_replace('\\', '/', $ruta);
+            if ($excluirRespaldos && str_starts_with($ruta, self::CARPETA . '/')) continue;
+
+            $real = realpath($almacenamiento->path($ruta));
+            if ($real === false || ! is_file($real)) continue;
+            if ($raiz && ! str_starts_with($real, rtrim($raiz, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)) continue;
+            if ($raizDuplicada && ($real === $raizDuplicada || str_starts_with($real, rtrim($raizDuplicada, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR))) continue;
+
+            $nombreInterno = trim($prefijo . '/' . $ruta, '/');
+            if (! $zip->addFile($real, $nombreInterno)) {
+                throw new \RuntimeException("No se pudo agregar el archivo {$nombreInterno} al ZIP.");
+            }
+        }
     }
 
     /** Respaldos guardados, del más reciente al más antiguo. */
