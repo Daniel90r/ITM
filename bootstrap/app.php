@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAlumno;
+use App\Http\Middleware\EstadoInstitucional;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->appendToGroup('web', EstadoInstitucional::class);
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'alumno.portal' => EnsureAlumno::class,

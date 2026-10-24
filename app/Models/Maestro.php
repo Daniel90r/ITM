@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Maestro extends Model
 {
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return ['activo' => 'boolean'];
+    }
+
     protected $fillable = [
         'user_id',
         'nombre',

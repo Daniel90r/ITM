@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Alumno;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ class AuthenticationTest extends TestCase
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
         $user = User::factory()->create(['role' => 'alumno']);
+        Alumno::factory()->create(['user_id' => $user->id, 'activo' => true]);
 
         $response = $this->post('/login', [
             'email' => $user->email,

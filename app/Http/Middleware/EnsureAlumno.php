@@ -27,9 +27,11 @@ class EnsureAlumno
             return redirect()->guest(route('login'));
         }
 
-        $tieneExpediente = Alumno::where('user_id', $user->id)->exists();
+        $existeExpediente = Alumno::where('user_id', $user->id)->exists();
+        abort_if($user->role !== 'alumno' && $existeExpediente, 403);
+        $tieneExpediente = $user->role === 'alumno' && $existeExpediente;
 
-        if (!$tieneExpediente) {
+        if (! $tieneExpediente) {
             $destino = match ($user->role) {
                 'admin' => route('admin.dashboard'),
                 'docente' => route('docente.notas'),

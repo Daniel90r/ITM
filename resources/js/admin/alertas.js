@@ -56,7 +56,7 @@ function initConfirmaciones() {
     });
 }
 
-function mostrarConfirmacion({ mensaje = '¿Estás seguro?', titulo = 'Confirmación', boton = 'Sí, continuar', tipo = 'aviso' }) {
+function mostrarConfirmacion({ mensaje = '¿Estás seguro?', titulo = 'Confirmación', boton = 'Sí, continuar', tipo = 'aviso', opciones = {} }) {
     const iconMap = {
         exito: 'success',
         peligro: 'warning',
@@ -65,6 +65,7 @@ function mostrarConfirmacion({ mensaje = '¿Estás seguro?', titulo = 'Confirmac
 
     return Swal.fire({
         ...swalBase,
+        ...opciones,
         title: titulo,
         text: mensaje,
         icon: iconMap[tipo] || 'question',

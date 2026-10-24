@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\EstadoPersonaController;
 
 // RUTAS: ADMINISTRADOR
 //
@@ -8,6 +9,15 @@ use Illuminate\Support\Facades\Route;
 // `verified` era un no-op porque User no implementa MustVerifyEmail y no hay
 // flujo de verificación operativo. Se conserva `auth` y `role:admin`.
 Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/filtros/asistencias', [\App\Http\Controllers\Admin\AsistenciaController::class, 'index'])->name('admin.sugerencias.asistencias');
+    Route::get('/admin/filtros/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])->name('admin.sugerencias.mensualidades');
+    Route::get('/admin/filtros/estados-cuenta', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'index'])->name('admin.sugerencias.estados-cuenta');
+    Route::get('/admin/filtros/encargados', [\App\Http\Controllers\Admin\EncargadoController::class, 'index'])->name('admin.sugerencias.encargados');
+    Route::get('/admin/filtros/busqueda/{modulo}', \App\Http\Controllers\Admin\SugerenciasFiltroController::class)->name('admin.sugerencias.busqueda');
+    Route::get('/admin/personas/{tipo}/{id}/estado', [EstadoPersonaController::class, 'show'])->whereIn('tipo', ['alumnos', 'maestros'])->whereNumber('id')->name('admin.personas.estado');
+    Route::patch('/admin/personas/{tipo}/{id}/estado', [EstadoPersonaController::class, 'update'])->whereIn('tipo', ['alumnos', 'maestros'])->whereNumber('id')->name('admin.personas.estado.update');
+    Route::patch('/admin/asignaciones/{id}/finalizar-programada', [EstadoPersonaController::class, 'finalizarProgramada'])->whereNumber('id')->name('admin.asignaciones.finalizar-programada');
+
     Route::get('/admin/reportes/{tipo}/visor', \App\Http\Controllers\Admin\ReporteVisorController::class)
         ->whereIn('tipo', array_keys(\App\Http\Controllers\Admin\ReporteVisorController::REPORTES))->name('admin.reportes.visor');
     Route::get('/admin/reportes/alumnos/pdf', [\App\Http\Controllers\Admin\ReporteController::class, 'alumnosPdf'])->name('admin.reportes.alumnos.pdf');
@@ -16,6 +26,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/reportes/maestros/pdf', [\App\Http\Controllers\Admin\ReporteController::class, 'maestrosPdf'])->name('admin.reportes.maestros.pdf');
     Route::get('/admin/reportes/mensualidades/pdf', [\App\Http\Controllers\Admin\ReporteController::class, 'mensualidadesPdf'])->name('admin.reportes.mensualidades.pdf');
     Route::get('/admin/reportes', [\App\Http\Controllers\Admin\ReporteController::class, 'index'])->name('admin.reportes');
+    Route::get('/admin/reportes/solicitudes', [\App\Http\Controllers\Admin\ReporteController::class, 'solicitudes'])->name('admin.reportes.solicitudes');
     Route::get('/admin/reportes/{tipo}', [\App\Http\Controllers\Admin\ReporteController::class, 'show'])
         ->whereIn('tipo', array_keys(\App\Services\ReportesAdministrativos::TIPOS))->name('admin.reportes.show');
     Route::get('/admin/solicitudes/{inscripcion}/documento', [\App\Http\Controllers\DocumentoInscripcionController::class, 'show'])
@@ -117,9 +128,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // vista y de las redirecciones del controlador.
     Route::get('/admin/mensualidades', [\App\Http\Controllers\Admin\MensualidadController::class, 'index'])
         ->name('admin.mensualidades');
-    Route::get('/admin/mensualidades/historial', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'index'])
+    Route::get('/admin/mensualidades/historial', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'legacyIndex'])
         ->name('admin.mensualidades.historial.index');
-    Route::get('/admin/mensualidades/alumnos/{alumno}/historial', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'show'])
+    Route::get('/admin/mensualidades/alumnos/{alumno}/historial', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'legacyShow'])
         ->whereNumber('alumno')->name('admin.mensualidades.historial.show');
     Route::get('/admin/mensualidades/cursos/{curso}/alumnos/{alumno}', [\App\Http\Controllers\Admin\MensualidadController::class, 'detalles'])
         ->whereNumber('curso')->whereNumber('alumno')->name('admin.mensualidades.detalles');
@@ -138,6 +149,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // ADMINISTRADOR: Pagos
     Route::get('/admin/pagos', [\App\Http\Controllers\Admin\PagoController::class, 'index'])
         ->name('admin.pagos');
+    Route::get('/admin/pagos/alumnos', [\App\Http\Controllers\Admin\PagoController::class, 'alumnos'])
+        ->name('admin.pagos.alumnos');
+    Route::get('/admin/pagos/historial', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'index'])
+        ->name('admin.pagos.historial.index');
+    Route::get('/admin/pagos/alumnos/{alumno}/estado-cuenta', [\App\Http\Controllers\Admin\HistorialMensualidadController::class, 'show'])
+        ->whereNumber('alumno')->name('admin.pagos.estado-cuenta');
 
     Route::get('/admin/maestros/{id}', [\App\Http\Controllers\Admin\MaestroController::class, 'show'])
         ->name('admin.maestros.show');

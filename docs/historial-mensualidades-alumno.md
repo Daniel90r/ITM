@@ -1,11 +1,12 @@
 # Historial anual de mensualidades por alumno
 
-Acceso desde Mensualidades: «Historial por alumno» abre un buscador paginado que incluye alumnos activos e inactivos, sin exigir inscripción. Cada fila del panel existente también ofrece «Ver historial anual», conservando el año seleccionado.
+Acceso desde Pagos: «Estado de cuenta por alumno» abre un buscador paginado que incluye alumnos activos e inactivos que tengan alguna inscripción en estado aprobada o mensualidades registradas. Una solicitud pendiente o rechazada, por sí sola, no habilita esta consulta. Mensualidades enlaza a «Ver estado de cuenta en Pagos», conservando el año seleccionado. Los detalles de navegación y movimientos se documentan en reorganizacion-financiera.md.
 
 Rutas GET protegidas por `auth` y `role:admin`:
 
-- `/admin/mensualidades/historial`: `admin.mensualidades.historial.index`.
-- `/admin/mensualidades/alumnos/{alumno}/historial`: `admin.mensualidades.historial.show`.
+- `/admin/pagos/historial`: `admin.pagos.historial.index`.
+- `/admin/pagos/alumnos/{alumno}/estado-cuenta`: `admin.pagos.estado-cuenta`.
+- Las rutas y nombres antiguos de historial bajo Mensualidades se conservan como redirecciones 302 con sus parámetros.
 
 La página consulta `mensualidades`, no un listado exclusivo de cobros. Los meses sin registro se limitan por una referencia de visualización cuando está disponible; si no puede determinarse, se conservan enero a diciembre. No genera obligaciones ni infiere el comienzo del cobro. Los meses sin registro no tienen importe ni forman parte del saldo.
 
@@ -35,7 +36,7 @@ Se utiliza `inscripciones.fecha_inscripcion` como **Fecha registrada de solicitu
 - Las inconsistencias entre estado y pagos se señalan sin corregir estados ni movimientos. Los importes sin duplicados siguen su estado almacenado, igual que el reporte existente. Un movimiento residual de una pendiente no se presenta como fecha de pago válida.
 - Meses no reconocidos se muestran en una sección separada, sin asignarles un mes ficticio. Sus importes no duplicados conservan el tratamiento por estado y llevan una advertencia.
 
-La vista es de consulta: no contiene acciones de cobro, generación, reversión ni modificación. El controlador y PDF anteriores permanecen sin cambios; solo se agregan enlaces de acceso al panel.
+La vista es de consulta: no contiene acciones de cobro, generación, reversión ni modificación. Los cálculos y el PDF permanecen sin cambios. El listado y el acceso directo al historial comparten el mismo criterio de elegibilidad. Las obligaciones de años anteriores permiten consultar al alumno aunque actualmente no tenga inscripción aprobada.
 
 ## Pruebas aisladas
 
@@ -50,3 +51,13 @@ Resultado de la primera fase: **43 pruebas aprobadas, 836 aserciones, cero fallo
 Resultado final del ajuste de fecha de referencia: **47 pruebas aprobadas, 898 aserciones, cero fallos y omisiones**, en una única ejecución de las mismas cinco clases. Las pruebas adicionales cubren referencia reciente, inscripción inactiva, cursos separados y referencia global, fechas inválidas o ausentes, años anteriores y futuros, obligaciones fuera del intervalo y origen desconocido. Sintaxis PHP y comprobación de diferencias satisfactorias. No se consultó ni modificó la base real durante esta implementación, ni se ejecutaron comandos de migración contra ella.
 
 Resultado de la simplificación a consulta anual sin selector de curso: **49 pruebas aprobadas, 984 aserciones**, sin fallos ni omisiones, en una sola ejecución de las cinco clases. Se verifican la ausencia del selector, el curso asignado informativo, las asignaciones ambiguas, fechas históricas distintas y la conservación de obligaciones, pagos y saldos ante parámetros antiguos de curso, incluidos registros sin curso. Se mantiene la regresión de pagos y PDF. Todas las pruebas utilizan SQLite en memoria y almacenamiento temporal.
+
+## Elegibilidad del historial y generación
+
+El listado y la ruta individual comparten una consulta Eloquent: alguna inscripción con estado `aprobada`, o alguna mensualidad existente en cualquier año. No se utiliza `alumnos.activo` como sustituto de aprobación. Las condiciones se agrupan antes de aplicar la búsqueda y no se unen filas de inscripciones, evitando duplicar alumnos. Un expediente sin aprobación ni obligaciones no aparece y su URL individual responde 404.
+
+Las solicitudes pendientes, rechazadas e inactivas no habilitan nuevas mensualidades. La generación conserva su consulta existente de inscripciones aprobadas y su deduplicación por alumno; ahora rechaza explícitamente la selección sin aprobados mediante validación, en lugar de mostrar éxito con cero generaciones. El acceso al historial por obligaciones anteriores no habilita generación. No se cambian importes, vencimientos, pagos, estados almacenados ni el PDF.
+
+Los escenarios de referencia de expedientes retirados en las pruebas incorporan una obligación sintética de otro año para acreditar un historial económico real. Esa obligación no modifica los totales del año consultado. Las pruebas de esta corrección están en ElegibilidadMensualidadesTest, junto a las regresiones existentes de historial, panel, pagos, PDF y permisos.
+
+Verificación final de elegibilidad: 64 pruebas aprobadas, 1.185 aserciones, cero fallos y omisiones en una sola ejecución de ElegibilidadMensualidadesTest, HistorialMensualidadesTest, MensualidadesPanelTest, PagoTest, ReporteMensualidadesPdfTest y AdminGlobalRoleAccessTest. SQLite en memoria y almacenamiento temporal; sin ejecutar TransicionDocumentalTest. La comprobación del caso reportado en MySQL fue exclusivamente de lectura.

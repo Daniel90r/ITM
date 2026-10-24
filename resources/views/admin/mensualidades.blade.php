@@ -8,7 +8,7 @@
     .mensualidades-page .mp-logo { width:40px; height:40px; object-fit:cover; border:1px solid #e5e7eb; border-radius:12px; }
     .mensualidades-page h1 { margin:0; color:#111827; font-size:18px; font-weight:700; }
     .mensualidades-page .mp-muted { margin:4px 0 0; color:#6b7280; font-size:12px; line-height:1.6; }
-    .mensualidades-page .mp-header-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+    .mensualidades-page .mp-header-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; margin-left:auto; gap:10px; }
     .mensualidades-page .mp-content { flex:1; min-height:0; overflow-y:auto; padding:24px; }
     .mensualidades-page:has(.chk-mensualidad:checked) .mp-content { padding-bottom:120px; }
     .mensualidades-page .mp-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:12px; }
@@ -128,10 +128,9 @@
         <header class="mp-header">
             <div class="mp-heading">
                 <img class="mp-logo" src="{{ asset('images/logo_itm.jpg') }}" alt="ITM">
-                <div><h1>Mensualidades</h1><p class="mp-muted">Control de pagos · Cuota mensual $25.00</p></div>
+                <div><h1>Mensualidades</h1><p class="mp-muted">Gestión de cuotas · Cuota mensual $25.00</p></div>
             </div>
             <div class="mp-header-actions">
-                <a class="mp-btn" href="{{ route('admin.mensualidades.historial.index') }}">Historial por alumno</a>
                 <label class="mp-cycle-label" for="cicloMensualidades">Ciclo</label>
                 <select id="cicloMensualidades" class="mp-control mp-cycle" name="anio" form="mensualidadesFiltros" onchange="this.form.requestSubmit()">
                     @foreach($aniosDisponibles as $a)<option value="{{ $a }}" @selected($a == $anioSeleccionado)>{{ $a }} {{ $a == date('Y') ? '(actual)' : '' }}</option>@endforeach
@@ -164,7 +163,7 @@
                     <div class="mp-filter-footer"><p class="mp-muted">Período: {{ $filtros['mes'] ?? 'Todos los meses' }} · {{ $anioSeleccionado }}</p><div class="mp-button-group"><a class="mp-btn" href="{{ route('admin.mensualidades', ['anio' => $anioSeleccionado]) }}">Limpiar</a><button class="mp-btn mp-btn-primary" type="submit">Filtrar</button></div></div>
                 </form>
             </section>
-            <div class="mp-list-heading"><div><h2>Alumnos por curso</h2><p class="mp-muted">Mensualidades del alumno en el ciclo. Expande para consultar los meses y las acciones de pago.</p></div><span class="mp-badge">{{ number_format($listado->total()) }} resultados · {{ $listado->perPage() }} por página</span></div>
+            <div class="mp-list-heading"><div><h2>Alumnos por curso</h2><p class="mp-muted">Mensualidades del alumno en el ciclo. Expande para consultar los meses y gestionar sus pagos.</p></div><span class="mp-badge">{{ number_format($listado->total()) }} resultados · {{ $listado->perPage() }} por página</span></div>
             @forelse($grupos as $cursoId => $inscripciones)
                 @php $curso = $inscripciones->first()->curso; @endphp
                 <section class="mp-panel grupo-curso" data-curso="{{ $cursoId }}" aria-labelledby="curso-mensualidades-{{ $cursoId }}">
@@ -175,7 +174,7 @@
                                 <div class="mp-student-identity">
                                     <span class="mp-student-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($ins->alumno->nombre, 0, 1).mb_substr($ins->alumno->apellido, 0, 1)) }}</span>
                                     <div class="mp-student-info"><h3 class="mp-student-name">{{ $ins->alumno->nombre_completo }}</h3><p class="mp-student-code"><span>{{ $ins->alumno->codigo }}</span>@if($ins->registros)<span class="mp-mobile-balance" title="Pendiente en los resultados"><strong>${{ number_format($ins->saldo, 2) }}</strong> pendiente</span>@endif</p>
-                                    <a class="mp-btn" href="{{ route('admin.mensualidades.historial.show', ['alumno' => $ins->alumno_id, 'anio' => $anioSeleccionado]) }}">Ver historial anual</a></div>
+                                    <a class="mp-btn" href="{{ route('admin.pagos.estado-cuenta', ['alumno' => $ins->alumno_id, 'anio' => $anioSeleccionado]) }}">Ver estado de cuenta en Pagos</a></div>
                                 </div>
                                 <div class="mp-student-right">
                                     @if($ins->registros)
@@ -201,6 +200,7 @@
         </div>
     </main>
 </div>
+
 <form id="formLote" class="mp-batch" method="POST" action="{{ route('admin.mensualidades.pagarLote') }}" onsubmit="return prepararCobroLote(event)">
     @csrf
     <p><strong id="loteCantidad">0</strong> seleccionadas · <strong id="loteTotal">$0.00</strong></p>

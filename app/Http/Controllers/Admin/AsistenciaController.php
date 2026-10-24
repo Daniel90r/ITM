@@ -15,9 +15,6 @@ class AsistenciaController extends Controller
 {
     public function index(Request $request)
     {
-        $cursos = Curso::where('activo', true)->orderBy('nombre')->get();
-        $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
-
         $filtros = $this->filtros($request);
         $cursoId = $filtros['curso_id'] ?? null;
         $maestroId = $filtros['maestro_id'] ?? null;
@@ -26,6 +23,11 @@ class AsistenciaController extends Controller
         $fechaHasta = $filtros['fecha_hasta'] ?? null;
         $busqueda = $filtros['q'] ?? '';
         $consulta = $this->consultaFiltrada($filtros);
+        if ($request->routeIs('admin.sugerencias.asistencias')) {
+            return \App\Services\SugerenciasFiltros::personas(\App\Services\SugerenciasFiltros::alumnosDe($consulta));
+        }
+        $cursos = Curso::where('activo', true)->orderBy('nombre')->get();
+        $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
         // Contar todos los resultados filtrados antes de paginar.
         $porEstado = (clone $consulta)->selectRaw('estado, COUNT(*) AS cantidad')

@@ -1,0 +1,72 @@
+.gestion-maestros{color:#172b4d;font-size:13px;line-height:1.5}
+.gestion-maestros *{box-sizing:border-box}
+.gestion-maestros .gm-panel{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#f8fafc}
+.gestion-maestros .gm-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 24px;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+.gestion-maestros .gm-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.gestion-maestros .gm-brand img{width:40px;height:40px;object-fit:contain;flex-shrink:0}
+.gestion-maestros h1{font-size:18px;font-weight:700;margin:0;color:#173454}
+.gestion-maestros .gm-brand p{font-size:12px;color:#64748b;margin:3px 0 0}
+.gestion-maestros .gm-header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gestion-maestros .gm-month{font-size:12px;color:#64748b;background:#f1f5f9;padding:6px 10px;border-radius:8px}
+.gestion-maestros .gm-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;max-width:100%;padding:10px 12px;border:1px solid transparent;border-radius:8px;font:inherit;font-size:12px;line-height:20px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap}
+.gestion-maestros .gm-button svg{flex-shrink:0}
+.gestion-maestros .gm-primary{background:#173454;color:#fff;border-color:#173454}
+.gestion-maestros .gm-primary:hover{background:#10243b;border-color:#10243b}
+.gestion-maestros .gm-secondary{background:#fff;color:#334155;border-color:#cbd5e1}
+.gestion-maestros .gm-secondary:hover{background:#f1f5f9}
+.gestion-maestros :is(a,button,input):focus-visible,.gm-menu [role=menuitem]:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.gestion-maestros .gm-search-bar{display:flex;align-items:center;gap:12px;padding:16px 24px;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+.gestion-maestros .gm-search{position:relative;flex:1;max-width:400px;min-width:0}
+.gestion-maestros .gm-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none}
+.gestion-maestros .gm-search input{width:100%;min-height:44px;padding:10px 12px 10px 38px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;font:inherit;color:#172b4d}
+.gestion-maestros #contadorMaestros{color:#64748b;font-size:12px;margin:0}
+.gestion-maestros #contadorMaestros:empty{display:none}
+.gestion-maestros .gm-content{flex:1;min-height:0;min-width:0;overflow-y:auto;padding:24px}
+.gestion-maestros .gm-list{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgb(15 23 42 / 4%)}
+.gestion-maestros .gm-list-heading{padding:18px 20px;border-bottom:1px solid #e2e8f0}
+.gestion-maestros .gm-list-heading h2{font-size:15px;font-weight:700;margin:0}
+.gestion-maestros .gm-list-heading p{font-size:12px;color:#64748b;margin:4px 0 0}
+.gestion-maestros .gm-table{width:100%;table-layout:fixed;border-collapse:collapse;text-align:left}
+.gestion-maestros .gm-col-code{width:100px}.gestion-maestros .gm-col-name{width:24%}.gestion-maestros .gm-col-state{width:104px}.gestion-maestros .gm-col-actions{width:320px}
+.gestion-maestros .gm-table th{padding:12px 16px;background:#f8fafc;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;font-weight:700;text-align:left;border-bottom:1px solid #e2e8f0}
+.gestion-maestros .gm-table td{padding:18px 16px;vertical-align:middle;border-bottom:1px solid #edf2f7;overflow-wrap:anywhere}
+.gestion-maestros .gm-table tbody tr:last-child td{border-bottom:0}
+.gestion-maestros .gm-table tbody tr:hover{background:#fafcff}
+.gestion-maestros .gm-code{font-family:monospace;color:#64748b;font-size:12px;font-weight:600}
+.gestion-maestros .gm-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.gestion-maestros .gm-identity>div{min-width:0}
+.gestion-maestros .gm-identity{flex-wrap:nowrap!important}
+.gestion-maestros .gm-identity>div{flex:1}
+.gestion-maestros .gm-avatar{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:50%;background:#edf3f9;color:#173454;font-size:11px;font-weight:700}
+.gestion-maestros .gm-name{font-weight:600;margin:0;line-height:1.5;color:#172b4d;overflow-wrap:anywhere}
+.gestion-maestros .gm-assignment-count{font-size:11px;color:#64748b;margin:4px 0 0}
+.gestion-maestros .gm-subjects{display:flex;flex-wrap:wrap;align-items:start;gap:6px}
+.gestion-maestros .gm-subject{display:inline-block;max-width:100%;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#475569;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.gestion-maestros .gm-more{background:#edf2f7;white-space:nowrap}
+.gestion-maestros .gm-muted{font-size:12px;color:#64748b}
+.gestion-maestros .gm-status{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid;border-radius:999px;font-size:11px;font-weight:600;line-height:18px;white-space:nowrap}
+.gestion-maestros .gm-status::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.gestion-maestros .gm-active{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.gestion-maestros .gm-inactive{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.gestion-maestros .gm-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gestion-maestros .gm-actions .gm-button{flex-wrap:nowrap!important}
+/* Popover se dibuja en la capa superior, fuera del recorte de la tabla. */
+.gm-menu[data-gm-menu]{display:none;position:fixed;inset:auto;margin:0;padding:6px;width:190px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#172b4d;box-shadow:0 8px 24px rgb(15 23 42 / 14%);z-index:1300;box-sizing:border-box}
+.gm-menu[data-gm-open]{display:block}
+.gm-menu [role=menuitem]{display:flex;align-items:center;min-height:44px;width:100%;padding:10px 12px;border:0;border-radius:6px;background:#fff;color:#172b4d;font:inherit;font-size:13px;text-align:left;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.gm-menu [role=menuitem]:hover,.gm-menu [role=menuitem]:focus{background:#f1f5f9}
+.gestion-maestros .gm-empty{padding:32px 20px;text-align:center;color:#64748b}
+.gestion-maestros .gm-sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1240px){
+ .gestion-maestros .gm-table,.gestion-maestros .gm-table tbody{display:block!important;min-width:0!important}
+ .gestion-maestros .gm-table colgroup{display:none}
+ .gestion-maestros .gm-table thead{display:block!important;position:absolute;width:1px!important;min-width:0!important;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+ .gestion-maestros .gm-table .fila-maestro{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:16px;gap:14px;border-bottom:1px solid #e2e8f0}
+ .gestion-maestros .gm-table td{display:block;padding:0!important;border:0;min-width:0;white-space:normal!important}
+ .gestion-maestros .gm-table td::before{content:attr(data-label);display:block;font-size:10px;font-weight:600;color:#64748b;margin-bottom:6px}
+ .gestion-maestros .gm-table td:nth-child(1){grid-column:1;grid-row:1}
+ .gestion-maestros .gm-table td:nth-child(4){grid-column:2;grid-row:1}
+ .gestion-maestros .gm-table td:nth-child(2),.gestion-maestros .gm-table td:nth-child(3),.gestion-maestros .gm-table td:nth-child(5){grid-column:1 / -1}
+ .gestion-maestros .gm-table td.gm-empty{padding:32px 20px}
+}
+@media(max-width:640px){.gestion-maestros .gm-header{align-items:flex-start;flex-direction:column;gap:14px}.gestion-maestros .gm-header-actions{width:100%;justify-content:space-between}.gestion-maestros .gm-content{padding:14px}.gestion-maestros .gm-search-bar{padding:14px;flex-wrap:wrap}.gestion-maestros .gm-search{flex-basis:calc(100% - 90px);max-width:none}.gestion-maestros #contadorMaestros{order:3;width:100%}.gestion-maestros .gm-search input{font-size:16px}.gestion-maestros .gm-actions{display:grid!important;grid-template-columns:minmax(0,1fr)}.gestion-maestros .gm-actions .gm-button{width:100%;min-width:0}.gestion-maestros .gm-table td::before{font-size:11px}}

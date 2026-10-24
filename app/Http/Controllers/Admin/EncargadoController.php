@@ -33,6 +33,7 @@ class EncargadoController extends Controller
             });
         }
 
+        if ($request->routeIs('admin.sugerencias.encargados')) return \App\Services\SugerenciasFiltros::personas($consulta);
         $alumnos = $consulta->orderBy('apellido')->orderBy('nombre')->orderBy('id')
             ->paginate(20)->withQueryString();
 

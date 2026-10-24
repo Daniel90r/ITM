@@ -18,6 +18,13 @@ class ReporteController extends Controller
             ->header('Cache-Control', 'private, no-store');
     }
 
+    public function solicitudes(Request $request)
+    {
+        $filtros = $request->validate(ConsultaSolicitudesInscripcion::REGLAS);
+        return response()->view('admin.reportes.solicitudes', compact('filtros'))
+            ->header('Cache-Control', 'private, no-store');
+    }
+
     public function show(Request $request, ReportesAdministrativos $reportes, string $tipo)
     {
         abort_unless(array_key_exists($tipo, ReportesAdministrativos::TIPOS), 404);

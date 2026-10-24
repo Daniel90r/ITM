@@ -67,7 +67,7 @@ class ReporteVisorTest extends TestCase
                 default => ['estado' => 'aprobada', 'q' => 'Prueba ficticia'],
             };
             $url = route('admin.reportes.visor', ['tipo' => $tipo] + $filtros);
-            $listado = $tipo === 'inscripciones' ? route('admin.solicitudes', $filtros) : route('admin.reportes.show', ['tipo' => $tipo] + $filtros);
+            $listado = $tipo === 'inscripciones' ? route('admin.reportes.solicitudes', $filtros) : route('admin.reportes.show', ['tipo' => $tipo] + $filtros);
             $html = $this->get($listado)->assertOk()->assertSee('Visualizar PDF')->getContent();
             $dom = new \DOMDocument;@$dom->loadHTML($html);$xpath = new \DOMXPath($dom);
             $link = $xpath->query('//a[contains(@class,"reportes-preview")]')->item(0);

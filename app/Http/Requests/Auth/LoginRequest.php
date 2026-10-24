@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Services\AccesoInstitucional;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -42,7 +45,25 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! DB::transaction(function () {
+            $user = User::where('email', $this->input('email'))->lockForUpdate()->first();
+            $ok = Auth::attemptWhen($this->only('email', 'password'), function ($candidate) {
+                if (! app(AccesoInstitucional::class)->permitido($candidate)) {
+                    return false;
+                }
+                if ($candidate->role !== 'admin' && ! str_starts_with((string) $candidate->remember_token, 'itm-access-v1:')) {
+                    $candidate->setRememberToken('itm-access-v1:'.$candidate->auth_version.':'.Str::random(40));
+                    $candidate->save();
+                }
+
+                return true;
+            }, $this->boolean('remember'));
+            if ($ok) {
+                $this->session()->put('auth_version', (int) Auth::user()->auth_version);
+            }
+
+            return $ok;
+        })) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

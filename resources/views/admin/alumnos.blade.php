@@ -228,6 +228,7 @@
                                     onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                                     Editar
                                 </button>
+                                <a href="{{ route('admin.personas.estado',['alumnos', $alumno->id]) }}" style="display:inline-block;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;color:#173454;">Estado y acceso</a>
                             </td>
                         </tr>
                         @endforeach

@@ -33,7 +33,7 @@ class ReportesAdministrativosTest extends TestCase
         return $this->get(route('admin.reportes.show', ['tipo' => $tipo] + $filtros))->assertOk();
     }
 
-    public function test_portada_con_cinco_tarjetas_y_seis_reportes_disponibles(): void
+    public function test_portada_con_seis_tarjetas_incluye_reporte_de_solicitudes(): void
     {
         $respuesta = $this->get(route('admin.reportes'))->assertOk()->assertSee('Selecciona un reporte')
             ->assertSee('sidebar-link active', false)->assertSee('Menú de administración');
@@ -41,7 +41,9 @@ class ReportesAdministrativosTest extends TestCase
         @$dom->loadHTML('<?xml encoding="UTF-8">'.$respuesta->getContent());
         $xpath = new \DOMXPath($dom);
         $tarjetas = $xpath->query('//nav[@aria-label="Tipos de reporte"]/a');
-        $this->assertSame(5, $tarjetas->length);
+        $this->assertSame(6, $tarjetas->length);
+        $this->assertSame(route('admin.reportes.solicitudes'), $tarjetas->item(5)->getAttribute('href'));
+        $this->assertStringContainsString('Reporte de solicitudes de inscripción', $tarjetas->item(5)->textContent);
         foreach (['alumnos', 'cursos', 'asistencias', 'mensualidades', 'maestros'] as $i => $tipo) {
             $tarjeta = $tarjetas->item($i);
             $this->assertSame(route('admin.reportes.show', $tipo), $tarjeta->getAttribute('href'));

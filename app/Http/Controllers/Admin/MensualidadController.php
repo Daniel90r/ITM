@@ -11,6 +11,7 @@ use App\Models\Inscripcion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class MensualidadController extends Controller
 {
@@ -26,16 +27,6 @@ class MensualidadController extends Controller
         $filtros = $this->filtros($request);
         $anioSeleccionado = $filtros['anio'];
 
-        $cursos = Curso::where('activo', 1)
-            ->with(['inscripciones' => fn($q) => $q
-                ->where('activa', 1)
-                ->where('estado', 'aprobada')
-                ->select(['id', 'alumno_id', 'curso_id'])
-                ->with('alumno:id,nombre,apellido,codigo')
-            ])
-            ->orderBy('nombre')
-            ->get();
-
         // Conservar el alcance original: mensualidades por alumno y ciclo,
         // no por la inscripción del curso donde aparece en el listado.
         $resumen = $this->mensualidadesFiltradas($filtros)->select('alumno_id')
@@ -50,6 +41,14 @@ class MensualidadController extends Controller
                 'alumnos.apellido as orden_apellido', 'alumnos.nombre as orden_nombre'])
             ->selectRaw('COALESCE(resumen_mensual.registros, 0) AS registros, COALESCE(resumen_mensual.pendientes, 0) AS pendientes, COALESCE(resumen_mensual.pagadas, 0) AS pagadas, COALESCE(resumen_mensual.saldo, 0) AS saldo')
             ->when(!empty($filtros['mes']) || !empty($filtros['estado']), fn ($q) => $q->where('resumen_mensual.registros', '>', 0));
+        if ($request->routeIs('admin.sugerencias.mensualidades')) {
+            return \App\Services\SugerenciasFiltros::personas(\App\Services\SugerenciasFiltros::alumnosDe($consulta, 'inscripciones.alumno_id'));
+        }
+        $cursos = Curso::where('activo', 1)
+            ->with(['inscripciones' => fn($q) => $q
+                ->where('activa', 1)->where('estado', 'aprobada')
+                ->select(['id', 'alumno_id', 'curso_id'])->with('alumno:id,nombre,apellido,codigo')
+            ])->orderBy('nombre')->get();
         $listado = $consulta->distinct()->with(['alumno:id,nombre,apellido,codigo', 'curso'])
             ->orderBy('orden_curso')->orderBy('inscripciones.curso_id')
             ->orderBy('orden_apellido')->orderBy('orden_nombre')->orderBy('inscripciones.alumno_id')
@@ -157,6 +156,13 @@ class MensualidadController extends Controller
         }
 
         $inscripciones = $query->get()->unique('alumno_id');
+
+        if ($inscripciones->isEmpty()) {
+            throw ValidationException::withMessages([
+                $request->tipo === 'uno' ? 'alumno_id' : ($request->tipo === 'curso' ? 'curso_id' : 'tipo')
+                    => 'No hay inscripciones aprobadas para generar mensualidades con esta selección.',
+            ]);
+        }
 
         $generadas = 0;
         $omitidas  = 0;

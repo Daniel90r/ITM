@@ -204,7 +204,9 @@ class MensualidadesPanelTest extends TestCase
     public function test_generacion_y_cobro_en_lote_siguen_accesibles_sin_ejecutarlos(): void
     {
         $this->listado()->assertOk()->assertSee(route('admin.mensualidades.generar'), false)
-            ->assertSee(route('admin.mensualidades.pagarLote'), false)->assertSee('Generar mensualidades')
+            ->assertSee(route('admin.mensualidades.pagarLote'), false)
+            ->assertDontSee(route('admin.pagos.historial.index'), false)->assertSee('Generar mensualidades')
+            ->assertSee('id="cicloMensualidades"', false)->assertSee('Ver estado de cuenta en Pagos')
             ->assertSee('id="radioCurso"', false)->assertSee('id="radioUno"', false);
         $this->get(route('admin.mensualidades.corta', ['anio' => 2026]))->assertOk();
     }

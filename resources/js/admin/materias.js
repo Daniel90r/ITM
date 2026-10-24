@@ -40,10 +40,23 @@ function limpiarBusquedaMaterias() {
     document.getElementById('sinResultados').style.display = 'none';
 }
 
+function filtrarMaterias() {
+    const texto = document.getElementById('buscadorMateria').value.toLowerCase().trim();
+    let visibles = 0;
+    document.querySelectorAll('.fila-materia').forEach(fila => {
+        const coincide = !texto || fila.textContent.toLowerCase().includes(texto);
+        fila.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+    });
+    document.getElementById('contadorMaterias').textContent = texto ? `${visibles} resultados` : '';
+    document.getElementById('sinResultados').style.display = visibles ? 'none' : 'block';
+}
+
 window.abrirModalMateria = abrirModalMateria;
 window.cerrarModalMateria = cerrarModalMateria;
 window.toggleEstado = toggleEstado;
 window.limpiarBusquedaMaterias = limpiarBusquedaMaterias;
+window.filtrarMaterias = filtrarMaterias;
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('modalNuevaMateria').addEventListener('click', function(e) {

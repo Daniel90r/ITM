@@ -11,6 +11,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Alumno extends Model
 {
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return ['activo' => 'boolean'];
+    }
+
     protected $fillable = ['user_id', 'nombre', 'apellido', 'codigo', 'fecha_nacimiento', 'dui', 'genero', 'telefono', 'direccion', 'activo'];
 
     public function getNombreCompletoAttribute(): string

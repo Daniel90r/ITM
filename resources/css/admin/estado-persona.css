@@ -1,0 +1,88 @@
+/* Presentación exclusiva de Estado y acceso institucional. */
+.swal2-popup.ep-confirm-dialog{box-sizing:border-box;width:32rem;max-width:calc(100vw - 24px);border:1px solid #e2e8f0;border-radius:16px;padding:24px;box-shadow:0 16px 48px #0f172a26;font-family:'DM Sans',sans-serif}
+.ep-confirm-dialog .swal2-title{font-size:22px;line-height:1.35;color:#173454;overflow-wrap:anywhere}
+.ep-confirm-dialog .swal2-html-container{font-size:14px;line-height:1.65;overflow-wrap:anywhere}
+.ep-confirm-dialog .swal2-actions{gap:10px;flex-wrap:wrap}
+.ep-confirm-dialog .swal2-styled{min-height:44px;border-radius:9px;font-size:14px;margin:0}
+.ep-confirm-dialog .ep-confirm-cancel{color:#173454;border:1px solid #cbd5e1}
+.ep-confirm-dialog .swal2-styled:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+@media(max-width:390px){.swal2-popup.ep-confirm-dialog{padding:18px}.ep-confirm-dialog .swal2-title{font-size:20px}.ep-confirm-dialog .swal2-actions{width:100%}.ep-confirm-dialog .swal2-styled{flex:1;padding:10px}}
+.estado-persona{display:flex;min-height:100vh;background:#f8fafc;color:#172b4d;font-size:14px;line-height:1.6}
+.estado-persona *{box-sizing:border-box}
+.estado-persona .ep-main{flex:1;min-width:0;padding:clamp(16px,3vw,36px);overflow-wrap:anywhere}
+.estado-persona h1,.estado-persona h2,.estado-persona h3,.estado-persona p{margin:0}
+.estado-persona .ep-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}
+.estado-persona h1{font-size:clamp(22px,2vw,28px);line-height:1.25;font-weight:700;letter-spacing:-.025em;color:#122b49;margin:4px 0 8px}
+.estado-persona h2{font-size:17px;line-height:1.4;font-weight:700;color:#173454}
+.estado-persona h3{font-size:16px;line-height:1.5;font-weight:700}
+.estado-persona .ep-eyebrow{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:#64748b}
+.estado-persona .ep-muted{color:#64748b;font-size:13px}
+.estado-persona .ep-overview{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:24px;align-items:start}
+.estado-persona .ep-card{min-width:0;border:1px solid #e2e8f0;border-radius:16px;background:#fff;padding:24px;box-shadow:0 2px 6px rgb(15 23 42 / 3%)}
+.estado-persona .ep-section{margin-top:24px}
+.estado-persona .ep-section-heading{margin-bottom:20px}
+.estado-persona .ep-section-heading .ep-muted{margin-top:4px}
+.estado-persona .ep-identity{display:flex;gap:14px;align-items:center;margin-bottom:24px}
+.estado-persona .ep-identity>div{min-width:0}
+.estado-persona .ep-identity h3{font-size:21px;line-height:1.35;margin-top:4px;color:#122b49}
+.estado-persona .ep-person-icon{flex-shrink:0;display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:#edf3f9;color:#173454}
+.estado-persona .ep-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 18px;padding:18px 0;border-block:1px solid #edf2f7}
+.estado-persona dt{font-size:12px;color:#64748b;margin-bottom:6px}
+.estado-persona dd{margin:0;font-weight:600}
+.estado-persona .ep-badge{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid transparent;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:1.5}
+.estado-persona .ep-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.estado-persona .ep-active{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+.estado-persona .ep-inactive{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+.estado-persona .ep-neutral{background:#f1f5f9;color:#475569;border-color:#e2e8f0}
+.estado-persona .ep-preservation{margin-top:20px;padding:16px;background:#f8fafc;border-radius:10px;color:#475569;font-size:12px}
+.estado-persona .ep-preservation strong{display:block;margin-bottom:5px;color:#334155}
+.estado-persona .ep-notice{padding:14px 16px;border:1px solid;border-radius:10px;margin-bottom:18px;font-size:13px}
+.estado-persona .ep-account{margin-top:16px}
+.estado-persona .ep-notice p{margin-top:4px}
+.estado-persona .ep-notice ul{margin:6px 0 0;padding-left:20px}
+.estado-persona .ep-warning{background:#fffbeb;border-color:#fde68a;color:#854d0e}
+.estado-persona .ep-info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.estado-persona .ep-success{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.estado-persona .ep-error{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.estado-persona label{display:block;font-weight:600;color:#334155;font-size:13px;margin-bottom:8px}
+.estado-persona .ep-required{font-weight:400;color:#64748b}
+.estado-persona textarea{display:block;resize:vertical;width:100%;min-height:112px;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;color:#172b4d;background:#fff;font:inherit;line-height:1.6;transition:border-color .15s}
+.estado-persona textarea::placeholder{color:#64748b}
+.estado-persona textarea[aria-invalid=true]{border-color:#b91c1c}
+.estado-persona .ep-field-meta{display:flex;justify-content:space-between;align-items:start;gap:12px;font-size:11px;color:#64748b;margin-top:8px}
+.estado-persona [data-persona-counter]{flex-shrink:0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.estado-persona .ep-field-error{color:#b91c1c;font-size:12px;margin-top:6px}
+.estado-persona .ep-form-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+.estado-persona .ep-processing{font-size:12px;color:#475569}
+.estado-persona .ep-button{display:inline-flex;justify-content:center;align-items:center;gap:8px;min-height:44px;max-width:100%;padding:11px 18px;border:1px solid #173454;border-radius:10px;background:#173454;color:#fff;font:inherit;font-size:13px;font-weight:600;line-height:1.5;cursor:pointer;transition:background-color .15s,border-color .15s}
+.estado-persona .ep-button svg{flex-shrink:0}
+.estado-persona .ep-button:hover{background:#10243b;border-color:#10243b}
+.estado-persona .ep-button-danger{background:#991b1b;border-color:#991b1b}
+.estado-persona .ep-button-danger:hover{background:#7f1d1d;border-color:#7f1d1d}
+.estado-persona .ep-button-secondary{background:#fff;color:#173454;border-color:#cbd5e1}
+.estado-persona .ep-button-secondary:hover{background:#f1f5f9;border-color:#94a3b8}
+.estado-persona .ep-button:disabled{opacity:.55;cursor:not-allowed}
+.estado-persona :is(button,a,textarea,[tabindex]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.estado-persona .ep-link{display:inline-block;min-height:44px;padding:10px 0;color:#173454;text-underline-offset:3px;font-size:13px;font-weight:600}
+.estado-persona .ep-assignments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.estado-persona .ep-assignment{min-width:0;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+.estado-persona .ep-assignment-title{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}
+.estado-persona .ep-assignment form{margin-top:16px}
+.estado-persona .ep-table-scroll{max-width:100%;overflow-x:auto;border:1px solid #e2e8f0;border-radius:10px;overscroll-behavior-inline:contain}
+.estado-persona .ep-table{width:100%;min-width:760px;border-collapse:collapse;text-align:left;table-layout:fixed;font-size:13px}
+.estado-persona .ep-table th{padding:12px 14px;background:#f8fafc;color:#475569;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid #e2e8f0}
+.estado-persona .ep-table td{padding:16px 14px;vertical-align:top;border-bottom:1px solid #edf2f7;overflow-wrap:anywhere}
+.estado-persona .ep-table th:last-child{width:32%}
+.estado-persona .ep-table tbody tr:last-child td{border-bottom:0}
+.estado-persona .ep-table tbody tr:nth-child(even){background:#fcfdff}
+.estado-persona .ep-reason{white-space:pre-wrap}
+.estado-persona .ep-date{font-variant-numeric:tabular-nums}
+.estado-persona .ep-empty{text-align:center;padding:24px 8px;color:#64748b}
+.estado-persona .ep-empty strong{color:#334155}
+.estado-persona .ep-empty p{margin-top:5px;font-size:12px}
+.estado-persona .ep-pagination:not(:empty){margin-top:18px}
+.estado-persona .ep-closures-heading{margin-top:28px}
+.estado-persona .ep-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1199px){.estado-persona .ep-overview{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.estado-persona .ep-heading{align-items:flex-start;flex-direction:column;gap:14px}.estado-persona .ep-card{padding:18px;border-radius:12px}.estado-persona .ep-overview{gap:18px}.estado-persona .ep-section{margin-top:18px}.estado-persona .ep-assignments{grid-template-columns:minmax(0,1fr)}.estado-persona .ep-field-meta{flex-wrap:wrap;gap:4px}.estado-persona textarea{font-size:16px}.estado-persona .ep-form-actions .ep-button{width:100%}.estado-persona .ep-processing:empty{display:none}}
+@media(prefers-reduced-motion:reduce){.estado-persona textarea,.estado-persona .ep-button{transition:none}}

@@ -28,6 +28,30 @@ class ReporteInscripcionesPdfTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'admin', 'name' => 'Generador del informe']));
     }
 
+    public function test_reporte_en_reportes_conserva_filtros_y_retorno_del_visor_sin_controles_en_gestion(): void
+    {
+        $this->get(route('admin.solicitudes'))->assertOk()->assertSee('Solicitudes')
+            ->assertSee('id="buscarSolicitud"', false)->assertDontSee('Descargar PDF')->assertDontSee('Visualizar PDF');
+        $this->get(route('admin.reportes'))->assertOk()->assertSee('Reporte de solicitudes de inscripción')
+            ->assertSee(route('admin.reportes.solicitudes'), false);
+        foreach (['todos', 'pendiente', 'aprobada', 'rechazada', 'inactiva', 'otros'] as $estado) {
+            $f = ['estado' => $estado, 'q' => 'Ana prueba'];
+            $this->get(route('admin.reportes.solicitudes', $f))->assertOk()->assertViewHas('filtros', $f)
+                ->assertSee('Descargar PDF')->assertSee('Visualizar PDF')->assertSee(route('admin.reportes.inscripciones.pdf', $f));
+            $this->get(route('admin.reportes.visor', ['tipo' => 'inscripciones'] + $f))->assertOk()
+                ->assertViewHas('volverUrl', route('admin.reportes.solicitudes', $f))
+                ->assertViewHas('pdfUrl', route('admin.reportes.inscripciones.pdf', $f));
+        }
+        $this->getJson(route('admin.reportes.solicitudes', ['estado' => 'invalido']))->assertUnprocessable();
+        $this->getJson(route('admin.reportes.solicitudes', ['q' => ['Ana']]))->assertUnprocessable();
+        foreach (['docente', 'alumno'] as $role) {
+            $this->actingAs(User::factory()->create(['role' => $role]));
+            $this->get(route('admin.reportes.solicitudes'))->assertForbidden();
+        }
+        $this->app['auth']->guard()->logout();
+        $this->get(route('admin.reportes.solicitudes'))->assertRedirect(route('login'));
+    }
+
     private function html(array $filtros = []): string
     {
         return view('admin.reportes.pdf.inscripciones', app(ConsultaSolicitudesInscripcion::class)->informe($filtros) + [
@@ -93,10 +117,10 @@ class ReporteInscripcionesPdfTest extends TestCase
         $buscada = Inscripcion::factory()->create(['alumno_id' => $alumno->id, 'estado' => 'rechazada']);
         Inscripcion::factory()->create(['estado' => 'rechazada']);
         $f = ['estado' => 'rechazada', 'q' => 'Ana %_!'];
-        $pantalla = $this->get(route('admin.solicitudes', $f))->assertOk()->assertSee('Descargar PDF');
+        $pantalla = $this->get(route('admin.solicitudes', $f))->assertOk()->assertDontSee('Descargar PDF')->assertDontSee('Visualizar PDF');
         $this->assertSame([$buscada->id], $pantalla->viewData('inscripciones')->pluck('id')->all());
         $this->assertSame([$buscada->id], app(ConsultaSolicitudesInscripcion::class)->informe($f)['filas']->pluck('id')->all());
-        $pantalla->assertSee(route('admin.reportes.inscripciones.pdf', $f));
+        $this->get(route('admin.reportes.solicitudes', $f))->assertOk()->assertSee(route('admin.reportes.inscripciones.pdf', $f));
         $this->assertStringContainsString('Ana %_!', $this->html($f));
         $this->assertSame(1, app(ConsultaSolicitudesInscripcion::class)->informe(['q' => 'PDF123'])['total']);
         $this->assertStringContainsString('No hay registros', $this->html(['q' => 'sin coincidencia']));

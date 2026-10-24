@@ -40,13 +40,13 @@ class StaffResponsiveTest extends TestCase
         Mensualidad::create(['alumno_id' => $alumno->id, 'curso_id' => $curso->id, 'mes' => '6', 'anio' => now()->year, 'monto' => 25, 'estado' => 'pendiente', 'fecha_vencimiento' => now()->subMonth()->toDateString()]);
         $antes = DB::table('inscripciones')->get()->toJson();
         $this->actingAs($admin);
-        foreach (['dashboard', 'alumnos', 'maestros', 'directores.index', 'encargados.index', 'cursos', 'materias', 'solicitudes', 'inscripciones', 'asistencias', 'notas', 'boletas', 'mensualidades', 'pagos', 'reportes', 'mensualidades.historial.index'] as $nombre) {
+        foreach (['dashboard', 'alumnos', 'maestros', 'directores.index', 'encargados.index', 'cursos', 'materias', 'solicitudes', 'inscripciones', 'asistencias', 'notas', 'boletas', 'mensualidades', 'pagos', 'reportes', 'pagos.historial.index'] as $nombre) {
             $this->comprobar('admin-'.$nombre, route('admin.'.$nombre));
         }
         foreach (['alumnos', 'cursos', 'calificaciones', 'asistencias', 'mensualidades', 'maestros'] as $tipo) {
             $this->comprobar('reporte-'.$tipo, route('admin.reportes.show', ['tipo' => $tipo]));
         }
-        $this->comprobar('historial', route('admin.mensualidades.historial.show', $alumno));
+        $this->comprobar('historial', route('admin.pagos.estado-cuenta', $alumno));
         $this->comprobar('boleta-preview', route('admin.boletas.preview', ['alumno' => $alumno->id, 'curso' => $curso->id]));
         $this->comprobar('curso-detalle', route('admin.cursos.show', $curso));
         $this->comprobar('curso-editar', route('admin.cursos.edit', $curso));

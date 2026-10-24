@@ -1,0 +1,17 @@
+/* Exclusivo del listado /admin/pagos; no cambia el layout financiero compartido. */
+.pm-page .pm-filter-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pm-page .pm-action{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid transparent;border-radius:8px;font-size:13px;font-weight:600;line-height:22px;text-decoration:none;white-space:nowrap;cursor:pointer;flex-wrap:nowrap!important;transition:background-color .15s,border-color .15s}
+.pm-page .pm-action svg{flex-shrink:0}
+.pm-page .pm-primary{background:#173454;border-color:#173454;color:#fff}
+.pm-page .pm-primary:hover{background:#10243b;border-color:#10243b}
+.pm-page .pm-secondary{background:#f8fafc;border-color:#cbd5e1;color:#173454}
+.pm-page .pm-secondary:hover{background:#e2e8f0;border-color:#94a3b8;color:#10243b}
+.pm-page .pm-action:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.pm-page .pm-action:disabled{opacity:.55;cursor:not-allowed}
+.pm-page .pm-consult{font-size:12px;padding:10px 12px}
+.pm-page .pm-table th:last-child,.pm-page .pm-consult-cell{width:210px;min-width:210px;vertical-align:middle;white-space:nowrap}
+.pm-page .pm-table{min-width:1000px}
+.pm-page .pm-search{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;width:260px;font-size:13px}
+@media(max-width:640px){.pm-page .pm-search{width:100%}}
+@media(max-width:640px){.pm-page .pm-filter-actions{width:100%}.pm-page .pm-filter-actions>.pm-action{flex:1;min-width:0;padding-inline:10px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.pm-page .pm-action{transition:none}}

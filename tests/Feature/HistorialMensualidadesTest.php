@@ -34,7 +34,7 @@ class HistorialMensualidadesTest extends TestCase
 
     private function url(Alumno $a, array $f = []): string
     {
-        return route('admin.mensualidades.historial.show', ['alumno' => $a->id] + $f);
+        return route('admin.pagos.estado-cuenta', ['alumno' => $a->id] + $f);
     }
 
     public function test_doce_meses_cronologicos_e_importes_solo_de_obligaciones_reales(): void
@@ -52,7 +52,7 @@ class HistorialMensualidadesTest extends TestCase
         $numeros = [];
         foreach ($xp->query('//tbody[@data-mes]') as $nodo) $numeros[] = (int) $nodo->getAttribute('data-mes');
         $this->assertSame(range(1, 12), $numeros);
-        $this->assertSame(8, substr_count($r->getContent(), '>Sin registro<'));
+        $this->assertSame(8, substr_count($r->getContent(), '>Sin mensualidad registrada<'));
         $r->assertSee('Vencido')->assertSee('Pendiente')->assertSee('Pagado')->assertSee('15/07/2026');
         $this->assertDatabaseCount('mensualidades', 4);
         $this->assertDatabaseCount('pagos', 2);
@@ -66,7 +66,7 @@ class HistorialMensualidadesTest extends TestCase
         $m = $this->obligacion($a, $antiguo, 'Marzo');
         $this->obligacion($a, $actual, 'Mayo', ['anio' => 2025]);
         $sinCurso = $this->obligacion($a, null, 'Abril');
-        $this->get(route('admin.mensualidades.historial.index', ['q' => 'Retirado']))->assertOk()->assertSee($this->url($a), false);
+        $this->get(route('admin.pagos.historial.index', ['q' => 'Retirado']))->assertOk()->assertSee($this->url($a), false);
         $r = $this->get($this->url($a, ['anio' => 2026, 'curso_id' => $antiguo->id]))->assertOk();
         $this->assertSame(5000, $r->viewData('resumen')['pendiente']);
         $this->assertSame([$m->id, $sinCurso->id], $r->viewData('meses')->flatMap(fn ($mes) => $mes['filas'])->pluck('registro.id')->all());
@@ -92,6 +92,7 @@ class HistorialMensualidadesTest extends TestCase
     public function test_vacio_vencimiento_hoy_y_consultas_de_solo_lectura(): void
     {
         $a = Alumno::factory()->create();
+        Inscripcion::factory()->create(['alumno_id' => $a->id, 'estado' => 'aprobada', 'activa' => true]);
         $this->get($this->url($a))->assertOk()->assertViewHas('resumen', fn ($s) => $s['pendiente'] === 0);
         $this->obligacion($a, null, 'Septiembre', ['fecha_vencimiento' => '2026-09-15', 'monto' => '17.35']);
         DB::connection()->beforeExecuting(function ($sql) { $this->assertMatchesRegularExpression('/^\s*(select|pragma)/i', $sql); });
@@ -117,23 +118,31 @@ class HistorialMensualidadesTest extends TestCase
         foreach ([['anio' => 1899], ['anio' => 'x']] as $f) {
             $this->getJson($this->url($a, $f))->assertUnprocessable();
         }
-        Alumno::factory()->count(26)->create(['apellido' => 'Busqueda']);
-        $this->get(route('admin.mensualidades.historial.index', ['q' => 'Busqueda', 'page' => 2]))->assertOk()
+        $curso = Curso::factory()->create();
+        Alumno::factory()->count(26)->create(['apellido' => 'Busqueda'])->each(function ($alumno) use ($curso) {
+            Inscripcion::factory()->create(['alumno_id' => $alumno->id, 'curso_id' => $curso->id, 'estado' => 'aprobada', 'activa' => true]);
+        });
+        $this->get(route('admin.pagos.historial.index', ['q' => 'Busqueda', 'page' => 2]))->assertOk()
             ->assertViewHas('alumnos', fn ($p) => $p->total() === 26 && $p->count() === 1);
         foreach (['alumno', 'docente', 'director'] as $rol) {
             $this->actingAs(User::factory()->make(['role' => $rol]));
             $this->get($this->url($a))->assertForbidden();
-            $this->get(route('admin.mensualidades.historial.index'))->assertForbidden();
+            $this->get(route('admin.pagos.historial.index'))->assertForbidden();
         }
         auth()->forgetGuards();
         $this->get($this->url($a))->assertRedirect(route('login'));
-        $this->get(route('admin.mensualidades.historial.index'))->assertRedirect(route('login'));
+        $this->get(route('admin.pagos.historial.index'))->assertRedirect(route('login'));
     }
 
     private function referenciaInscripcion(Alumno $a, Curso $c, string $fecha): void
     {
         Inscripcion::factory()->create(['alumno_id' => $a->id, 'curso_id' => $c->id,
             'fecha_inscripcion' => $fecha, 'estado' => 'inactiva', 'activa' => false]);
+        // El expediente retirado sigue siendo consultable por su historia económica.
+        // Una obligación fuera de los años consultados no altera sus indicadores.
+        if (! Mensualidad::where('alumno_id', $a->id)->exists()) {
+            $this->obligacion($a, $c, 'Enero', ['anio' => 2020]);
+        }
     }
 
     public function test_referencia_reciente_limita_meses_sin_ocultar_obligaciones(): void
@@ -142,14 +151,14 @@ class HistorialMensualidadesTest extends TestCase
         $this->referenciaInscripcion($a, $c, '2026-07-20');
         $this->get($this->url($a, ['curso_id' => $c->id]))->assertOk()
             ->assertViewHas('meses', fn ($m) => $m->keys()->all() === [7, 8, 9])
-            ->assertSee('Fecha registrada de solicitud/inscripción')->assertSee('20/07/2026');
+            ->assertSee('Fecha de referencia del registro de inscripción')->assertSee('20/07/2026');
         $antigua = $this->obligacion($a, $c, 'Junio');
         $futura = $this->obligacion($a, $c, '11');
         $r = $this->get($this->url($a, ['curso_id' => $c->id]))->assertOk();
         $this->assertSame([6, 7, 8, 9, 11], $r->viewData('meses')->keys()->all());
         foreach ([$antigua, $futura] as $m) $r->assertSee('data-obligacion="'.$m->id.'"', false);
         $this->assertSame(5000, $r->viewData('resumen')['pendiente']);
-        $this->assertDatabaseCount('mensualidades', 2);
+        $this->assertDatabaseCount('mensualidades', 3);
     }
 
     public function test_anos_anteriores_y_posteriores_conservan_solo_intervalo_o_registros(): void
@@ -217,7 +226,7 @@ class HistorialMensualidadesTest extends TestCase
         foreach ([[], ['curso_id' => $actual->id], ['curso_id' => 'sin_curso'], ['curso_id' => ['1']], ['curso_id' => 999999]] as $parametros) {
             $r = $this->get($this->url($a, $parametros))->assertOk()
                 ->assertDontSee('name="curso_id"', false)->assertDontSee('Todos los cursos')
-                ->assertSee('Consultar')->assertSee('Volver a Alumnos')->assertSee('Sin curso asociado')
+                ->assertSee('Consultar año')->assertSee('Volver a Estados de cuenta')->assertSee('Sin curso asociado')
                 ->assertSee('Curso anterior')->assertSee('Curso asignado actual');
             $this->assertSame($actual->id, $r->viewData('cursoAsignado')->id);
             $this->assertSame(2500, $r->viewData('resumen')['pagado']);
@@ -228,7 +237,8 @@ class HistorialMensualidadesTest extends TestCase
             }
         }
         $this->assertDatabaseHas('mensualidades', ['id' => $pagada->id, 'curso_id' => $antiguo->id, 'estado' => 'Pagado']);
-        $this->assertDatabaseCount('mensualidades', 3);
+        $this->assertSame(3, Mensualidad::where('anio', 2026)->count());
+        $this->assertDatabaseCount('mensualidades', 4); // Incluye la obligación histórica de 2020.
         $this->assertDatabaseCount('pagos', 1);
     }
 

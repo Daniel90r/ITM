@@ -19,5 +19,9 @@
                         <span class="block font-semibold mt-1">{{ $titulo }} <span aria-hidden="true">↗</span></span>
                     </a>
                 @endforeach
+                <a class="reportes-card" href="{{ route('admin.reportes.solicitudes') }}">
+                    <span class="text-xs text-gray-500">06</span>
+                    <span class="block font-semibold mt-1">Reporte de solicitudes de inscripción <span aria-hidden="true">↗</span></span>
+                </a>
             </nav>
 </x-admin-reportes-layout>

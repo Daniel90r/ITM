@@ -1,4 +1,7 @@
 @php($staffResponsive = auth()->check() && in_array(auth()->user()->role, ['admin', 'docente'], true) && request()->routeIs('admin.*', 'docente.*') && !request()->routeIs('docente.asistencia.reporte'))
+@if($staffResponsive && auth()->user()->role === 'admin')
+    @include('components.filtros-autocompletado')
+@endif
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>

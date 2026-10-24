@@ -132,9 +132,10 @@ class ReporteAlumnosPdfTest extends TestCase
         $this->assertStringContainsString('no acredita cuándo se aprobó', $html);
         $menu = $this->get(route('admin.reportes'))->assertOk()->assertDontSee('Reporte de inscripciones: consultar solicitudes');
         $dom = new \DOMDocument(); @$dom->loadHTML($menu->getContent());
-        $this->assertSame(5, (new \DOMXPath($dom))->query('//nav[@aria-label="Tipos de reporte"]/a')->length);
+        $this->assertSame(6, (new \DOMXPath($dom))->query('//nav[@aria-label="Tipos de reporte"]/a')->length);
         $this->assertSame(url('/admin/reportes/inscripciones/pdf'), route('admin.reportes.inscripciones.pdf'));
-        $this->get(route('admin.solicitudes'))->assertOk()->assertSee(route('admin.reportes.inscripciones.pdf'), false);
+        $this->get(route('admin.solicitudes'))->assertOk()->assertDontSee(route('admin.reportes.inscripciones.pdf'), false);
+        $this->get(route('admin.reportes.solicitudes'))->assertOk()->assertSee(route('admin.reportes.inscripciones.pdf'), false);
         $this->get(route('admin.reportes.inscripciones.pdf'))->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->post(route('admin.reportes.alumnos.pdf'))->assertStatus(405);
         foreach (['alumno', 'docente', 'director', 'maestro'] as $rol) {

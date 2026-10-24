@@ -29,7 +29,7 @@ class ReporteVisorController extends Controller
         $filtros = $request->only($parametros);
         $pdfUrl = route($ruta, $filtros);
         $volverUrl = $tipo === 'inscripciones'
-            ? route('admin.solicitudes', $filtros)
+            ? route('admin.reportes.solicitudes', $filtros)
             : route('admin.reportes.show', ['tipo' => $tipo] + $filtros);
 
         return response()->view('admin.reportes.visor', compact('titulo', 'pdfUrl', 'volverUrl'))

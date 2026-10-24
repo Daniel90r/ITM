@@ -220,6 +220,7 @@
 
     function abrirCurso(btn) {
         cursoActual = btn.dataset.curso;
+        document.getElementById('vistaAlumnos').dataset.cursoActual = cursoActual;
 
         document.getElementById('vistaCursos').style.display  = 'none';
         document.getElementById('vistaAlumnos').style.display = 'flex';
@@ -233,6 +234,7 @@
 
     function volverACursos() {
         cursoActual = '';
+        document.getElementById('vistaAlumnos').dataset.cursoActual = '';
         document.getElementById('vistaAlumnos').style.display = 'none';
         document.getElementById('vistaCursos').style.display  = 'flex';
 
