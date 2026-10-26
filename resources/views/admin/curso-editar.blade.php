@@ -1,9 +1,23 @@
 <x-app-layout>
-<div class="curso-horarios-edicion" style="display:flex; height:100vh; overflow:hidden;">
+@push('styles')
+<style>
+    .curso-horarios-edicion{position:fixed;inset:0;display:flex;height:100vh;height:100dvh;min-height:0;overflow:hidden;background:#f8fafc}
+    .curso-horarios-edicion>.ce-panel{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:#f8fafc}
+    .curso-horarios-edicion .ce-form-scroll{flex:1;min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:24px;box-sizing:border-box;background:#f8fafc}
+    @media screen and (min-width:1024px){
+        .curso-horarios-edicion>[data-staff-sidebar]{height:100vh;height:100dvh;min-height:0;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+        .curso-horarios-edicion>[data-staff-sidebar]>*{flex-shrink:0}
+    }
+    @media screen and (max-width:1023px){
+        .curso-horarios-edicion .ce-form-scroll{flex:0 0 auto;overflow:visible;padding:16px}
+    }
+</style>
+@endpush
+<div class="curso-horarios-edicion">
 
     @include('components.admin-sidebar', ['active' => 'cursos'])
 
-    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc;">
+    <div class="ce-panel">
 
         <header style="background:#ffffff; border-bottom:1px solid #e5e7eb; padding:14px 24px; display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex-shrink:0;">
                         <x-boton-regreso :href="route('admin.cursos')">Volver a Cursos</x-boton-regreso>
@@ -13,7 +27,7 @@
             </div>
         </header>
 
-        <div style="flex:1; overflow-y:auto; padding:24px;">
+        <div class="ce-form-scroll">
             <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:28px; max-width:560px;">
 
                 @if($errors->any())
@@ -59,11 +73,17 @@
                     </div>
 
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        @php
+                            $inicioBloqueado = in_array($curso->estado_curso, [\App\Models\Curso::ESTADO_ACTIVO, \App\Models\Curso::ESTADO_FINALIZADO], true);
+                        @endphp
                         <div>
-                            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Fecha de inicio <span style="color:red">*</span></label>
-                            <input type="date" name="fecha_inicio" value="{{ old('fecha_inicio', $curso->fecha_inicio?->format('Y-m-d')) }}" required
+                            <label for="curso-fecha-inicio" style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Fecha de inicio <span style="color:red">*</span></label>
+                            <input id="curso-fecha-inicio" type="date" name="fecha_inicio" value="{{ $inicioBloqueado ? $curso->fecha_inicio?->format('Y-m-d') : old('fecha_inicio', $curso->fecha_inicio?->format('Y-m-d')) }}" required @readonly($inicioBloqueado) @if($inicioBloqueado) aria-describedby="curso-inicio-ayuda" @endif
                                 style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none;"
                                 onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
+                            @if($inicioBloqueado)
+                                <p id="curso-inicio-ayuda" style="font-size:12px; color:#64748b; margin:6px 0 0;">{{ $curso->estado_curso === \App\Models\Curso::ESTADO_FINALIZADO ? 'La fecha de inicio no puede modificarse porque el curso ya está finalizado' : 'La fecha de inicio no puede modificarse porque el curso ya está activo' }}</p>
+                            @endif
                         </div>
                         <div>
                             <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Fecha de finalización <span style="color:red">*</span></label>

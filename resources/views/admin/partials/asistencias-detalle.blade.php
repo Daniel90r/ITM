@@ -1,5 +1,8 @@
 <p class="detalle-mensaje">{{ number_format($asistencias->total()) }} registros filtrados · Mostrando {{ $asistencias->firstItem() ?? 0 }}–{{ $asistencias->lastItem() ?? 0 }}</p>
-<div class="tabla-scroll" role="region" aria-label="Asistencias individuales" tabindex="0">
+@foreach($asistencias->getCollection()->groupBy(fn ($registro) => $registro->fecha->format('Y-m')) as $periodo => $registrosMes)
+<details class="mes-asistencias" data-mes="{{ $periodo }}" @if($loop->first) open @endif>
+    <summary>{{ ucfirst($registrosMes->first()->fecha->copy()->locale('es')->translatedFormat('F Y')) }} · {{ $totalesPorMes[$periodo] }} {{ (int)$totalesPorMes[$periodo] === 1 ? 'registro' : 'registros' }} @if((int)$totalesPorMes[$periodo] !== $registrosMes->count()) · {{ $registrosMes->count() }} en esta página @endif</summary>
+<div class="tabla-scroll" role="region" aria-label="Asistencias de {{ $periodo }}" tabindex="0">
     <table class="reporte-tabla">
         <caption class="solo-lectores">Asistencias individuales, de la más reciente a la más antigua</caption>
         <thead><tr>
@@ -7,7 +10,7 @@
             <th scope="col">Estado</th><th scope="col">Docente</th>
         </tr></thead>
         <tbody>
-            @forelse($asistencias as $asistencia)
+            @forelse($registrosMes as $asistencia)
                 <tr data-asistencia-id="{{ $asistencia->id }}">
                     <td>{{ $asistencia->curso->nombre ?? '—' }}</td>
                     <td><p class="materia-nombre">{{ $asistencia->detalleCurso->materia->nombre ?? '—' }}</p><p class="dato-secundario">{{ $asistencia->detalleCurso->materia->codigo ?? '' }}</p></td>
@@ -28,6 +31,11 @@
         </tbody>
     </table>
 </div>
+</details>
+@endforeach
+@if($asistencias->hasPages())
+    <p class="detalle-mensaje">Un mes puede continuar en otra página. Sus totales incluyen todo el período filtrado.</p>
+@endif
 @if($asistencias->hasPages())
     <div class="detalle-paginacion">{{ $asistencias->links() }}</div>
 @endif

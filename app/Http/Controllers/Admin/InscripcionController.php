@@ -18,15 +18,44 @@ use Illuminate\Validation\ValidationException;
 
 class InscripcionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $filtros = $request->validate([
+            'incluir_historicos' => ['nullable', 'boolean'],
+            'estado_alumno' => ['nullable', 'in:todos,activos,inactivos'],
+            'curso_id' => ['nullable', 'integer', 'exists:cursos,id'],
+            'q' => ['nullable', 'string', 'max:150'],
+        ]);
+        $filtros = app(\App\Services\CursosConsulta::class)->normalizar($filtros);
+        $estadoAlumno = $filtros['estado_alumno'] ?? 'todos';
+        $busqueda = trim($filtros['q'] ?? '');
         // "Alumnos inscritos": únicamente inscripciones APROBADAS.
         $inscripciones = Inscripcion::with(['alumno', 'curso'])
             ->aprobada()
+            ->whereIn('curso_id', app(\App\Services\CursosConsulta::class)->opciones($filtros)->pluck('id'))
+            ->when($filtros['curso_id'] ?? null, fn ($q, $id) => $q->where('curso_id', $id))
+            ->whereHas('alumno', function ($q) use ($estadoAlumno, $busqueda) {
+                if ($estadoAlumno !== 'todos') $q->where('activo', $estadoAlumno === 'activos');
+                if ($busqueda !== '') {
+                    $q->where(function ($q) use ($busqueda) {
+                        $q->where('nombre', 'like', '%'.$busqueda.'%')
+                            ->orWhere('apellido', 'like', '%'.$busqueda.'%')
+                            ->orWhere('codigo', 'like', '%'.$busqueda.'%');
+                    });
+                }
+            })
             ->orderBy('fecha_inscripcion', 'desc')
-            ->paginate(10);
+            ->orderByDesc('id')
+            ->paginate(10)->withQueryString();
+        $cursos = app(\App\Services\CursosConsulta::class)->opciones($filtros);
+        $revisiones = \App\Models\CambioEstadoPersona::query()
+            ->whereIn('alumno_id', $inscripciones->pluck('alumno_id'))
+            ->selectRaw('alumno_id, MAX(id) AS revision')->groupBy('alumno_id')->pluck('revision', 'alumno_id');
+        foreach ($inscripciones as $inscripcion) {
+            $inscripcion->revision_estado = (int) ($revisiones[$inscripcion->alumno_id] ?? 0);
+        }
 
-        return view('admin.inscripciones', compact('inscripciones'));
+        return view('admin.inscripciones', compact('inscripciones', 'cursos', 'estadoAlumno', 'busqueda', 'filtros'));
     }
 
     public function store(Request $request)

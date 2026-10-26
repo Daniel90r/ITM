@@ -1,7 +1,7 @@
 <?php
 namespace Tests\Feature;
 
-use App\Models\{Alumno, AsignacionDocente, Curso, DetalleCurso, Inscripcion, Maestro, Materia, Mensualidad, User};
+use App\Models\{Alumno, AsignacionDocente, Asistencia, Curso, DetalleCurso, Inscripcion, Maestro, Materia, Mensualidad, User};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -33,14 +33,16 @@ class StaffResponsiveTest extends TestCase
         $detalle = DetalleCurso::factory()->create(['curso_id' => $curso->id, 'materia_id' => $materia->id, 'maestro_id' => $maestro->id]);
         AsignacionDocente::create(['detalle_curso_id' => $detalle->id, 'maestro_id' => $maestro->id, 'estado' => 'activa']);
         Inscripcion::factory()->create(['alumno_id' => $alumno->id, 'curso_id' => $curso->id, 'estado' => 'aprobada', 'activa' => true]);
+        Asistencia::create(['alumno_id' => $alumno->id, 'curso_id' => $curso->id, 'detalle_curso_id' => $detalle->id, 'registrado_por' => $maestro->id, 'fecha' => '2026-10-17', 'estado' => 'presente']);
         foreach (range(1, 30) as $numero) {
             $otro = Alumno::factory()->create(['nombre' => 'Estudiante Ficticio '.$numero]);
             Inscripcion::factory()->create(['alumno_id' => $otro->id, 'curso_id' => $curso->id, 'estado' => 'aprobada', 'activa' => true]);
+            Asistencia::create(['alumno_id' => $otro->id, 'curso_id' => $curso->id, 'detalle_curso_id' => $detalle->id, 'registrado_por' => $maestro->id, 'fecha' => '2026-10-17', 'estado' => 'presente']);
         }
         Mensualidad::create(['alumno_id' => $alumno->id, 'curso_id' => $curso->id, 'mes' => '6', 'anio' => now()->year, 'monto' => 25, 'estado' => 'pendiente', 'fecha_vencimiento' => now()->subMonth()->toDateString()]);
         $antes = DB::table('inscripciones')->get()->toJson();
         $this->actingAs($admin);
-        foreach (['dashboard', 'alumnos', 'maestros', 'directores.index', 'encargados.index', 'cursos', 'materias', 'solicitudes', 'inscripciones', 'asistencias', 'notas', 'boletas', 'mensualidades', 'pagos', 'reportes', 'pagos.historial.index'] as $nombre) {
+        foreach (['dashboard', 'alumnos', 'maestros', 'directores.index', 'encargados.index', 'cursos', 'materias', 'solicitudes', 'inscripciones', 'asistencias', 'notas', 'boletas', 'mensualidades', 'pagos', 'reportes', 'pagos.historial.index', 'respaldos'] as $nombre) {
             $this->comprobar('admin-'.$nombre, route('admin.'.$nombre));
         }
         foreach (['alumnos', 'cursos', 'calificaciones', 'asistencias', 'mensualidades', 'maestros'] as $tipo) {
@@ -51,6 +53,8 @@ class StaffResponsiveTest extends TestCase
         $this->comprobar('curso-detalle', route('admin.cursos.show', $curso));
         $this->comprobar('curso-editar', route('admin.cursos.edit', $curso));
         $this->comprobar('maestro-detalle', route('admin.maestros.show', $maestro));
+        $this->comprobar('materia-editar', route('admin.materias.edit', $materia));
+        $this->comprobar('asistencias-vacias', route('admin.asistencias', ['anio' => 1900]));
         $this->actingAs($docente);
         $this->comprobar('docente-dashboard', route('docente.dashboard'));
         foreach (['notas', 'asistencia'] as $nombre) {
@@ -62,6 +66,7 @@ class StaffResponsiveTest extends TestCase
     public function test_scope_y_permisos_no_cambian(): void
     {
         $this->withoutVite();
+        $this->get(route('login'))->assertOk()->assertDontSee('itm-admin-document')->assertSee('linear-gradient');
         $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
         $this->get(route('docente.notas'))->assertRedirect(route('login'));
         $alumnoUser = User::factory()->create(['role' => 'alumno']);
@@ -76,6 +81,11 @@ class StaffResponsiveTest extends TestCase
     {
         $respuesta = $this->get($url)->assertOk()->assertSee('itm-staff')->assertSee('aria-controls="staff-navigation"', false)->assertSee('data-staff-sidebar', false)
             ->assertSee('Cerrar menú de navegación', false);
+        if (auth()->user()->role === 'admin') {
+            $respuesta->assertSee('class="itm-admin-document"', false)->assertSee(' itm-admin"', false)->assertSee('overflow:clip!important', false);
+        } else {
+            $respuesta->assertDontSee('itm-admin-document');
+        }
         $this->assertSame(1, substr_count($respuesta->getContent(), 'id="staff-navigation"'));
         if ($directorio = getenv('ITM_STAFF_PREVIEW_DIR')) {
             $html = $respuesta->getContent();

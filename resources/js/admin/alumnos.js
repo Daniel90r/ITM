@@ -1,3 +1,5 @@
+import {initFiltrosAlumnos} from './alumnos-filtros.js';
+
 function abrirModalEditar(id, nombre, apellido, email, cursoId, telefono, cursoNombre) {
     document.getElementById('editId').value       = id;
     document.getElementById('editNombre').value   = nombre;
@@ -56,6 +58,8 @@ function filtrarAlumnos() {
 }
 
 function limpiarFiltrosAlumnos() {
+    const alcance = document.getElementById('alumnos-alcance');
+    if (alcance) { window.location.assign(alcance.action); return; }
     document.getElementById('buscarAlumno').value = '';
     document.getElementById('filtrarCurso').value = '';
     document.getElementById('filtrarAnio').value  = '';
@@ -73,6 +77,7 @@ window.filtrarAlumnos = filtrarAlumnos;
 window.limpiarFiltrosAlumnos = limpiarFiltrosAlumnos;
 
 document.addEventListener('DOMContentLoaded', function() {
+    initFiltrosAlumnos(document);
     const modalNuevo = document.getElementById('modalNuevoAlumno');
     const modalEditar = document.getElementById('modalEditarAlumno');
     if (modalNuevo) {

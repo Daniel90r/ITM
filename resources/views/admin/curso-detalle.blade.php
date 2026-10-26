@@ -44,7 +44,22 @@
                 </div>
             </div>
 
-            <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
+            <form method="POST" action="{{ route('admin.cursos.orden', $curso) }}" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
+    @csrf
+    <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:4px; height:16px; background:#111827; border-radius:2px;"></div>
+        <p style="font-size:14px; font-weight:600; color:#111827; margin:0;">Orden académico de materias</p>
+    </div>
+    @foreach($detalleCursosVisibles as $detalle)
+        <label style="display:flex; align-items:center; gap:12px; font-size:13px;">
+            <span style="flex:1;">{{ $detalle->materia->nombre }}</span>
+            <input type="number" min="1" name="orden[{{ $detalle->id }}]" value="{{ $detalle->orden_academico }}" style="width:80px; border:1px solid #d1d5db; border-radius:6px; padding:6px;">
+        </label>
+    @endforeach
+    <button type="submit" style="align-self:flex-start; background:#111827; color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px;">Guardar orden</button>
+</form>
+
+<div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <div style="width:4px; height:16px; background:#111827; border-radius:2px;"></div>
                     <p style="font-size:14px; font-weight:600; color:#111827; margin:0;">Información del período</p>

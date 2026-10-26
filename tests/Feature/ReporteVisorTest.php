@@ -66,6 +66,7 @@ class ReporteVisorTest extends TestCase
                 'maestros' => ['estado' => 'activo'],
                 default => ['estado' => 'aprobada', 'q' => 'Prueba ficticia'],
             };
+            if ($tipo !== 'inscripciones') $filtros['incluir_historicos'] = 0;
             $url = route('admin.reportes.visor', ['tipo' => $tipo] + $filtros);
             $listado = $tipo === 'inscripciones' ? route('admin.reportes.solicitudes', $filtros) : route('admin.reportes.show', ['tipo' => $tipo] + $filtros);
             $html = $this->get($listado)->assertOk()->assertSee('Visualizar PDF')->getContent();

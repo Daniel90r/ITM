@@ -21,6 +21,7 @@ window.filtrarMaterias = function() {
     const cursoId = document.getElementById('selectCurso').value;
     const selectMateria = document.getElementById('selectMateria');
     selectMateria.value = '';
+    document.getElementById('inputDetalleCursoId').value = '';
     if (!cursoId) {
         selectMateria.querySelectorAll('option[data-curso]').forEach(o => o.style.display = 'none');
         selectMateria.querySelector('option[value=""]').textContent = '-- Primero selecciona un curso --';

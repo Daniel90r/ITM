@@ -57,6 +57,7 @@
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Código</th>
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Nombre</th>
                             <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Estado</th>
+                            <th style="padding:11px 24px;text-align:left;font-size:11px;color:#6b7280;">Acciones</th>
 
                         </tr>
                     </thead>
@@ -86,10 +87,11 @@
                                 </span>
                             </td>
 
+                            <td style="padding:13px 24px;"><a href="{{ route('admin.materias.edit', $materia) }}" style="display:inline-flex;padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;color:#1e293b;background:#f8fafc;text-decoration:none;">Editar</a></td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="3" style="padding:40px; text-align:center; color:#9ca3af; font-size:13px;">
+                            <td colspan="4" style="padding:40px; text-align:center; color:#9ca3af; font-size:13px;">
                                 No hay materias registradas.
                             </td>
                         </tr>

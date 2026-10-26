@@ -18,6 +18,18 @@
     .alumnos-table td:nth-child(6) span { display:inline-flex; align-items:center; white-space:nowrap; }
     .alumnos-table td:last-child button { display:inline-flex; align-items:center; justify-content:center; min-height:32px; white-space:nowrap; }
     .alumnos-filtros > * { min-width:0; }
+    .alumnos-panel .alumnos-filtros-panel{padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin:0;min-width:0}
+    .alumnos-panel .alumnos-filtros{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .alumnos-panel .alumnos-filtro-campo{min-width:0}
+    .alumnos-panel .alumnos-filtro-campo label{display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px}
+    .alumnos-panel .alumnos-filtro-campo :is(input,select){box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#0f172a;font-size:13px}
+    .alumnos-panel .alumnos-filtro-historicos{margin:10px 0 12px}
+    .alumnos-panel .alumnos-filtro-historicos [data-consulta-cursos-alcance]>p{display:none}
+    .alumnos-panel #alumnos-alcance .alumnos-filtros-busqueda{display:grid;grid-template-columns:minmax(0,1fr) auto!important;gap:12px;align-items:end}
+    .alumnos-panel .alumnos-limpiar{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 14px;background:white;border:1px solid #cbd5e1;border-radius:8px;color:#334155;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+    .alumnos-panel .alumnos-limpiar:hover{background:#e2e8f0;border-color:#94a3b8}
+    .alumnos-panel .alumnos-filtro-nota{margin:10px 0 0;color:#64748b;font-size:12px;line-height:1.5}
+    .alumnos-panel .alumnos-filtros-panel :is(input,select,button):focus-visible{outline:3px solid #60a5fa;outline-offset:3px}
     @media(max-width:1000px) {
         .alumnos-filtros { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
         .alumnos-resumen { gap:8px !important; }
@@ -27,6 +39,7 @@
         .alumnos-contenido { padding:14px !important; }
         .alumnos-resumen { grid-template-columns:1fr !important; }
         .alumnos-filtros { grid-template-columns:minmax(0,1fr) !important; }
+        .alumnos-panel #alumnos-alcance .alumnos-filtros-busqueda,.alumnos-panel #alumnos-alcance .alumnos-filtros{grid-template-columns:minmax(0,1fr)!important}
         .alumnos-encabezado { flex-wrap:wrap; gap:10px; }
     }
 </style>
@@ -44,7 +57,7 @@
                 </div>
                 <div>
                     <h2 style="font-size:16px; font-weight:700; margin:0; color:#111827;">Gestión de Alumnos</h2>
-                    <p style="font-size:12px; color:#6b7280; margin:0;" id="contadorHeader" data-total="{{ $alumnos->count() }} alumnos inscritos">{{ $alumnos->count() }} alumnos inscritos</p>
+                    <p data-alumnos-contador style="font-size:12px; color:#6b7280; margin:0;" id="contadorHeader" data-total="{{ $alumnos->count() }} alumnos inscritos">{{ $alumnos->count() }} alumnos inscritos</p>
                 </div>
             </div>
             <span style="font-size:12px; color:#9ca3af; background:#f3f4f6; padding:6px 12px; border-radius:8px;">{{ now()->isoFormat('MMMM YYYY') }}</span>
@@ -68,7 +81,7 @@
             @endif
 
             {{-- Aqui se muestra las estadísticas --}}
-            <div class="alumnos-resumen" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;">
+            <div data-alumnos-resumen class="alumnos-resumen" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;">
                 <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:14px;">
                     <div style="width:40px; height:40px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; justify-content:center;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -114,52 +127,50 @@
                         </button>
                     </div>
 
-                    {{-- Buscadores --}}
-                    <div class="alumnos-filtros" style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:center;">
-                        <div style="position:relative;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input type="text" id="buscarAlumno" placeholder="Buscar alumno..."
-                                style="width:100%; padding:8px 12px 8px 30px; font-size:13px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
-                                oninput="filtrarAlumnos()"
-                                onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
+                    <form id="alumnos-alcance" method="GET" action="{{ route('admin.alumnos') }}" class="alumnos-filtros-panel" aria-label="Filtros del listado de alumnos">
+                        <div class="alumnos-filtros">
+                            <div class="alumnos-filtro-campo">
+                                <label for="alumnos-curso-consulta">Curso</label>
+                                <select id="alumnos-curso-consulta" name="curso_id" onchange="this.form.requestSubmit()"><x-consulta-cursos-opciones :cursos="$cursosFiltro" :filtros="$filtrosCursos" /></select>
+                            </div>
+                            <div class="alumnos-filtro-campo">
+                                <label for="filtrarAnio">Año lectivo</label>
+                                <select id="filtrarAnio" name="anio" form="alumnos-alcance" onchange="filtrarAlumnos()">
+                                    <option value="">Todos los años</option>
+                                    @php
+                                        $aniosList = $alumnos->filter(fn($a) => $a->inscripciones->isNotEmpty())
+                                            ->map(fn($a) => $a->inscripciones->first()->curso->anio_lectivo ?? null)
+                                            ->filter()->unique()->sort()->values();
+                                        if (!empty($filtrosCursos['anio']) && !$aniosList->contains($filtrosCursos['anio'])) {
+                                            $aniosList = $aniosList->push($filtrosCursos['anio'])->sort()->values();
+                                        }
+                                    @endphp
+                                    @foreach($aniosList as $anio)
+                                    <option value="{{ $anio }}" @selected(($filtrosCursos['anio'] ?? '') == $anio)>{{ $anio }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-
-                        <select id="filtrarCurso" onchange="filtrarAlumnos()"
-                            style="padding:8px 12px; font-size:13px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:#111827; outline:none; cursor:pointer;">
-                            <option value="">Todos los cursos</option>
-                            @php
-                            $cursosList = $alumnos->filter(fn($a) => $a->inscripciones->isNotEmpty())
-                                ->map(fn($a) => $a->inscripciones->first()->curso->nombre ?? null)
-                                ->filter()->unique()->sort()->values();
-                            @endphp
-                            @foreach($cursosList as $c)
-                            <option value="{{ strtolower($c) }}">{{ $c }}</option>
-                            @endforeach
-                        </select>
-
-                        <select id="filtrarAnio" onchange="filtrarAlumnos()"
-                            style="padding:8px 12px; font-size:13px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:#111827; outline:none; cursor:pointer;">
-                            <option value="">Todos los años</option>
-                            @php
-                            $aniosList = $alumnos->filter(fn($a) => $a->inscripciones->isNotEmpty())
-                                ->map(fn($a) => $a->inscripciones->first()->curso->anio_lectivo ?? null)
-                                ->filter()->unique()->sort()->values();
-                            @endphp
-                            @foreach($aniosList as $anio)
-                            <option value="{{ $anio }}">{{ $anio }}</option>
-                            @endforeach
-                        </select>
-
-                        <button onclick="limpiarFiltrosAlumnos()"
-                            style="padding:8px 14px; background:none; border:1px solid #e5e7eb; border-radius:8px; font-size:12px; color:#6b7280; cursor:pointer; white-space:nowrap;"
-                            onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
-                            ✕ Limpiar
-                        </button>
-                    </div>
+                        <div class="alumnos-filtro-historicos"><x-consulta-cursos-alcance :filtros="$filtrosCursos" /></div>
+                        <div class="alumnos-filtros-busqueda">
+                            <div class="alumnos-filtro-campo">
+                                <label for="buscarAlumno">Buscar alumno</label>
+                                <input type="text" id="buscarAlumno" name="q" form="alumnos-alcance" value="{{ $filtrosCursos['q'] ?? '' }}" placeholder="Buscar alumno..."
+                                    oninput="filtrarAlumnos()" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
+                            </div>
+                            <button type="button" class="alumnos-limpiar" onclick="limpiarFiltrosAlumnos()">Limpiar filtros</button>
+                        </div>
+                        <input type="hidden" id="filtrarCurso" value="">
+                        <p class="alumnos-filtro-nota">Sin seleccionar curso también se muestran expedientes sin inscripción aprobada.</p>
+                        <noscript><button type="submit">Consultar</button><a href="{{ route('admin.alumnos') }}">Limpiar filtros</a></noscript>
+                    </form>
 
                     <p id="contadorResultados" style="font-size:12px; color:#9ca3af; margin:8px 0 0; display:none;"></p>
+                    <p data-alumnos-carga role="status" aria-live="polite" style="font-size:12px;color:#64748b;margin:4px 0 0"></p>
+                    <p data-alumnos-error role="alert" style="font-size:13px;color:#991b1b;margin:4px 0 0"></p>
                 </div>
 
+                <div data-alumnos-resultados aria-live="polite" aria-busy="false">
                 <div class="alumnos-scroll" role="region" aria-label="Listado de alumnos" tabindex="0">
                 <table class="alumnos-table">
                     <thead>
@@ -236,8 +247,9 @@
                 </table>
                 </div>
 
-                <div id="sinResultados" style="display:none; padding:40px; text-align:center; color:#9ca3af; font-size:13px;">
+                <div id="sinResultados" style="display:{{ $alumnos->isEmpty() ? 'block' : 'none' }}; padding:40px; text-align:center; color:#9ca3af; font-size:13px;">
                     No se encontraron alumnos con los filtros seleccionados.
+                </div>
                 </div>
             </div>
         </div>

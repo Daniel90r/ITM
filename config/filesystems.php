@@ -30,6 +30,14 @@ return [
 
     'disks' => [
 
+        'boletas_oficiales' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/boletas-oficiales'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

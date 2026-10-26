@@ -32,8 +32,13 @@ class NotasController extends Controller
         $maestro = $this->maestroAutenticado();
 
         $detalleCursos = $this->detallesAsignados($maestro);
+        $filtrosCursos = app(\App\Services\CursosConsulta::class)->normalizar($request->validate([
+            'incluir_historicos' => 'nullable|boolean', 'curso_id' => 'nullable|integer|exists:cursos,id',
+        ]) + ['curso_id' => $request->input('curso_id') ?: $detalleCursos->firstWhere('id', $request->input('detalle_curso_id'))?->curso_id]);
+        $idsOpciones = app(\App\Services\CursosConsulta::class)->opciones($filtrosCursos)->pluck('id');
 
         $cursos = $detalleCursos
+            ->filter(fn ($d) => $idsOpciones->contains($d->curso_id))
             ->groupBy('curso_id')
             ->map(fn ($items) => [
                 'curso'    => $items->first()->curso,
@@ -57,6 +62,7 @@ class NotasController extends Controller
             $detalle = $detalleCursos->firstWhere('id', $detalleCursoId);
 
             abort_if($detalle === null, 403, 'No tiene esa materia asignada actualmente.');
+            abort_if($cursoSeleccionado && (int) $cursoSeleccionado !== (int) $detalle->curso_id, 403, 'La materia no corresponde al curso seleccionado.');
 
             $alumnos = $this->alumnosDeLaMateria($detalle);
 
@@ -68,7 +74,7 @@ class NotasController extends Controller
         return view('docente.notas', compact(
             'maestro', 'cursos', 'detalleCursos',
             'detalleCursoId', 'cursoSeleccionado',
-            'alumnos', 'notas', 'detalle'
+            'alumnos', 'notas', 'detalle', 'filtrosCursos'
         ));
     }
 
@@ -86,8 +92,8 @@ class NotasController extends Controller
             'notas.*.laboratorio'    => 'nullable|numeric|min:0|max:10',
             'notas.*.examen_teorico' => 'nullable|numeric|min:0|max:10',
             'notas.*.practica'       => 'nullable|numeric|min:0|max:10',
-            'notas.*.conducta'       => 'nullable|string|max:2',
-        ]);
+            'notas.*.conducta'       => \App\Support\Conducta::reglas(),
+        ], ['notas.*.conducta.in' => 'Selecciona Bueno, Muy Bueno o Excelente, o deja la conducta pendiente.']);
 
         // ── Autorización real: la materia debe estar asignada al maestro ──
         $detalle = DetalleCurso::with(['curso', 'materia'])

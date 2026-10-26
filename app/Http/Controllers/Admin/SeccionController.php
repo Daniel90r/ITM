@@ -207,6 +207,12 @@ class SeccionController extends Controller
             if ($curso->estado_curso === Curso::ESTADO_FINALIZADO) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['estado' => 'Un curso finalizado no puede modificarse.']);
             }
+            if ($curso->estado_curso === Curso::ESTADO_ACTIVO
+                && $curso->fecha_inicio?->format('Y-m-d') !== \Illuminate\Support\Carbon::parse($datos['fecha_inicio'])->format('Y-m-d')) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'fecha_inicio' => 'La fecha de inicio no puede modificarse porque el curso ya está activo',
+                ]);
+            }
             $curso->update($datos);
             app(\App\Services\HorariosCurso::class)->guardar($curso, $horarios);
         });
@@ -214,7 +220,36 @@ class SeccionController extends Controller
         return redirect()->route('admin.cursos')->with('success', 'Curso actualizado correctamente.');
     }
 
-    public function finalizar(Curso $curso)
+public function updateOrdenMaterias(Request $request, Curso $curso)
+    {
+        $validated = $request->validate([
+            'orden' => 'required|array',
+            'orden.*' => 'nullable|integer|min:1',
+        ]);
+
+        $ordenes = array_filter($validated['orden'], fn ($valor) => $valor !== null && $valor !== '');
+        if (count($ordenes) !== count(array_unique($ordenes))) {
+            return back()->with('error', 'No se pueden repetir posiciones dentro del mismo curso.');
+        }
+
+        $detalleIds = DetalleCurso::where('curso_id', $curso->id)->pluck('id')->map(fn ($id) => (string) $id)->all();
+        $enviados = array_keys($validated['orden']);
+        if (array_diff($enviados, $detalleIds) !== []) {
+            return back()->with('error', 'No se pueden modificar materias de otro curso.');
+        }
+
+        DB::transaction(function () use ($curso, $validated) {
+            foreach ($validated['orden'] as $detalleId => $orden) {
+                DetalleCurso::where('curso_id', $curso->id)
+                    ->where('id', $detalleId)
+                    ->update(['orden_academico' => $orden === null || $orden === '' ? null : (int) $orden]);
+            }
+        });
+
+        return redirect()->route('admin.cursos.show', $curso->id)
+            ->with('success', 'Orden académico actualizado correctamente.');
+    }
+public function finalizar(Curso $curso)
     {
         if ($curso->estado_curso === 'FINALIZADO') {
             return back()->with('error', 'El curso ya está finalizado.');

@@ -9,10 +9,9 @@ use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Services\BoletaService;
 use App\Exceptions\BoletaEmissionException;
+use App\Exceptions\BoletaStorageException;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 
 class BoletaController extends Controller
 {
@@ -20,9 +19,15 @@ class BoletaController extends Controller
         private BoletaService $boletaService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        $filtrosCursos = app(\App\Services\CursosConsulta::class)->normalizar($request->validate([
+            'incluir_historicos' => 'nullable|boolean', 'curso_id' => 'nullable|integer|exists:cursos,id',
+        ]));
+        $cursosFiltro = app(\App\Services\CursosConsulta::class)->opciones($filtrosCursos);
         $inscripcionesAprobadas = Inscripcion::where('estado', 'aprobada')
+            ->whereIn('curso_id', $cursosFiltro->pluck('id'))
+            ->when($filtrosCursos['curso_id'] ?? null, fn ($q, $id) => $q->where('curso_id', $id))
             ->with([
                 'alumno.notas.detalleCurso.materia',
                 'curso'
@@ -48,7 +53,7 @@ class BoletaController extends Controller
             ->sortBy(fn ($g) => $g['curso']?->nombre ?? 'zzz')
             ->values();
 
-        return view('admin.boletas', compact('grupos'));
+        return view('admin.boletas', compact('grupos', 'filtrosCursos', 'cursosFiltro'));
     }
 
     /**
@@ -120,7 +125,10 @@ class BoletaController extends Controller
         }
 
         if ($selectorActivo) {
-            return view('admin.boleta-detalle', compact('alumno', 'cursosAprobados', 'curso'));
+            $filtrosCursos = app(\App\Services\CursosConsulta::class)->normalizar(request()->validate(['incluir_historicos'=>'nullable|boolean']));
+            $ids = app(\App\Services\CursosConsulta::class)->opciones($filtrosCursos)->pluck('id');
+            $cursosAprobados = $cursosAprobados->whereIn('id', $ids)->values();
+            return view('admin.boleta-detalle', compact('alumno', 'cursosAprobados', 'curso', 'filtrosCursos'));
         }
 
         // Usar el service para obtener los datos de preview (igual que preview())
@@ -183,17 +191,30 @@ class BoletaController extends Controller
                     'curso'  => $cursoId,
                 ])
                 ->withErrors(['emision' => $e->getMessage()]);
+        } catch (BoletaStorageException $e) {
+            // No registrar mensajes de adaptadores: pueden contener rutas o datos privados.
+            \Illuminate\Support\Facades\Log::error('boleta.emision_almacenamiento_fallido', [
+                'operacion' => $e->operacion,
+                'causa' => get_class($e->getPrevious() ?? $e),
+                'administrador_id' => $request->user()?->getAuthIdentifier(),
+            ]);
+            return redirect()->route('admin.boletas.preview', ['alumno' => $alumnoId, 'curso' => $cursoId])
+                ->withErrors(['emision' => BoletaStorageException::MENSAJE_USUARIO]);
         }
     }
 
     public function generarPdf($alumno_id)
     {
+        request()->validate(['curso_id'=>'nullable|integer|min:1']);
+        $historicas = Boleta::where('alumno_id', $alumno_id)
+            ->when(request()->filled('curso_id'), fn ($q) => $q->where('curso_id', request()->query('curso_id')))
+            ->get();
+        if ($historicas->count() === 1) {
+            return $this->descargarEmision($historicas->first());
+        }
         $alumno = Alumno::with([
             'inscripciones' => fn ($q) => $q->aprobada(),
             'inscripciones.curso',
-            'notas.detalleCurso.curso',
-            'notas.detalleCurso.materia',
-            'notas.detalleCurso.maestro',
         ])->findOrFail($alumno_id);
 
         [$curso, $cursosAprobados, $selectorActivo] = $this->resolverCurso(
@@ -203,12 +224,25 @@ class BoletaController extends Controller
 
         // Una boleta PDF representa un curso académico concreto.
         abort_if(! $curso, 404, 'Debe seleccionar un curso para generar la boleta.');
+        if ($historica = $historicas->firstWhere('curso_id', $curso->id)) {
+            return $this->descargarEmision($historica);
+        }
 
-        $notas = $this->notasDelCurso($alumno, $curso->id);
+        // Reutilizar la elegibilidad de la emisión: incluye opcionales solamente
+        // cuando están asociadas a este alumno y muestra las materias sin nota.
+        try {
+            $preview = $this->boletaService->previsualizar($alumno->id, $curso->id);
+        } catch (BoletaEmissionException $e) {
+            abort(404, $e->getMessage());
+        }
+        $notas = \App\Support\BoletaPdfPresentacion::notasDesdeFilas($preview['filas'], $curso->id);
         $promedio_general = $notas->whereNotNull('promedio')->avg('promedio');
+        $calificacionesCompletas = $preview['puede_emitir_academicamente'] && $preview['materias_esperadas'] > 0;
+        $estado_academico = $this->boletaService->estadoAcademicoCurso($preview['filas']);
+        $docenteUltimaMateria = $this->boletaService->docenteUltimaMateria($curso->id);
 
         $concepto = function ($p) {
-            if (! $p) return '';
+            if ($p === null || $p === '') return '';
             if ($p >= 9) return 'E';
             if ($p >= 8) return 'MB';
             if ($p >= 7) return 'B';
@@ -216,29 +250,20 @@ class BoletaController extends Controller
             return 'D';
         };
 
-        // La firma y el nombre proceden de la emisión, nunca del Director actual
-        // ni de las firmas del alumno o encargado. No modificar el snapshot.
-        $boletaEmitida = Boleta::where('alumno_id', $alumno->id)->where('curso_id', $curso->id)->first();
+        // Sin emisión: generar una vista actual. No crea registros ni archivos oficiales.
+        $boletaEmitida = null;
         $firmaDirector = null;
-        $fechaBoleta = $boletaEmitida?->fecha_emision ?? now();
-        if ($boletaEmitida) {
-            $path = $boletaEmitida->director_firma_snapshot_path;
-            if (!str_starts_with($path, 'boletas/firmas/'.$boletaEmitida->id.'/')
-                || str_contains($path, '..') || !Storage::disk('local')->exists($path)) {
-                throw ValidationException::withMessages(['emision' => 'La firma histórica de esta boleta no está disponible. Contacta a Administración.']);
-            }
-            $bytes = Storage::disk('local')->get($path);
-            $info = @getimagesizefromstring($bytes);
-            if (!$info || !in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_WEBP], true)) {
-                throw ValidationException::withMessages(['emision' => 'La firma histórica de esta boleta no es una imagen válida. Contacta a Administración.']);
-            }
-            $firmaDirector = 'data:'.$info['mime'].';base64,'.base64_encode($bytes);
-        }
+        $fechaBoleta = now();
 
         $pdf = Pdf::loadView('admin.pdf.boleta', compact(
-            'alumno', 'curso', 'notas', 'promedio_general', 'concepto', 'boletaEmitida', 'firmaDirector', 'fechaBoleta'
+            'alumno', 'curso', 'notas', 'promedio_general', 'concepto', 'boletaEmitida', 'firmaDirector', 'fechaBoleta', 'calificacionesCompletas', 'estado_academico', 'docenteUltimaMateria'
         ))->setPaper('a4', 'portrait');
 
         return $pdf->download('boleta-' . $alumno->codigo . '-' . now()->year . '.pdf');
+    }
+
+    public function descargarEmision(Boleta $boleta)
+    {
+        return app(\App\Services\DocumentoBoleta::class)->descargar($boleta);
     }
 }

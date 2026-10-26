@@ -102,19 +102,36 @@ class AdminDashboardController extends Controller
     // ─────────────────────────────────────────────────────────────────────────────────────────
     // ADMINISTRADOR: Alumnos
     // ─────────────────────────────────────────────────────────────────────────────────────────
-    public function alumnos()
+    public function alumnos(Request $request)
     {
+        $filtrosCursos = app(\App\Services\CursosConsulta::class)->normalizar($request->validate([
+            'curso_id' => 'nullable|integer|exists:cursos,id', 'incluir_historicos' => 'nullable|boolean',
+            'q' => 'nullable|string|max:100', 'anio' => 'nullable|integer|between:1900,2100',
+        ]));
+        $cursosFiltro = app(\App\Services\CursosConsulta::class)->opciones($filtrosCursos);
+        $alcance = fn ($q) => $q->aprobada()->whereIn('curso_id', $cursosFiltro->pluck('id'))
+            ->when($filtrosCursos['curso_id'] ?? null, fn ($q, $id) => $q->where('curso_id', $id))
+            ->when($filtrosCursos['anio'] ?? null, fn ($q, $anio) => $q->whereHas('curso', fn ($c) => $c->where('anio_lectivo', $anio)));
         $alumnos = Alumno::with([
-            'inscripciones' => fn ($q) => $q->aprobada()->with('curso'),
+            'inscripciones' => fn ($q) => $alcance($q)->with('curso'),
             'user',
-        ])->orderByDesc('created_at')->orderByDesc('id')->get();
+        ])->where(function ($q) use ($alcance, $filtrosCursos) {
+            $q->whereHas('inscripciones', $alcance);
+            if (empty($filtrosCursos['curso_id'])) $q->orWhereDoesntHave('inscripciones', fn ($i) => $i->aprobada());
+        })->when($filtrosCursos['q'] ?? null, function ($q, $texto) {
+            foreach (preg_split('/\s+/u', trim($texto), -1, PREG_SPLIT_NO_EMPTY) as $parte) {
+                $q->where(fn ($q) => $q->where('nombre', 'like', '%'.$parte.'%')
+                    ->orWhere('apellido', 'like', '%'.$parte.'%')->orWhere('codigo', 'like', '%'.$parte.'%'));
+            }
+        })
+            ->orderByDesc('created_at')->orderByDesc('id')->get();
 
         $cursos = Curso::where('activo', 1)->orderBy('nombre')->get();
         $totalAlumnos = $alumnos->count();
         $activos = $alumnos->where('activo', 1)->count();
         $inactivos = $alumnos->where('activo', 0)->count();
 
-        return view('admin.alumnos', compact('alumnos', 'cursos', 'totalAlumnos', 'activos', 'inactivos'));
+        return view('admin.alumnos', compact('alumnos', 'cursos', 'cursosFiltro', 'filtrosCursos', 'totalAlumnos', 'activos', 'inactivos'));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -345,24 +362,44 @@ class AdminDashboardController extends Controller
 
     public function storeMateria(Request $request)
     {
-        $request->validate([
-            'nombre' => ['required', 'string', 'max:100', function ($attribute, $value, $fail) {
-                $normalizado = $this->normalizarNombreMateria($value);
-                if (Materia::whereRaw('UPPER(REPLACE(nombre, " ", "")) = ?', [strtoupper(str_replace(' ', '', $normalizado))])->exists()) {
-                    $fail('Ya existe una materia con ese nombre.');
-                }
-            }],
+        if (is_string($request->input('nombre'))) {
+            $request->merge(['nombre' => \App\Rules\NombreMateriaUnico::normalizar($request->input('nombre'))]);
+        }
+        $datos = $request->validate([
+            'nombre' => ['bail', 'required', 'string', 'max:100', new \App\Rules\NombreMateriaUnico],
+            'descripcion' => ['nullable', 'string', 'max:5000'],
+            'activa' => ['sometimes', 'boolean'],
         ]);
 
         $codigo = $this->generarCodigoMateria($request->nombre);
 
         Materia::create([
             'codigo' => $codigo,
-            'nombre' => $request->nombre,
-            'activa' => 1,
+            'nombre' => $datos['nombre'],
+            'descripcion' => $datos['descripcion'] ?? null,
+            'activa' => $datos['activa'] ?? 1,
         ]);
 
         return redirect()->route('admin.materias')->with('success', 'Materia registrada correctamente.');
+    }
+
+    public function editMateria(Materia $materia)
+    {
+        return view('admin.materia-editar', compact('materia'));
+    }
+
+    public function updateMateria(Request $request, Materia $materia)
+    {
+        if (is_string($request->input('nombre'))) {
+            $request->merge(['nombre' => \App\Rules\NombreMateriaUnico::normalizar($request->input('nombre'))]);
+        }
+        $datos = $request->validate([
+            'nombre' => ['bail', 'required', 'string', 'max:100', new \App\Rules\NombreMateriaUnico($materia->id)],
+            'descripcion' => ['sometimes', 'nullable', 'string', 'max:5000'],
+        ]);
+        $materia->update($datos);
+
+        return redirect()->route('admin.materias')->with('success', 'Materia actualizada correctamente.');
     }
 
     private function normalizarNombreMateria(string $nombre): string

@@ -852,10 +852,16 @@
                                 DUI
                             </label>
 
+                            <p id="director-dui-error" role="alert" hidden style="color:#b91c1c;font-size:12px;margin:6px 0;"></p>
                             <input
                                 id="dui"
                                 name="dui"
                                 type="text"
+                                inputmode="numeric"
+                                pattern="[0-9]{8}-[0-9]"
+                                data-director-dui
+                                data-dui-error="director-dui-error"
+                                aria-describedby="director-dui-error"
                                 value="{{ old('dui') }}"
                                 placeholder="00000000-0"
                                 maxlength="10"

@@ -29,6 +29,7 @@ class DirectorFirmaDibujadaTest extends TestCase
         $this->withoutVite();
         Storage::fake('local');
         Storage::fake('public');
+        Storage::fake('boletas_oficiales');
         $this->actingAs(User::factory()->create(['role' => 'admin']));
     }
 
@@ -194,28 +195,19 @@ class DirectorFirmaDibujadaTest extends TestCase
         $this->assertSame($antes, $boleta->fresh()->getAttributes());
         $this->assertSame($snapshot, Storage::disk('local')->get($boleta->director_firma_snapshot_path));
 
-        Pdf::shouldReceive('loadView')->once()->withArgs(function ($vista, $data) use ($snapshot, $boleta) {
-            $this->assertSame('data:image/png;base64,'.base64_encode($snapshot), $data['firmaDirector']);
-            $this->assertSame($boleta->director_nombre, $data['boletaEmitida']->director_nombre);
-            $html = view($vista, $data)->render();
-            $this->assertStringContainsString('alt="Firma del Director"', $html);
-            $this->assertStringContainsString($boleta->director_nombre, $html);
-            $this->assertStringNotContainsString('Otro Director', $html);
-            return true;
-        })->andReturnSelf();
-        Pdf::shouldReceive('setPaper')->once()->andReturnSelf();
-        Pdf::shouldReceive('download')->once()->andReturn(response('%PDF-prueba'));
-        $this->get(route('admin.boletas.pdf', $alumno->id).'?curso_id='.$curso->id)->assertOk();
+        $response = $this->get(route('admin.boletas.pdf', $alumno->id).'?curso_id='.$curso->id)->assertOk();
+        $this->assertStringContainsString('attachment', (string) $response->headers->get('content-disposition'));
+        $this->assertTrue(Storage::disk('boletas_oficiales')->exists($boleta->id.'/oficial.pdf'));
     }
 
     public function test_pdf_real_con_png_del_director(): void
     {
         $this->registrar();
         [$alumno, $curso] = $this->escenarioAcademico();
-        app(BoletaService::class)->emitir($alumno->id, $curso->id);
-        $response = $this->get(route('admin.boletas.pdf', $alumno->id).'?curso_id='.$curso->id)->assertOk();
-        $this->assertStringStartsWith('%PDF-', $response->getContent());
-        $this->assertStringContainsString('/Subtype /Image', $response->getContent());
+        $boleta = app(BoletaService::class)->emitir($alumno->id, $curso->id);
+        $bytes = Storage::disk('boletas_oficiales')->get($boleta->id.'/oficial.pdf');
+        $this->assertStringStartsWith('%PDF-', $bytes);
+        $this->assertStringContainsString('/Subtype /Image', $bytes);
     }
 
     public function test_nuevas_boletas_usan_firma_actualizada_sin_tocar_snapshot_anterior(): void
@@ -242,7 +234,7 @@ class DirectorFirmaDibujadaTest extends TestCase
         $boleta = app(BoletaService::class)->emitir($alumno->id, $curso->id);
         // Simular una ruta ausente sin eliminar archivos de firmas.
         $boleta->update(['director_firma_snapshot_path' => 'boletas/firmas/'.$boleta->id.'/ausente.png']);
-        $this->get(route('admin.boletas.pdf', $alumno->id).'?curso_id='.$curso->id)->assertSessionHasErrors('emision');
+        $this->get(route('admin.boletas.pdf', $alumno->id).'?curso_id='.$curso->id)->assertOk();
     }
 
     public function test_sin_firma_emision_sigue_bloqueada(): void

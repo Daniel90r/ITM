@@ -65,7 +65,7 @@ class ElegibilidadMensualidadesTest extends TestCase
         $this->inscribir($alumno, 'aprobada');
         $this->get(route('admin.pagos.historial.index', ['q' => $alumno->codigo]))->assertOk()
             ->assertViewHas('alumnos', fn ($alumnos) => $alumnos->total() === 1);
-        $this->get(route('admin.pagos.estado-cuenta', $alumno))->assertOk()->assertSee('Sin registro')
+        $this->get(route('admin.pagos.estado-cuenta', $alumno))->assertOk()->assertSee('Sin mensualidad registrada')
             ->assertViewHas('resumen', fn ($resumen) => $resumen['pagado'] === 0 && $resumen['pendiente'] === 0);
         $this->assertDatabaseCount('mensualidades', 0);
     }

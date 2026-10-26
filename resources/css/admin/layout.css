@@ -1,0 +1,21 @@
+/* Contrato de viewport para las páginas con navegación administrativa.
+   overflow:hidden todavía admite scrollIntoView/scrollTop; clip no desplaza
+   el shell. El scroll pertenece al panel de contenido y al menú, no al shell.
+   El shell es absoluto para no crear un contexto de apilamiento que atrape
+   el menú móvil debajo de su backdrop. Se carga después de responsive.css,
+   sin afectar docentes, alumnos o login. */
+@media screen {
+    html.itm-admin-document{min-height:100%;background:#f8fafc}
+    body.itm-admin{min-height:100vh;min-height:100dvh;background:#f8fafc}
+    body.itm-admin[data-staff-ready]{height:100vh;height:100dvh;min-height:0;overflow:clip}
+    body.itm-admin [data-staff-shell]{position:absolute!important;inset:0!important;display:flex!important;flex-direction:row!important;width:100%!important;max-width:100%!important;height:100vh!important;height:100dvh!important;min-height:0!important;margin:0!important;box-sizing:border-box;overflow:clip!important;background:#f8fafc;transform:none!important;animation:none!important}
+    body.itm-admin [data-staff-shell]>[data-staff-panel]{flex:1;min-width:0!important;min-height:0!important;height:100%!important;max-height:100%;box-sizing:border-box;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;background:#f8fafc}
+}
+@media screen and (min-width:1024px) {
+    body.itm-admin [data-staff-holder]{height:100%;min-height:0;overflow:clip}
+    body.itm-admin [data-staff-sidebar]{height:100vh!important;height:100dvh!important;min-height:0;box-sizing:border-box;flex-shrink:0;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain}
+    body.itm-admin [data-staff-sidebar]>*{flex-shrink:0}
+}
+@media screen and (max-width:1023px) {
+    body.itm-admin [data-staff-shell]{display:block!important;inset:60px 0 0!important;height:calc(100dvh - 60px)!important;margin:0!important;overflow:clip!important}
+}

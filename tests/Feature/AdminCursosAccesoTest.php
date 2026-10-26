@@ -105,7 +105,7 @@ class AdminCursosAccesoTest extends TestCase
                 'nivel' => 'Vespertino',
                 'seccion' => 'C',
                 'anio_lectivo' => 2027,
-                'fecha_inicio' => '2026-10-01',
+                'fecha_inicio' => $curso->fecha_inicio->format('Y-m-d'),
                 'fecha_fin' => '2028-10-01',
                 'estado' => 'PROXIMO',
             ])

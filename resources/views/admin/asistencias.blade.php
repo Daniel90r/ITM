@@ -1,6 +1,9 @@
 <x-app-layout>
 @push('styles')
 <style>
+    .asistencias-page .mes-asistencias{margin:12px 0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff}
+    .asistencias-page .mes-asistencias summary{padding:14px 16px;background:#f1f5f9;color:#173454;font-weight:600;font-size:13px;cursor:pointer;overflow-wrap:anywhere;line-height:1.6}
+    .asistencias-page .mes-asistencias summary:focus-visible{outline:2px solid #2563eb;outline-offset:-3px}
     .asistencias-page { display:flex; height:100vh; overflow:hidden; }
     .asistencias-page .reporte-main { flex:1; min-width:0; display:flex; flex-direction:column; background:#f8fafc; overflow:hidden; }
     .asistencias-page .reporte-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:18px 24px; background:#fff; border-bottom:1px solid #e5e7eb; }
@@ -11,14 +14,7 @@
     .asistencias-page .reporte-periodo { margin:0; padding:8px 12px; background:#f3f4f6; border-radius:8px; font-size:12px; color:#4b5563; line-height:1.6; }
     .asistencias-page .reporte-contenido { flex:1; min-height:0; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:20px; }
     .asistencias-page .reporte-contenido > * { flex-shrink:0; }
-    .asistencias-page .resumen-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
-    .asistencias-page .resumen-tarjeta { padding:18px; background:#fff; border:1px solid #e5e7eb; border-radius:14px; }
-    .asistencias-page .resumen-etiqueta { margin:0; font-size:12px; font-weight:600; color:#4b5563; }
-    .asistencias-page .resumen-valor { margin:10px 0 4px; font-size:28px; font-weight:700; color:#111827; line-height:1.2; font-variant-numeric:tabular-nums; }
     .asistencias-page .resumen-ayuda { margin:0; font-size:11px; color:#6b7280; line-height:1.5; }
-    .asistencias-page .valor-presente { color:#15803d; }
-    .asistencias-page .valor-ausente { color:#b91c1c; }
-    .asistencias-page .valor-porcentaje { color:#2563eb; }
     .asistencias-page .reporte-panel { background:#fff; border:1px solid #e5e7eb; border-radius:14px; min-width:0; }
     .asistencias-page .filtros-panel { padding:20px; }
     .asistencias-page h2 { margin:0; font-size:14px; font-weight:600; color:#111827; }
@@ -67,7 +63,6 @@
     .asistencias-page .estado-vacio h3 { margin:0 0 8px; color:#374151; font-size:14px; font-weight:600; }
     .asistencias-page .estado-vacio p { margin:0 auto 18px; max-width:360px; color:#6b7280; font-size:13px; line-height:1.6; }
     .asistencias-page .solo-lectores { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-    @media (max-width:1100px) { .asistencias-page .resumen-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media (max-width:640px) {
         .asistencias-page { flex-direction:column; height:100dvh; }
         .asistencias-page > aside { width:100% !important; box-sizing:border-box; flex-direction:row !important; align-items:center; padding:8px 12px !important; overflow-x:auto !important; overflow-y:hidden !important; }
@@ -78,9 +73,6 @@
         .asistencias-page .reporte-header { padding:16px; }
         .asistencias-page .reporte-contenido { padding:16px; gap:16px; }
         .asistencias-page .reporte-periodo { width:100%; box-sizing:border-box; }
-        .asistencias-page .resumen-grid { gap:10px; }
-        .asistencias-page .resumen-tarjeta { padding:14px; }
-        .asistencias-page .resumen-valor { font-size:24px; }
         .asistencias-page .filtros-panel { padding:16px; }
         .asistencias-page .filtros-grid { grid-template-columns:minmax(0,1fr); }
         .asistencias-page .filtros-botones { width:100%; }
@@ -111,15 +103,17 @@
                 <img class="reporte-logo" src="{{ asset('images/logo_itm.jpg') }}" alt="ITM">
                 <div>
                     <h1>Reportes de asistencia</h1>
+                    <div data-asistencia-exportacion>
                     @if($cursoId && $detalleCursoId)
                         <a class="reporte-boton" href="{{ route('admin.asistencias.pdf', $filtros) }}">Descargar PDF</a>
                     @else
                         <p class="reporte-descripcion">Selecciona curso y materia para descargar el Control de Asistencia PDF.</p>
                     @endif
+                    </div>
                     <p class="reporte-descripcion">Consulta la asistencia de los alumnos por curso, materia, docente y período.</p>
                 </div>
             </div>
-            <p class="reporte-periodo" aria-label="Período consultado">
+            <p class="reporte-periodo" aria-label="Período consultado" data-asistencia-periodo>
                 @if($fechaDesde || $fechaHasta)
                     {{ $fechaDesde ? 'Desde '.$fechaDesde : 'Sin fecha inicial' }} · {{ $fechaHasta ? 'Hasta '.$fechaHasta : 'Sin fecha final' }}
                 @else
@@ -129,39 +123,14 @@
         </header>
 
         <div class="reporte-contenido">
-            <section class="resumen-grid" aria-label="Resumen de los resultados filtrados">
-                <article class="resumen-tarjeta">
-                    <h2 class="resumen-etiqueta">Total de registros</h2>
-                    <p class="resumen-valor">{{ number_format($resumen['total']) }}</p>
-                    <p class="resumen-ayuda">Según los filtros aplicados</p>
-                </article>
-                <article class="resumen-tarjeta">
-                    <h2 class="resumen-etiqueta">Presentes</h2>
-                    <p class="resumen-valor valor-presente">{{ number_format($resumen['presentes']) }}</p>
-                    <p class="resumen-ayuda">Registros de presencia</p>
-                </article>
-                <article class="resumen-tarjeta">
-                    <h2 class="resumen-etiqueta">Ausentes</h2>
-                    <p class="resumen-valor valor-ausente">{{ number_format($resumen['ausentes']) }}</p>
-                    <p class="resumen-ayuda">Registros de ausencia</p>
-                </article>
-                <article class="resumen-tarjeta">
-                    <h2 class="resumen-etiqueta">Porcentaje de asistencia</h2>
-                    <p class="resumen-valor valor-porcentaje">{{ $resumen['porcentaje'] === null ? '—' : number_format($resumen['porcentaje'], 1).'%' }}</p>
-                    <p class="resumen-ayuda">{{ $resumen['total'] ? 'Presentes / total, incluidos permisos' : 'Sin registros para calcular' }}</p>
-                </article>
-                @if($resumen['permisos'])
-                    <article class="resumen-tarjeta">
-                        <h2 class="resumen-etiqueta">Permisos</h2>
-                        <p class="resumen-valor">{{ number_format($resumen['permisos']) }}</p>
-                        <p class="resumen-ayuda">Incluidos en el total de registros</p>
-                    </article>
-                @endif
-            </section>
-
+            @if($errors->any())
+                <div role="alert" style="padding:12px 16px;background:#fff1f2;border:1px solid #fca5a5;border-radius:10px;color:#991b1b;">
+                    @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+                </div>
+            @endif
             <section class="reporte-panel filtros-panel" aria-labelledby="titulo-filtros">
                 <h2 id="titulo-filtros">Filtrar asistencias</h2>
-                <form method="GET" action="{{ route('admin.asistencias') }}">
+                <form method="GET" action="{{ route('admin.asistencias') }}" data-asistencias-filtros><x-consulta-cursos-alcance :filtros="$filtros" />
                     <div class="filtros-grid">
                         <div class="filtro-campo">
                             <label for="asistencia-busqueda">Alumno</label>
@@ -169,30 +138,36 @@
                         </div>
                         <div class="filtro-campo">
                             <label for="asistencia-curso">Curso</label>
-                            <select id="asistencia-curso" class="filtro-control" name="curso_id" onchange="this.form.submit()" aria-describedby="ayuda-filtros">
-                                <option value="">Todos los cursos</option>
-                                @foreach($cursos as $curso)
-                                    <option value="{{ $curso->id }}" @selected($cursoId == $curso->id)>{{ $curso->nombre }} — {{ $curso->nivel }}</option>
-                                @endforeach
-                            </select>
+                            <select id="asistencia-curso" class="filtro-control" name="curso_id" aria-describedby="ayuda-filtros"><x-consulta-cursos-opciones :cursos="$cursos" :filtros="$filtros" /></select>
                         </div>
-                        @if($detalleCursos->count())
-                            <div class="filtro-campo">
+                            <div class="filtro-campo" data-asistencias-materias @if(!$detalleCursos->count()) hidden @endif>
                                 <label for="asistencia-materia">Materia / Programa</label>
-                                <select id="asistencia-materia" class="filtro-control" name="detalle_curso_id">
+                                <select id="asistencia-materia" class="filtro-control" name="detalle_curso_id" @disabled(!$detalleCursos->count())>
                                     <option value="">Todas las materias</option>
                                     @foreach($detalleCursos as $dc)
                                         <option value="{{ $dc->id }}" @selected($detalleCursoId == $dc->id)>{{ $dc->materia->nombre }} ({{ $dc->materia->codigo }})</option>
                                     @endforeach
                                 </select>
                             </div>
-                        @endif
                         <div class="filtro-campo">
                             <label for="asistencia-docente">Docente</label>
                             <select id="asistencia-docente" class="filtro-control" name="maestro_id">
                                 <option value="">Todos los docentes</option>
                                 @foreach($maestros as $maestro)
                                     <option value="{{ $maestro->id }}" @selected($maestroId == $maestro->id)>{{ $maestro->nombre_completo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="filtro-campo">
+                            <label for="asistencia-anio">Año</label>
+                            <input id="asistencia-anio" class="filtro-control" type="number" name="anio" min="1900" max="2100" placeholder="Todos los años" value="{{ $filtros['anio'] ?? '' }}">
+                        </div>
+                        <div class="filtro-campo">
+                            <label for="asistencia-mes">Mes</label>
+                            <select id="asistencia-mes" class="filtro-control" name="mes">
+                                <option value="">Todos los meses</option>
+                                @foreach(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] as $indice => $nombreMes)
+                                    <option value="{{ $indice + 1 }}" @selected((int)($filtros['mes'] ?? 0) === $indice + 1)>{{ $nombreMes }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -206,16 +181,18 @@
                         </div>
                     </div>
                     <div class="filtros-acciones">
-                        <p id="ayuda-filtros" class="resumen-ayuda">Al cambiar de curso se actualizan las materias disponibles.</p>
+                        <p id="ayuda-filtros" class="resumen-ayuda">Al cambiar de curso se actualizan las materias. Para elegir un mes, indica el año. Desde/Hasta limita adicionalmente el período.</p>
                         <div class="filtros-botones">
-                            <a class="reporte-boton" href="{{ route('admin.asistencias') }}">Limpiar</a>
+                            <a class="reporte-boton" href="{{ route('admin.asistencias') }}" data-asistencias-limpiar>Limpiar</a>
                             <button class="reporte-boton boton-filtrar" type="submit">Filtrar</button>
                         </div>
                     </div>
+                    <p data-asistencias-carga role="status" aria-live="polite" class="dato-secundario"></p>
+                    <p data-asistencias-error role="alert" style="color:#991b1b;font-size:13px;margin-top:8px;"></p>
                 </form>
             </section>
 
-            <section class="reporte-panel" aria-labelledby="titulo-listado">
+            <section class="reporte-panel" aria-labelledby="titulo-listado" data-asistencias-resultados tabindex="-1">
                 <div class="listado-header">
                     <div>
                         <h2 id="titulo-listado">Asistencias por alumno</h2>
@@ -228,7 +205,7 @@
                         <svg class="vacio-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18M9 16h6"/></svg>
                         <h3>No hay asistencias para mostrar</h3>
                         <p>No se encontraron registros con los filtros seleccionados. Prueba otro período o limpia los filtros.</p>
-                        <a class="reporte-boton" href="{{ route('admin.asistencias') }}">Limpiar filtros</a>
+                        <a class="reporte-boton" href="{{ route('admin.asistencias') }}" data-asistencias-limpiar>Limpiar filtros</a>
                     </div>
                 @else
                     <div class="tabla-scroll" role="region" aria-labelledby="titulo-listado" tabindex="0">

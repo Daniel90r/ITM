@@ -341,6 +341,7 @@ class CursoEstadoTest extends TestCase
 
         $response = $this->actingAs($this->admin)
             ->put(route('admin.cursos.update', $curso->id), $this->datosUpdate([
+                'fecha_inicio' => $curso->fecha_inicio->format('Y-m-d'),
                 'fecha_fin' => '2028-09-24',
             ]));
 

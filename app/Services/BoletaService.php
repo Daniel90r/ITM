@@ -88,6 +88,9 @@ class BoletaService
 
                 // 9. Copiar firma a ruta histórica definitiva
                 $rutaFinal = $this->generarRutaFinalFirma($boleta->id, $director->firma_path);
+                if (Storage::disk('local')->exists($rutaFinal)) {
+                    throw new \App\Exceptions\BoletaStorageException('colision_emision', 'No se sobrescribirán archivos de firma existentes.');
+                }
                 $copiada = Storage::disk('local')->copy($director->firma_path, $rutaFinal);
 
                 if (! $copiada) {
@@ -103,6 +106,20 @@ class BoletaService
 
                 // 11. Crear detalles de boleta
                 $this->crearDetallesBoleta($boleta->id, $notasValidadas);
+
+                $filasEstado = [];
+                foreach ($notasValidadas as $data) {
+                    $filasEstado[] = [
+                        'materia' => $data['detalle_curso']->materia,
+                        'nota' => $data['nota'],
+                        'completa' => true,
+                    ];
+                }
+                $estadoAcademico = $this->estadoAcademicoCurso($filasEstado);
+                $docenteUltimaMateria = $this->docenteUltimaMateria($cursoId);
+
+                // 12. Conservar el PDF oficial dentro de la transacción.
+                app(\App\Services\DocumentoBoleta::class)->conservar($boleta, $estadoAcademico, $docenteUltimaMateria);
 
                 return $boleta->fresh();
 
@@ -264,8 +281,11 @@ class BoletaService
             'promedio_general'            => $promedioGeneral,
             'concepto_general'            => $conceptoGeneral,
             'faltantes'                   => $todasFaltantes,
+            'estado_academico'            => $this->estadoAcademicoCurso($filas),
+            'docente_ultima_materia'      => $this->docenteUltimaMateria($cursoId),
         ];
     }
+
 
     /**
      * Preparar datos académicos compartidos entre emitir() y previsualizar().
@@ -474,6 +494,86 @@ class BoletaService
         if ($promedio >= 7) return 'B';
         if ($promedio >= 6) return 'R';
         return 'D';
+    }
+
+    /**
+     * Determina el estado academico del curso segun materias obligatorias.
+     * Obligatorias: es_opcional = false. Opcionales (Ingles) no afectan.
+     */
+    public function estadoAcademicoCurso(array $filas): string
+    {
+        $obligatorias = [];
+        foreach ($filas as $fila) {
+            $materia = $fila['materia'] ?? ($fila['detalle_curso']->materia ?? null);
+            if ($materia && ($materia->es_opcional ?? false)) continue;
+            $obligatorias[] = $fila;
+        }
+        if (empty($obligatorias)) { return 'Pendiente de completar calificaciones'; }
+        $reprobada = false;
+        $pendiente = false;
+        foreach ($obligatorias as $fila) {
+            $nota = $fila['nota'] ?? null;
+            $promedio = $nota?->promedio;
+            $completa = $fila['completa'] ?? ($nota !== null);
+            if (!$completa || $promedio === null) { $pendiente = true; continue; }
+            if ($promedio < 6) $reprobada = true;
+        }
+        if ($reprobada) return 'Reprobado';
+        if ($pendiente) return 'Pendiente de completar calificaciones';
+        return 'Aprobado';
+    }
+
+    public function docenteUltimaMateria(int $cursoId): ?string
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('asignaciones_docentes')) {
+            return null;
+        }
+$detalles = DetalleCurso::with(['materia', 'asignacionesDocentes.maestro'])
+            ->where('curso_id', $cursoId)
+            ->get();
+
+        if ($detalles->isEmpty()) {
+            return null;
+        }
+
+        $ordenes = $detalles->pluck('orden_academico');
+        if ($ordenes->contains(null) || $ordenes->count() !== $ordenes->unique()->count()) {
+            return null;
+        }
+
+        $conOrden = $detalles;
+        if ($conOrden->isEmpty()) {
+            return null;
+        }
+        $maxOrden = $conOrden->max('orden_academico');
+        $ultimasMaterias = $conOrden->where('orden_academico', $maxOrden);
+        if ($ultimasMaterias->count() !== 1) {
+            return null;
+        }
+
+        $detalle = $ultimasMaterias->first();
+        $hoy = now()->startOfDay();
+        $asignaciones = $detalle->asignacionesDocentes->filter(function ($asignacion) use ($hoy) {
+            if (! in_array($asignacion->estado, ['activa', 'finalizada'], true)) {
+                return false;
+            }
+
+            $fecha = $asignacion->fecha_fin ?? $asignacion->fecha_inicio;
+            return $fecha && $fecha->lte($hoy);
+        });
+
+        if ($asignaciones->isEmpty()) {
+            return null;
+        }
+
+        $asignacion = $asignaciones->sortBy(function ($item) {
+            $fecha = $item->fecha_fin ?? $item->fecha_inicio;
+            return [$fecha?->getTimestamp() ?? 0, $item->created_at?->getTimestamp() ?? 0];
+        })->last();
+
+        return $asignacion?->relationLoaded('maestro') && $asignacion->maestro
+            ? trim($asignacion->maestro->nombre . ' ' . $asignacion->maestro->apellido)
+            : null;
     }
 
     /**

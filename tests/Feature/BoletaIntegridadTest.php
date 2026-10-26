@@ -128,10 +128,11 @@ class BoletaIntegridadTest extends TestCase
             'concepto' => null,
         ]);
 
-        $this->assertStringContainsString('Conducta registrada', $html);
+        $this->assertStringContainsString('Conceptos de conducta', $html);
         $this->assertSame(1, substr_count($html, 'class="td-concepto-conducta"'),
-            'debe haber una celda de conducta por materia');
-        $this->assertStringContainsString('>E</td>', $html);
+            'una materia sin correspondencia conserva una celda neutral de concepto');
+        $this->assertStringContainsString('>Sin agrupación definida</td>', $html);
+        $this->assertStringContainsString('>Excelente</strong>', $html);
     }
 
     #[Test]

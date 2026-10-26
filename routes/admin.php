@@ -63,6 +63,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.maestros.update');
 
     // ADMINISTRADOR: Materias
+    Route::get('/admin/materias/{materia}/editar', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'editMateria'])
+        ->whereNumber('materia')->name('admin.materias.edit');
+    Route::put('/admin/materias/{materia}', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'updateMateria'])
+        ->whereNumber('materia')->name('admin.materias.update');
     Route::get('/admin/materias', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'materias'])
         ->name('admin.materias');
     Route::post('/admin/materias', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'storeMateria'])
@@ -91,6 +95,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::patch('/admin/cursos/{curso}/finalizar', [\App\Http\Controllers\Admin\SeccionController::class, 'finalizar'])
         ->name('admin.cursos.finalizar');
 
+    Route::post('/admin/cursos/{curso}/orden-materias', [\App\Http\Controllers\Admin\SeccionController::class, 'updateOrdenMaterias'])
+        ->name('admin.cursos.orden');
+
     // ADMINISTRADOR: Inscripciones
     Route::get('/admin/inscripciones', [\App\Http\Controllers\Admin\InscripcionController::class, 'index'])
         ->name('admin.inscripciones');
@@ -116,6 +123,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.boletas.emitir');
     Route::get('/admin/boletas/preview/{alumno}/{curso}', [\App\Http\Controllers\Admin\BoletaController::class, 'preview'])
         ->name('admin.boletas.preview');
+    Route::get('/admin/boletas/emisiones/{boleta}/pdf', [\App\Http\Controllers\Admin\BoletaController::class, 'descargarEmision'])
+        ->name('admin.boletas.emisiones.pdf');
     Route::get('/admin/boletas/{alumno_id}', [\App\Http\Controllers\Admin\BoletaController::class, 'show'])
         ->name('admin.boletas.show');
     Route::get('/boletas/{id}/pdf', [\App\Http\Controllers\Admin\BoletaController::class, 'generarPdf'])

@@ -35,8 +35,8 @@
         #maestro-programas .programa-aviso { text-align:left; }
     }
     @media (max-width:767px) {
-        #maestro-programas { flex-direction:column; height:100dvh !important; }
-        #maestro-programas > aside { width:100% !important; max-height:150px; border-right:0 !important; border-bottom:1px solid #e5e7eb; }
+        #maestro-programas:not([data-staff-shell]) { flex-direction:column; height:100dvh !important; }
+        #maestro-programas:not([data-staff-shell]) > aside { width:100% !important; max-height:150px; border-right:0 !important; border-bottom:1px solid #e5e7eb; }
         #maestro-programas > .maestro-contenido { min-height:0; }
         #maestro-programas .maestro-header { flex-wrap:wrap; gap:12px; }
         #maestro-programas .maestro-resumen > div { flex-wrap:wrap; gap:16px; }

@@ -25,6 +25,7 @@ class MensualidadController extends Controller
     public function index(Request $request)
     {
         $filtros = $this->filtros($request);
+        $cursosFiltro = app(\App\Services\CursosConsulta::class)->opciones($filtros);
         $anioSeleccionado = $filtros['anio'];
 
         // Conservar el alcance original: mensualidades por alumno y ciclo,
@@ -67,7 +68,7 @@ class MensualidadController extends Controller
         }
 
         return view('admin.mensualidades', compact(
-            'cursos', 'listado', 'grupos', 'filtros', 'totalPendiente', 'totalPagado', 'totalAlumnos',
+            'cursos', 'cursosFiltro', 'listado', 'grupos', 'filtros', 'totalPendiente', 'totalPagado', 'totalAlumnos',
             'anioSeleccionado', 'aniosDisponibles'
         ) + ['meses' => $this->meses]);
     }
@@ -93,6 +94,7 @@ class MensualidadController extends Controller
     private function filtros(Request $request): array
     {
         $filtros = $request->validate([
+            'incluir_historicos' => 'nullable|boolean',
             'anio' => 'nullable|integer', 'q' => 'nullable|string|max:100',
             'curso_id' => 'nullable|integer|min:1',
             'mes' => 'nullable|string|in:'.implode(',', $this->meses),
@@ -102,7 +104,7 @@ class MensualidadController extends Controller
         unset($filtros['page'], $filtros['mensualidad_page']);
         $filtros['anio'] = (int) ($filtros['anio'] ?? date('Y'));
         $filtros['q'] = trim($filtros['q'] ?? '');
-        return $filtros;
+        return app(\App\Services\CursosConsulta::class)->normalizar($filtros);
     }
 
     private function mensualidadesFiltradas(array $filtros)
@@ -120,8 +122,9 @@ class MensualidadController extends Controller
     {
         $query = Inscripcion::query()->join('cursos', 'cursos.id', '=', 'inscripciones.curso_id')
             ->join('alumnos', 'alumnos.id', '=', 'inscripciones.alumno_id')
-            ->where('cursos.activo', 1)->where('inscripciones.activa', 1)->where('inscripciones.estado', 'aprobada')
+            ->where('inscripciones.activa', 1)->where('inscripciones.estado', 'aprobada')
             ->when($filtros['curso_id'] ?? null, fn ($q, $id) => $q->where('inscripciones.curso_id', $id));
+        app(\App\Services\CursosConsulta::class)->aplicar($query, $filtros, 'inscripciones.curso_id');
         foreach (preg_split('/\s+/u', $filtros['q'], -1, PREG_SPLIT_NO_EMPTY) as $termino) {
             $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';
             $query->where(fn ($q) => $q->whereRaw("alumnos.nombre LIKE ? ESCAPE '!'", [$patron])

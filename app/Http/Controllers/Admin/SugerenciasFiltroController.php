@@ -11,8 +11,9 @@ class SugerenciasFiltroController extends Controller
 {
     public function __invoke(Request $request, string $modulo)
     {
-        $f = $request->validate(['q' => 'required|string|min:2|max:100', 'curso' => 'nullable|string|max:150',
+        $f = $request->validate(['incluir_historicos' => 'nullable|boolean', 'q' => 'required|string|min:2|max:100', 'curso' => 'nullable|string|max:150',
             'curso_id' => 'nullable|integer|min:1', 'anio' => 'nullable|integer|min:1900|max:2100',
+            'materia_id' => 'nullable|integer|exists:materias,id', 'maestro_id' => 'nullable|integer|exists:maestros,id',
             'turno' => 'nullable|string|max:50', 'estado' => 'nullable|in:todos,pendiente,aprobada,rechazada,inactiva,otros']);
         $persona = in_array($modulo, ['alumnos', 'maestros', 'solicitudes', 'notas-alumnos', 'boletas-alumnos'], true);
         $query = match ($modulo) {
@@ -25,17 +26,34 @@ class SugerenciasFiltroController extends Controller
         if ($modulo === 'solicitudes') {
             $query->whereIn('id', app(ConsultaSolicitudesInscripcion::class)->consulta($f)->withoutEagerLoads()->reorder()->select('alumno_id'));
         }
+        if ($modulo === 'alumnos') {
+            $f = app(\App\Services\CursosConsulta::class)->normalizar($f);
+            $ids = app(\App\Services\CursosConsulta::class)->opciones($f)->pluck('id');
+            $query->where(function ($q) use ($f, $ids) {
+                $q->whereHas('inscripciones', fn ($i) => $i->aprobada()->whereIn('curso_id', $ids)
+                    ->when($f['curso_id'] ?? null, fn ($i, $id) => $i->where('curso_id', $id)));
+                if (empty($f['curso_id'])) $q->orWhereDoesntHave('inscripciones', fn ($i) => $i->aprobada());
+            });
+        }
         if ($modulo === 'alumnos' && (!empty($f['curso']) || !empty($f['anio']))) {
             $query->whereHas('inscripciones', fn ($i) => $i->aprobada()
-                ->where('inscripciones.id', Inscripcion::select('id')->whereColumn('alumno_id', 'alumnos.id')->aprobada()->orderBy('id')->limit(1))
+                ->whereIn('curso_id', $ids)
+                ->when($f['curso_id'] ?? null, fn ($i, $id) => $i->where('curso_id', $id))
                 ->whereHas('curso', fn ($c) => $c
                 ->when($f['curso'] ?? null, fn ($q, $v) => $q->whereRaw('LOWER(nombre) = ?', [mb_strtolower($v)]))
                 ->when($f['anio'] ?? null, fn ($q, $v) => $q->where('anio_lectivo', $v))));
         }
         if ($modulo === 'cursos' && !empty($f['turno'])) $query->whereRaw("LOWER(nivel) LIKE ? ESCAPE '!'", [$this->patron($f['turno'])]);
-        if ($modulo === 'notas-cursos') $query->where('activo', 1);
+        if (in_array($modulo, ['notas-cursos', 'boletas-cursos', 'notas-alumnos', 'boletas-alumnos'], true)) {
+            $f = app(\App\Services\CursosConsulta::class)->normalizar($f);
+            if (str_ends_with($modulo, '-cursos')) app(\App\Services\CursosConsulta::class)->aplicar($query, $f, 'cursos.id');
+        }
         if ($modulo === 'boletas-cursos') $query->whereIn('id', Inscripcion::aprobada()->select('curso_id'));
-        if ($modulo === 'notas-alumnos') $query->whereIn('id', Nota::whereHas('detalleCurso.curso', fn ($c) => $c->where('activo', 1)
+        if ($modulo === 'notas-alumnos') $query->whereIn('id', Nota::whereHas('detalleCurso', fn ($d) => $d
+            ->when($f['materia_id'] ?? null, fn ($d, $id) => $d->where('materia_id', $id))
+            ->when($f['maestro_id'] ?? null, fn ($d, $id) => $d->where('maestro_id', $id)))
+            ->whereHas('detalleCurso.curso', fn ($c) => app(\App\Services\CursosConsulta::class)->aplicar($c, $f, 'cursos.id')
+            ->when($f['curso_id'] ?? null, fn ($q, $id) => $q->whereKey($id))
             ->when($f['curso'] ?? null, fn ($q, $v) => $q->whereRaw("LOWER(nombre) LIKE ? ESCAPE '!'", [$this->patron($v)])))->select('alumno_id'));
         if ($modulo === 'boletas-alumnos') {
             // Sin contexto no se ofrecen alumnos de otros cursos.
@@ -51,9 +69,9 @@ class SugerenciasFiltroController extends Controller
         }
         if ($persona) return SugerenciasFiltros::personas($query);
         $esCurso = str_contains($modulo, 'cursos');
-        $filas = $query->orderBy('nombre')->orderBy('id')->limit(8)->get($esCurso ? ['id', 'nombre', 'nivel', 'seccion', 'anio_lectivo'] : ['id', 'nombre', 'codigo']);
+        $filas = $query->orderBy('nombre')->orderBy('id')->limit(8)->get($esCurso ? ['id', 'nombre', 'nivel', 'seccion', 'anio_lectivo', 'estado', 'fecha_inicio', 'fecha_fin', 'finalizado_manualmente'] : ['id', 'nombre', 'codigo']);
         return response()->json(['alumnos' => $filas->map(fn ($f) => ['id' => $f->id, 'nombre' => $f->nombre,
-            'codigo' => $esCurso ? "$f->nivel · $f->seccion · $f->anio_lectivo" : $f->codigo])])
+            'codigo' => $esCurso ? "$f->nivel · $f->seccion · $f->anio_lectivo · $f->estado_curso" : $f->codigo])])
             ->header('Cache-Control', 'private, no-store');
     }
 

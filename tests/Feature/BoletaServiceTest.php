@@ -31,6 +31,12 @@ class BoletaServiceTest extends TestCase
         $this->service = new BoletaService();
         Storage::fake('local');
         Storage::fake('public');
+        Storage::fake('boletas_oficiales');
+        // Esta suite caracteriza snapshots y transacciones con firmas ficticias.
+        // El archivo PDF real se verifica separadamente en BoletaDocumentosTest.
+        $this->partialMock(\App\Services\DocumentoBoleta::class, function ($mock) {
+            $mock->shouldReceive('conservar')->andReturnUsing(fn ($boleta) => $boleta->id.'/oficial.pdf');
+        });
     }
 
     private function crearEscenarioBasico(): array
@@ -1146,6 +1152,12 @@ Nota::factory()->create([
         Storage::shouldReceive('disk')
             ->with('local')
             ->andReturn($diskMock);
+        $diskMock->shouldReceive('exists')
+            ->with(Mockery::on(fn ($ruta) => str_starts_with($ruta, 'boletas/firmas/')))
+            ->andReturn(false);
+        $archivoMock = Mockery::mock(\Illuminate\Filesystem\FilesystemAdapter::class);
+        $archivoMock->shouldReceive('exists')->andReturn(false);
+        Storage::shouldReceive('disk')->with('boletas_oficiales')->andReturn($archivoMock);
 
         // Emitir debe fallar con RuntimeException (NO BoletaEmissionException::yaEmitida())
         $this->expectException(\RuntimeException::class);

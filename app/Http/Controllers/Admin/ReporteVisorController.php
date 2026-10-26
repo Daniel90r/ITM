@@ -23,7 +23,7 @@ class ReporteVisorController extends Controller
         // La ruta PDF conserva toda la validación y autorización existentes.
         // Nunca aceptar una URL, ruta de disco o documento proporcionado por el usuario.
         $parametros = $tipo === 'inscripciones' ? ['estado', 'q'] : [
-            'curso_id', 'estado', 'anio', 'mes', 'modalidad', 'detalle_curso_id',
+            'incluir_historicos', 'curso_id', 'estado', 'anio', 'mes', 'modalidad', 'detalle_curso_id',
             'fecha_desde', 'fecha_hasta', 'maestro_id', 'q',
         ];
         $filtros = $request->only($parametros);

@@ -27,9 +27,14 @@ class AsistenciaController extends Controller
 
         // Materias del maestro, agrupadas por curso. 1 consulta + eager loading.
         $detalles = $this->detallesAsignados($maestro);
+        $filtrosCursos = app(\App\Services\CursosConsulta::class)->normalizar($request->validate([
+            'incluir_historicos' => 'nullable|boolean', 'curso_id' => 'nullable|integer|exists:cursos,id',
+        ]));
+        $idsOpciones = app(\App\Services\CursosConsulta::class)->opciones($filtrosCursos)->pluck('id');
 
         $cursos = $detalles
             ->pluck('curso')
+            ->filter(fn ($c) => $idsOpciones->contains($c->id))
             ->unique('id')
             ->sortBy(fn ($c) => $c->anio_lectivo . ' ' . $c->seccion)
             ->values();
@@ -70,7 +75,7 @@ class AsistenciaController extends Controller
 
         return view('docente.asistencia', compact(
             'maestro', 'cursos', 'curso', 'materias', 'detalle',
-            'cursoId', 'detalleCursoId', 'fecha', 'alumnos', 'asistencias'
+            'cursoId', 'detalleCursoId', 'fecha', 'alumnos', 'asistencias', 'filtrosCursos'
         ));
     }
 

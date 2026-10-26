@@ -26,7 +26,7 @@
             </div>
             @endif
 
-            <form method="GET" action="{{ route('docente.asistencia') }}" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:18px 20px; margin-bottom:20px;">
+            <form method="GET" action="{{ route('docente.asistencia') }}" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:18px 20px; margin-bottom:20px;"><x-consulta-cursos-alcance :filtros="$filtrosCursos" />
                 <h3 style="font-size:14px; font-weight:600; margin:0 0 14px; color:#1f2937;">Seleccionar curso y materia</h3>
 
                 <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
@@ -38,11 +38,12 @@
                                 onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#d1d5db'">
                             <option value="">-- Seleccionar curso --</option>
                             @foreach($cursos as $opcionCurso)
-                            <option value="{{ $opcionCurso->id }}" {{ $cursoId == $opcionCurso->id ? 'selected' : '' }}>
-                                Curso {{ $opcionCurso->seccion ?? '' }} — {{ $opcionCurso->nivel }} ({{ $opcionCurso->anio_lectivo }})
+                            <option value="{{ $opcionCurso->id }}" data-estado-curso="{{ $opcionCurso->estado_curso }}" {{ $cursoId == $opcionCurso->id ? 'selected' : '' }}>
+                                {{ $opcionCurso->nombre }} · {{ $opcionCurso->nivel }} · {{ $opcionCurso->seccion }} · {{ $opcionCurso->anio_lectivo }} · {{ $opcionCurso->estado_curso }}
                             </option>
                             @endforeach
                         </select>
+                        @if($cursos->isEmpty())<p style="font-size:12px">No hay cursos asignados disponibles para este alcance.</p>@endif
                     </div>
 
                     @if($curso)

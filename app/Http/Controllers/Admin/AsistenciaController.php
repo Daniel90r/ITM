@@ -26,7 +26,7 @@ class AsistenciaController extends Controller
         if ($request->routeIs('admin.sugerencias.asistencias')) {
             return \App\Services\SugerenciasFiltros::personas(\App\Services\SugerenciasFiltros::alumnosDe($consulta));
         }
-        $cursos = Curso::where('activo', true)->orderBy('nombre')->get();
+        $cursos = app(\App\Services\CursosConsulta::class)->opciones($filtros);
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
         // Contar todos los resultados filtrados antes de paginar.
@@ -82,12 +82,14 @@ class AsistenciaController extends Controller
         $filtros = $this->filtros($request);
         $consulta = $this->consultaFiltrada($filtros)->where('alumno_id', $alumno->id);
         abort_unless((clone $consulta)->exists(), 404);
+        $totalesPorMes = (clone $consulta)->selectRaw('SUBSTR(fecha, 1, 7) AS periodo, COUNT(*) AS cantidad')
+            ->groupBy('periodo')->pluck('cantidad', 'periodo');
         $asistencias = $consulta->with(['curso', 'detalleCurso.materia', 'detalleCurso.maestro'])
             ->orderByDesc('fecha')->orderByDesc('id')
             ->paginate(20, ['*'], 'detalle_page')->appends($filtros);
 
         // Solo HTML escapado por Blade; no serializar el expediente del alumno.
-        return response()->json(['html' => view('admin.partials.asistencias-detalle', compact('asistencias'))->render()])
+        return response()->json(['html' => view('admin.partials.asistencias-detalle', compact('asistencias', 'totalesPorMes'))->render()])
             ->header('Cache-Control', 'private, no-store');
     }
 
@@ -128,24 +130,30 @@ class AsistenciaController extends Controller
     private function filtros(Request $request): array
     {
         $validated = $request->validate([
+            'incluir_historicos' => 'nullable|boolean',
             'curso_id' => 'nullable|integer|min:1',
             'maestro_id' => 'nullable|integer|min:1',
             'detalle_curso_id' => 'nullable|integer|min:1',
             'fecha_desde' => 'nullable|date_format:Y-m-d',
             'fecha_hasta' => 'nullable|date_format:Y-m-d',
             'q' => 'nullable|string|max:100',
+            'anio' => 'required_with:mes|nullable|integer|between:1900,2100',
+            'mes' => 'nullable|integer|between:1,12',
             'page' => 'nullable|integer|min:1',
             'detalle_page' => 'nullable|integer|min:1',
         ]);
         unset($validated['page'], $validated['detalle_page']);
         if (isset($validated['q'])) $validated['q'] = trim($validated['q']);
-        return $validated;
+        return app(\App\Services\CursosConsulta::class)->normalizar($validated);
     }
 
     private function consultaFiltrada(array $filtros): Builder
     {
         $consulta = app(\App\Services\FiltrosHistoricosAsistencia::class)->aplicar(Asistencia::query(), $filtros)
+            ->when($filtros['anio'] ?? null, fn ($q, $anio) => $q->whereYear('fecha', $anio))
+            ->when($filtros['mes'] ?? null, fn ($q, $mes) => $q->whereMonth('fecha', $mes))
             ->when($filtros['maestro_id'] ?? null, fn ($q, $id) => $q->whereHas('detalleCurso', fn ($dc) => $dc->where('maestro_id', $id)));
+        app(\App\Services\CursosConsulta::class)->aplicar($consulta, $filtros);
 
         foreach (preg_split('/\s+/u', $filtros['q'] ?? '', -1, PREG_SPLIT_NO_EMPTY) as $termino) {
             $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';

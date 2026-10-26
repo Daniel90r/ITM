@@ -44,23 +44,24 @@ function promColor(int $p): string {
 <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:18px 20px; margin-bottom:20px;">
                 <h3 style="font-size:14px; font-weight:600; margin:0 0 14px; color:#1f2937;">Seleccionar curso y materia</h3>
 
-                <form method="GET" action="{{ route('docente.notas') }}" id="filtroForm" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+                <form method="GET" action="{{ route('docente.notas') }}" id="filtroForm" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;"><x-consulta-cursos-alcance :filtros="$filtrosCursos" />
                     <input type="hidden" name="detalle_curso_id" id="inputDetalleCursoId" value="{{ $detalleCursoId }}">
 
                     <div style="display:flex; flex-direction:column; gap:5px; flex:1 1 200px; min-width:180px;">
                         <label style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.06em;">Curso</label>
-                        <select id="selectCurso"
+                        <select id="selectCurso" name="curso_id"
                                 style="background:#ffffff; border:1px solid #d1d5db; border-radius:8px; padding:9px 12px; color:#1f2937; font-size:13px; outline:none; cursor:pointer; width:100%;"
                                 onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#d1d5db'"
                                 onchange="filtrarMaterias()">
                             <option value="">-- Seleccionar curso --</option>
                             @foreach($cursos as $grupo)
-                            <option value="{{ $grupo['curso']->id }}"
+                            <option value="{{ $grupo['curso']->id }}" data-estado-curso="{{ $grupo['curso']->estado_curso }}"
                                 {{ $cursoSeleccionado == $grupo['curso']->id ? 'selected' : '' }}>
-                                Curso {{ $grupo['curso']->seccion }} — {{ $grupo['curso']->nivel }} ({{ $grupo['curso']->anio }})
+                                {{ $grupo['curso']->nombre }} · {{ $grupo['curso']->nivel }} · {{ $grupo['curso']->seccion }} · {{ $grupo['curso']->anio_lectivo }} · {{ $grupo['curso']->estado_curso }}
                             </option>
                             @endforeach
                         </select>
+                        @if($cursos->isEmpty())<p style="font-size:12px">No hay cursos asignados disponibles para este alcance.</p>@endif
                     </div>
 
                     <div style="display:flex; flex-direction:column; gap:5px; flex:1 1 200px; min-width:180px;">
@@ -170,15 +171,7 @@ function promColor(int $p): string {
                                         </span>
                                     </td>
                                     <td style="padding:7px 8px; text-align:center;">
-                                        <select name="notas[{{ $alumno->id }}][conducta]"
-                                                class="nota-input"
-                                                style="width:90px; text-align:center; background:#ffffff; border:1px solid #d1d5db; border-radius:7px; padding:6px; color:#ef4444; font-size:13px; outline:none;"
-                                                onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='#d1d5db'">
-                                            <option value="">—</option>
-                                            <option value="B" {{ $nota?->conducta === 'B' ? 'selected' : '' }}>B</option>
-                                            <option value="MB" {{ $nota?->conducta === 'MB' ? 'selected' : '' }}>MB</option>
-                                            <option value="E" {{ $nota?->conducta === 'E' ? 'selected' : '' }}>E</option>
-                                        </select>
+                                        @include('docente.partials.conducta-select', ['alumno' => $alumno, 'nota' => $nota])
                                     </td>
                                 </tr>
                                 @endforeach

@@ -7,14 +7,9 @@
                 @if($tipo === 'asistencias')
                     <p class="text-sm mb-3">Al cambiar de curso, aplica los filtros para actualizar las materias disponibles.</p>
                 @endif
-                <form method="GET" action="{{ route('admin.reportes.show', $tipo) }}" class="reportes-filters">
+                <form method="GET" action="{{ route('admin.reportes.show', $tipo) }}" class="reportes-filters"><x-consulta-cursos-alcance :filtros="$filtros" />
                     <label>Curso
-                        <select name="curso_id" @if($tipo === 'asistencias') onchange="this.form.elements.detalle_curso_id.value = ''" @endif>
-                            <option value="">Todos los cursos</option>
-                            @foreach($cursos as $curso)
-                                <option value="{{ $curso->id }}" @selected(($filtros['curso_id'] ?? '') == $curso->id)>{{ $curso->nombre }} · {{ $curso->nivel }} · {{ $curso->seccion }} · {{ $curso->anio_lectivo }}</option>
-                            @endforeach
-                        </select>
+                        <select name="curso_id" @if($tipo === 'asistencias') onchange="this.form.elements.detalle_curso_id.value = ''" @endif><x-consulta-cursos-opciones :cursos="$cursos" :filtros="$filtros" /></select>
                     </label>
                     @if($estados)
                         <label>{{ $tipo === 'alumnos' ? 'Estado del alumno' : 'Estado' }}

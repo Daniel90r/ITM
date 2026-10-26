@@ -130,7 +130,7 @@ class ReporteMensualidadesPdfTest extends TestCase
         $enlace = (new \DOMXPath($dom))->query('//a[contains(@href,"/admin/reportes/mensualidades/pdf")]')->item(0);
         $this->assertNotNull($enlace);
         parse_str(parse_url($enlace->getAttribute('href'), PHP_URL_QUERY), $parametros);
-        $this->assertEquals($f, $parametros);
+        $this->assertEquals($f + ['incluir_historicos'=>0], $parametros);
         $this->assertSame($pantalla->viewData('reporte')['filas']->total(), $r['filas']->count());
         $this->assertSame(3003, $r['pendienteCentavos']);
         $this->assertSame('$30.03', $pantalla->viewData('reporte')['resumen']['Monto pendiente']);

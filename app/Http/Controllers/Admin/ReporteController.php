@@ -43,8 +43,10 @@ class ReporteController extends Controller
         if ($tipo === 'asistencias') $filtros = array_merge($filtros, app(\App\Services\PeriodoAsistencia::class)->validar($request));
         return response()->view('admin.reportes.'.$tipo, [
             'tipos' => ReportesAdministrativos::TIPOS, 'tipo' => $tipo, 'estados' => $estados,
-            'filtros' => $filtros, 'cursos' => $reportes->catalogoCursos(),
-            'materias' => $tipo === 'calificaciones' ? Materia::select('id', 'nombre')->where('activa', true)->orderBy('nombre')->get() : collect(),
+            'filtros' => $filtros, 'cursos' => app(\App\Services\CursosConsulta::class)->opciones($filtros),
+            'materias' => $tipo === 'calificaciones' ? Materia::select('id', 'nombre')->where('activa', true)
+                ->whereHas('detalleCursos', fn ($q) => app(\App\Services\CursosConsulta::class)->aplicar($q, $filtros)
+                    ->when($filtros['curso_id'] ?? null, fn ($q, $id) => $q->where('curso_id', $id)))->orderBy('nombre')->get() : collect(),
             'detalleCursos' => $tipo === 'asistencias' && !empty($filtros['curso_id'])
                 ? DetalleCurso::where('curso_id', $filtros['curso_id'])->with('materia')->orderBy('id')->get() : collect(),
             'reporte' => $reportes->consultar($tipo, $filtros),
@@ -134,7 +136,7 @@ class ReporteController extends Controller
             'mensualidades' => ['Pendiente' => 'Pendiente', 'Pagado' => 'Pagado'],
             default => [],
         };
-        $reglas = ['curso_id' => 'nullable|integer|min:1|exists:cursos,id', 'page' => 'nullable|integer|min:1|max:100000'];
+        $reglas = ['incluir_historicos' => 'nullable|boolean', 'curso_id' => 'nullable|integer|min:1|exists:cursos,id', 'page' => 'nullable|integer|min:1|max:100000'];
         if ($estados) $reglas['estado'] = ['nullable', 'string', Rule::in(array_keys($estados))];
         if ($tipo === 'calificaciones') $reglas['materia_id'] = 'nullable|integer|min:1|exists:materias,id';
         if ($tipo === 'asistencias') {
@@ -167,6 +169,6 @@ class ReporteController extends Controller
         }
         $filtros = array_filter($request->validate($reglas), fn ($v) => $v !== null && $v !== '');
         unset($filtros['page']);
-        return [$estados, $filtros];
+        return [$estados, app(\App\Services\CursosConsulta::class)->normalizar($filtros)];
     }
 }

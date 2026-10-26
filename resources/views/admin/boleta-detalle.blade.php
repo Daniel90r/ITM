@@ -123,7 +123,7 @@
                     @else
                         <span class="boleta-btn boleta-emitida">✓ Boleta emitida</span>
                     @endif
-                    <a class="boleta-btn boleta-pdf-link" href="{{ route('admin.boletas.pdf', [$alumno->id, 'curso_id' => $curso->id]) }}">Descargar PDF</a>
+                    <a class="boleta-btn boleta-pdf-link" href="{{ !empty($boletaHistorica) ? route('admin.boletas.emisiones.pdf', $boletaHistorica->id) : route('admin.boletas.pdf', [$alumno->id, 'curso_id' => $curso->id]) }}">{{ !empty($boletaHistorica) ? 'Descargar emisión' : 'Descargar PDF actual' }}</a>
                 </div>
             @endif
         </header>
@@ -208,18 +208,20 @@
                         <p class="boleta-empty">Sin materias esperadas para este curso.</p>
                     @endif
                 </section>
-            @elseif(isset($cursosAprobados) && $cursosAprobados->isNotEmpty())
+            @elseif(isset($cursosAprobados) && isset($filtrosCursos))
                 <section class="boleta-card boleta-selector">
                     <h2 class="boleta-selector-title">Seleccionar curso / ciclo</h2>
                     <form class="boleta-selector-form" method="GET" action="{{ route('admin.boletas.show', ['alumno_id' => $alumno->id]) }}">
-                        @if($cursosAprobados->count() > 1)
+                        <x-consulta-cursos-alcance :filtros="$filtrosCursos" />
+                        @if($cursosAprobados->isNotEmpty())
                             <select name="curso_id" class="boleta-selector-input" aria-label="Curso / ciclo">
                                 <option value="">-- Curso --</option>
                                 @foreach($cursosAprobados as $c)
-                                    <option value="{{ $c->id }}" @selected(request('curso_id') == $c->id)>{{ $c->nombre }} ({{ $c->anio_lectivo ?? '—' }})</option>
+                                    <option value="{{ $c->id }}" data-estado-curso="{{ $c->estado_curso }}" @selected(request('curso_id') == $c->id)>{{ $c->nombre }} · {{ $c->nivel }} · {{ $c->seccion }} · {{ $c->anio_lectivo }} · {{ $c->estado_curso }}</option>
                                 @endforeach
                             </select>
                         @endif
+                        @if($cursosAprobados->isEmpty())<p>No hay cursos activos disponibles. Incluye los cursos históricos para consultar otras boletas.</p>@endif
                         <button class="boleta-btn boleta-selector-btn" type="submit">Aplicar</button>
                     </form>
                 </section>

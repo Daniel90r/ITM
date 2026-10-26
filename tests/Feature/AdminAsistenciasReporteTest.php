@@ -71,7 +71,9 @@ class AdminAsistenciasReporteTest extends TestCase
         $this->get(route('admin.asistencias'))->assertOk()
             ->assertViewHas('resumen', ['total' => 6, 'presentes' => 3, 'ausentes' => 2, 'permisos' => 1, 'porcentaje' => 50.0])
             ->assertSee('Reportes de asistencia')->assertSee('Período: todas las fechas')
-            ->assertSee('Presente')->assertSee('Ausente')->assertSee('Permiso')->assertSee('50.0%')
+            ->assertSee('Presente')->assertSee('Ausente')->assertSee('Permiso')
+            ->assertDontSee('class="resumen-grid"', false)->assertDontSee('Total de registros')->assertDontSee('Porcentaje de asistencia')
+            ->assertSee('Filtrar asistencias')
             ->assertSee($this->alumno->nombre_completo)->assertSee($this->alumno->codigo)
             ->assertDontSee('Programa de prueba')->assertSee('Curso de prueba')
             ->assertSee('role="region"', false)->assertSee('scope="col"', false);
@@ -147,7 +149,7 @@ class AdminAsistenciasReporteTest extends TestCase
         $this->get(route('admin.asistencias'))->assertOk()
             ->assertViewHas('resumen', ['total' => 0, 'presentes' => 0, 'ausentes' => 0, 'permisos' => 0, 'porcentaje' => null])
             ->assertSee('No hay asistencias para mostrar')->assertSee('Limpiar filtros')
-            ->assertSee('Sin registros para calcular')->assertDontSee('0.0%');
+            ->assertDontSee('class="resumen-grid"', false)->assertDontSee('0.0%');
     }
 
     public function test_historial_sin_detalle_de_materia_no_impide_renderizar(): void
@@ -256,6 +258,81 @@ class AdminAsistenciasReporteTest extends TestCase
         }
         $this->app['auth']->guard()->logout();
         $this->getJson($url)->assertUnauthorized();
+    }
+
+    public function test_detalle_agrupa_meses_y_anios_en_orden_sin_duplicar_registros(): void
+    {
+        $this->registrar($this->detalle, '2026-10-17', 'presente');
+        $this->registrar($this->otraMateria, '2026-10-03', 'permiso');
+        $this->registrar($this->detalle, '2026-09-19', 'ausente');
+        $this->registrar($this->detalle, '2025-10-11', 'presente');
+        $html = $this->getJson(route('admin.asistencias.detalles', $this->alumno))->assertOk()->json('html');
+        $this->assertStringContainsString('Octubre 2026 · 2 registros', $html);
+        $this->assertStringContainsString('Septiembre 2026 · 1 registro', $html);
+        $this->assertStringContainsString('Octubre 2025 · 1 registro', $html);
+        preg_match_all('/data-mes="([0-9-]+)"/', $html, $meses);
+        $this->assertSame(['2026-10', '2026-09', '2025-10'], $meses[1]);
+        preg_match_all('/data-asistencia-id="(\d+)"/', $html, $ids);
+        $this->assertCount(4, $ids[1]); $this->assertCount(4, array_unique($ids[1]));
+        $this->assertSame(3, substr_count($html, '<details '));
+        $this->assertSame(3, substr_count($html, '<summary>'));
+        $this->assertStringContainsString('17/10/2026', $html);
+        $this->assertStringContainsString(e($this->detalle->maestro->nombre_completo), $html);
+    }
+
+    public function test_mes_anio_y_filtros_existentes_comparten_totales_y_detalles(): void
+    {
+        $this->registrar($this->detalle, '2026-10-17', 'presente');
+        $this->registrar($this->detalle, '2026-10-03', 'ausente');
+        $this->registrar($this->detalle, '2026-09-19', 'permiso');
+        $this->registrar($this->detalle, '2025-10-11', 'presente');
+        $this->registrar($this->otraMateria, '2026-10-17', 'presente');
+        $f = ['anio' => 2026, 'mes' => 10, 'curso_id' => $this->detalle->curso_id, 'detalle_curso_id' => $this->detalle->id, 'maestro_id' => $this->detalle->maestro_id, 'q' => $this->alumno->codigo];
+        $r = $this->get(route('admin.asistencias', $f))->assertOk();
+        $a = $r->viewData('alumnos')->first();
+        $this->assertSame(2, (int)$a->registros); $this->assertSame(1, (int)$a->presentes); $this->assertSame(1, (int)$a->ausentes);
+        $html = $this->getJson(route('admin.asistencias.detalles', ['alumno' => $this->alumno->id] + $f))->assertOk()->json('html');
+        $this->assertSame(2, substr_count($html, 'data-asistencia-id='));
+        $this->assertStringNotContainsString('Septiembre', $html);
+        $this->assertStringNotContainsString('2025', $html);
+        $this->get(route('admin.asistencias', ['anio' => 2026]))->assertViewHas('resumen', fn ($s) => $s['total'] === 4);
+        $this->get(route('admin.asistencias'))->assertViewHas('resumen', fn ($s) => $s['total'] === 5);
+        $this->get(route('admin.asistencias', $f + ['fecha_desde' => '2026-10-10']))->assertViewHas('resumen', fn ($s) => $s['total'] === 1);
+        $this->get(route('admin.asistencias', ['anio' => 2024, 'mes' => 1]))->assertOk()->assertSee('No hay asistencias para mostrar');
+    }
+
+    public function test_totales_mensuales_completos_y_paginacion_sin_perder_filtros(): void
+    {
+        for ($dia = 1; $dia <= 25; $dia++) $this->registrar($this->detalle, sprintf('2026-10-%02d', $dia), 'presente');
+        $url = route('admin.asistencias.detalles', ['alumno' => $this->alumno->id, 'anio' => 2026, 'mes' => 10]);
+        $uno = $this->getJson($url)->assertOk()->json('html');
+        $dos = $this->getJson($url.'&detalle_page=2')->assertOk()->json('html');
+        $this->assertStringContainsString('Octubre 2026 · 25 registros', $uno);
+        $this->assertStringContainsString('20 en esta página', $uno);
+        $this->assertStringContainsString('5 en esta página', $dos);
+        $this->assertStringContainsString('anio=2026', $uno); $this->assertStringContainsString('mes=10', $uno);
+        preg_match_all('/data-asistencia-id="(\d+)"/', $uno.$dos, $ids);
+        $this->assertCount(25, $ids[1]); $this->assertCount(25, array_unique($ids[1]));
+    }
+
+    public function test_periodo_invalido_se_rechaza_en_listado_y_detalle(): void
+    {
+        foreach ([['mes' => 10], ['anio' => 'incorrecto'], ['anio' => 2026, 'mes' => 13]] as $f) {
+            $this->getJson(route('admin.asistencias', $f))->assertUnprocessable();
+            $this->getJson(route('admin.asistencias.detalles', ['alumno' => $this->alumno->id] + $f))->assertUnprocessable();
+        }
+    }
+
+    public function test_fetch_reutiliza_el_listado_y_mantiene_validacion_y_get_tradicional(): void
+    {
+        $this->historial();
+        $f = ['anio' => 2026, 'mes' => 10, 'curso_id' => $this->detalle->curso_id];
+        $normal = $this->get(route('admin.asistencias', $f))->assertOk();
+        $ajax = $this->getJson(route('admin.asistencias', $f))->assertOk();
+        $this->assertSame($normal->viewData('alumnos')->pluck('id')->all(), $ajax->viewData('alumnos')->pluck('id')->all());
+        $ajax->assertSee('data-asistencias-resultados', false)->assertSee('data-asistencias-filtros', false)
+            ->assertSee('data-asistencias-limpiar', false)->assertSee('method="GET"', false)->assertDontSee('onchange="this.form.submit()"', false);
+        $this->getJson(route('admin.asistencias', ['mes' => 10]))->assertUnprocessable()->assertJsonValidationErrors('anio');
     }
 
     public function test_detalles_escapan_contenido_y_no_exponen_expedientes(): void

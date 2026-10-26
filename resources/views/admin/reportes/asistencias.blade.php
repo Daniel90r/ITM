@@ -23,14 +23,9 @@
         @if($errors->any())
             <div class="aviso" role="alert"><strong>Revisa los filtros:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
         @endif
-        <form id="filtros-asistencia" method="GET" action="{{ route('admin.reportes.show', 'asistencias') }}" class="reportes-filters">
+        <form id="filtros-asistencia" method="GET" action="{{ route('admin.reportes.show', 'asistencias') }}" class="reportes-filters"><x-consulta-cursos-alcance :filtros="$filtros" />
             <label class="campo-amplio">Curso
-                <select name="curso_id" id="curso-asistencia" aria-describedby="ayuda-materias">
-                    <option value="">Todos los cursos</option>
-                    @foreach($cursos as $curso)
-                        <option value="{{ $curso->id }}" @selected(($filtros['curso_id'] ?? '') == $curso->id)>{{ $curso->nombre }} · {{ $curso->nivel }} · {{ $curso->seccion }} · {{ $curso->anio_lectivo }}</option>
-                    @endforeach
-                </select>
+                <select name="curso_id" id="curso-asistencia" aria-describedby="ayuda-materias"><x-consulta-cursos-opciones :cursos="$cursos" :filtros="$filtros" /></select>
             </label>
             <label class="campo-amplio">Materia del curso
                 <select name="detalle_curso_id" id="materia-asistencia" @disabled($detalleCursos->isEmpty()) aria-describedby="ayuda-materias">

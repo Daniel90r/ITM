@@ -1,9 +1,12 @@
-@php($staffResponsive = auth()->check() && in_array(auth()->user()->role, ['admin', 'docente'], true) && request()->routeIs('admin.*', 'docente.*') && !request()->routeIs('docente.asistencia.reporte'))
+@php
+    $staffResponsive = auth()->check() && in_array(auth()->user()->role, ['admin', 'docente'], true) && request()->routeIs('admin.*', 'docente.*') && !request()->routeIs('docente.asistencia.reporte');
+    $adminLayout = $staffResponsive && auth()->user()->role === 'admin';
+@endphp
 @if($staffResponsive && auth()->user()->role === 'admin')
     @include('components.filtros-autocompletado')
 @endif
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @if($adminLayout) class="itm-admin-document" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,8 +31,11 @@
     @if($staffResponsive)
         <style>{!! file_get_contents(resource_path('css/staff/responsive.css')) !!}</style>
     @endif
+    @if($adminLayout)
+        <style>{!! file_get_contents(resource_path('css/admin/layout.css')) !!}</style>
+    @endif
 </head>
-<body class="font-sans{{ $staffResponsive ? ' itm-staff' : '' }}" style="background:#0f172a; margin:0;">
+<body class="font-sans{{ $staffResponsive ? ' itm-staff' : '' }}{{ $adminLayout ? ' itm-admin' : '' }}" style="background:{{ $adminLayout ? '#f8fafc' : '#0f172a' }}; margin:0;">
     @if($staffResponsive)
         @include('components.staff-mobile-bar')
     @endif

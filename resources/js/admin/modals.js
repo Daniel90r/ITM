@@ -6,10 +6,10 @@
 // y por tanto cubre también los modales que se crean dinámicamente.
 // Tenerla aquí además creaba dos fuentes de verdad y riesgo de doble binding.
 // ═══════════════════════════════════════════════════════════════
+import {formatearValorDui} from '../utils/dui.js';
+
 function formatearDui(e) {
-    let v = e.target.value.replace(/[^0-9]/g, '').slice(0, 9);
-    if (v.length > 8) v = v.slice(0, 8) + '-' + v.slice(8);
-    e.target.value = v;
+    e.target.value = formatearValorDui(e.target.value);
 }
 
 function inicializarFormatoDui(selector) {

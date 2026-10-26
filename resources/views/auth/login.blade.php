@@ -41,7 +41,7 @@
     <div class="blob" style="width:70px;height:70px;background:#ddd6fe;top:350px;right:40px;border-radius:50%;"></div>
 
     {{-- Card glassmorphism --}}
-    <div style="background:rgba(255,255,255,0.13); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.22); border-radius:18px; padding:40px 36px; width:340px; position:relative; z-index:2;">
+    <div style="background:rgba(255,255,255,0.13); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.22); border-radius:18px; padding:40px 36px; width:340px; max-width:calc(100% - 32px); position:relative; z-index:2;">
 
         {{-- Logo --}}
         <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:24px;">
@@ -56,10 +56,13 @@
 
         {{-- Errores --}}
         @if ($errors->any())
-        <div style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); border-radius:10px; padding:10px 14px; margin-bottom:16px;">
-            @foreach ($errors->all() as $error)
-            <p style="font-size:12px; color:#fca5a5; margin:0;">{{ $error }}</p>
-            @endforeach
+        <div role="alert" style="display:flex; align-items:flex-start; gap:10px; background:#FFF1F2; color:#991B1B; border:1px solid #FCA5A5; border-radius:10px; padding:12px 14px; margin-bottom:16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex-shrink:0; margin-top:1px;"><path d="M10.3 3.9 1.8 18.5A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.5L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg>
+            <div style="min-width:0; display:flex; flex-direction:column; gap:6px;">
+                @foreach ($errors->all() as $error)
+                <p style="font-size:14px; font-weight:500; line-height:1.5; overflow-wrap:anywhere; margin:0;">{{ $error }}</p>
+                @endforeach
+            </div>
         </div>
         @endif
 
@@ -80,15 +83,12 @@
                     style="width:100%; padding:10px 14px; font-size:13px; border:1px solid rgba(255,255,255,0.22); border-radius:9px; background:rgba(255,255,255,0.10); color:white; transition:all .15s;">
             </div>
 
-            {{-- Recuérdame + olvidé --}}
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+            {{-- Recuérdame --}}
+            <div style="display:flex; align-items:center; justify-content:flex-start;">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:rgba(255,255,255,0.70); cursor:pointer;">
                     <input type="checkbox" name="remember" style="accent-color:#f59e0b; width:13px; height:13px;">
                     Recuérdame
                 </label>
-                @if (Route::has('password.request'))
-                <a href="{{ route('password.request') }}" style="font-size:12px; color:#fef08a; font-weight:500; text-decoration:none;">¿Olvidaste tu contraseña?</a>
-                @endif
             </div>
 
             {{-- Botón --}}

@@ -109,7 +109,8 @@ class ReportesAdministrativosTest extends TestCase
         Inscripcion::factory()->create(['estado' => 'pendiente']);
         Inscripcion::factory()->create(['estado' => 'rechazada']);
         Inscripcion::factory()->create(['estado' => 'inactiva']);
-        $this->reporte('alumnos')->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 1
+        $this->reporte('alumnos')->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 1 && !str_contains($r['filas'][0][2], 'Curso histórico'));
+        $this->reporte('alumnos', ['incluir_historicos'=>1])->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 1
             && $r['resumen']['Alumnos únicos'] === 1 && substr_count($r['filas'][0][2], 'Curso histórico') === 1);
         $this->reporte('alumnos', ['curso_id' => $c->id])->assertSee('Curso histórico')->assertViewHas('reporte', fn ($r) =>
             $r['filas']->total() === 1 && !str_contains($r['filas'][0][2], 'Curso actual'));
@@ -124,7 +125,7 @@ class ReportesAdministrativosTest extends TestCase
         Inscripcion::factory()->count(21)->create(['curso_id' => $c->id, 'estado' => 'aprobada']);
         Inscripcion::factory()->create(['curso_id' => $c->id, 'estado' => 'pendiente']);
         Curso::factory()->create(['estado' => 'ACTIVO', 'fecha_fin' => now()->addDay()]);
-        $this->reporte('cursos', ['estado' => 'FINALIZADO'])->assertViewHas('reporte', fn ($r) =>
+        $this->reporte('cursos', ['estado' => 'FINALIZADO', 'incluir_historicos'=>1])->assertViewHas('reporte', fn ($r) =>
             $r['filas']->total() === 1 && $r['filas'][0][1] === $c->estado_curso
             && $r['filas'][0][5] === Curso::CUPOS_MAXIMO && $r['filas'][0][4] === $c->inscritos_count && $r['filas'][0][6] === 0);
         $this->reporte('cursos', ['curso_id' => $c->id, 'estado' => 'ACTIVO'])->assertViewHas('reporte', fn ($r) => $r['filas']->total() === 0);
@@ -285,14 +286,14 @@ class ReportesAdministrativosTest extends TestCase
 
     public function test_enlaces_pdf_y_paginacion_conservan_filtros_sin_exportar_page(): void
     {
-        Curso::factory()->count(26)->create(['fecha_inicio' => null, 'fecha_fin' => null])->each(fn ($c) => Inscripcion::factory()->create(['curso_id'=>$c->id,'estado'=>'aprobada']));
-        foreach (['cursos' => ['estado' => 'SIN_FECHAS'], 'maestros' => ['estado' => 'activo'],
+        Curso::factory()->count(26)->create(['estado'=>'ACTIVO'])->each(fn ($c) => Inscripcion::factory()->create(['curso_id'=>$c->id,'estado'=>'aprobada']));
+        foreach (['cursos' => ['estado' => 'ACTIVO'], 'maestros' => ['estado' => 'activo'],
             'mensualidades' => ['anio' => 2026, 'mes' => 10, 'estado' => 'Pendiente']] as $tipo => $filtros) {
             $pagina = $this->reporte($tipo, $filtros + ['page' => 2]);
-            $this->assertEquals($tipo === 'cursos' ? $filtros + ['modalidad'=>'anual','anio'=>now('America/El_Salvador')->year] : $filtros, $pagina->viewData('filtros'));
+            $this->assertEquals(($tipo === 'cursos' ? $filtros + ['modalidad'=>'anual','anio'=>now('America/El_Salvador')->year] : $filtros) + ['incluir_historicos'=>0], $pagina->viewData('filtros'));
             $pagina->assertSee(e(route('admin.reportes.'.$tipo.'.pdf', $pagina->viewData('filtros'))), false);
         }
-        $this->reporte('cursos', ['estado' => 'SIN_FECHAS'])->assertSee('estado=SIN_FECHAS', false)
+        $this->reporte('cursos', ['estado' => 'ACTIVO'])->assertSee('estado=ACTIVO', false)
             ->assertSee('page=2', false);
     }
 

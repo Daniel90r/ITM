@@ -85,7 +85,7 @@ class MateriaCodigoTest extends TestCase
         Materia::create(['codigo' => 'MW', 'nombre' => 'Microsoft Word', 'activa' => 1]);
 
         $response = $this->actingAs($this->admin)->postJson('/admin/materias', ['nombre' => 'Microsoft Word']);
-        $response->assertStatus(422)->assertJsonValidationErrors(['nombre' => 'Ya existe una materia con ese nombre.']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['nombre' => 'Ya existe una materia registrada con este nombre. Ingresa un nombre diferente.']);
     }
 
     public function test_nombre_duplicado_con_diferente_casing_lanza_excepcion(): void
@@ -93,7 +93,7 @@ class MateriaCodigoTest extends TestCase
         Materia::create(['codigo' => 'MW', 'nombre' => 'Microsoft Word', 'activa' => 1]);
 
         $response = $this->actingAs($this->admin)->postJson('/admin/materias', ['nombre' => 'microsoft word']);
-        $response->assertStatus(422)->assertJsonValidationErrors(['nombre' => 'Ya existe una materia con ese nombre.']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['nombre' => 'Ya existe una materia registrada con este nombre. Ingresa un nombre diferente.']);
     }
 
     public function test_palabras_stop_words_se_ignoran(): void

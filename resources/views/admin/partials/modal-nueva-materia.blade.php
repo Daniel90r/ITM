@@ -31,17 +31,20 @@
             {{-- Nombre --}}
             <div>
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Nombre de la materia <span style="color:#dc2626;">*</span></label>
-                <input type="text" name="nombre" id="nombreMateria" required maxlength="100" placeholder="Ej: Microsoft Windows"
+                <input type="text" name="nombre" id="nombreMateria" value="{{ old('nombre') }}" required maxlength="100" placeholder="Ej: Microsoft Windows"
                     style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box;"
                     onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
             </div>
 
+            @error('nombre')<p role="alert" style="color:#b91c1c;font-size:13px">{{ $message }}</p>@enderror
+            @error('descripcion')<p role="alert" style="color:#b91c1c;font-size:13px">{{ $message }}</p>@enderror
+            @error('activa')<p role="alert" style="color:#b91c1c;font-size:13px">{{ $message }}</p>@enderror
             {{-- Descripción --}}
             <div>
                 <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px;">Descripción <span style="color:#9ca3af; font-weight:400;">(opcional)</span></label>
-                <textarea name="descripcion" rows="3" placeholder="Descripción breve de la materia..."
+                <textarea name="descripcion" rows="3" maxlength="5000" placeholder="Descripción breve de la materia..."
                     style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box; resize:none; font-family:inherit;"
-                    onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                    onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">{{ old('descripcion') }}</textarea>
             </div>
 
             {{-- Estado --}}
@@ -50,8 +53,8 @@
                 <select name="activa"
                     style="width:100%; padding:10px 14px; font-size:13px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; color:#111827; outline:none; box-sizing:border-box; cursor:pointer;"
                     onfocus="this.style.borderColor='#111827'" onblur="this.style.borderColor='#e5e7eb'">
-                    <option value="1">Activa</option>
-                    <option value="0">Inactiva</option>
+                    <option value="1" @selected(old('activa', '1') == '1')>Activa</option>
+                    <option value="0" @selected(old('activa', '1') == '0')>Inactiva</option>
                 </select>
             </div>
 
@@ -126,6 +129,10 @@
         }
 
         if (nombreInput) nombreInput.addEventListener('input', actualizarCodigoMateria);
+        @if($errors->any())
+            window.abrirModalMateria?.();
+            actualizarCodigoMateria();
+        @endif
 
         window.limpiarFormularioMateria = function () {
             const form = document.querySelector('#modalNuevaMateria form');

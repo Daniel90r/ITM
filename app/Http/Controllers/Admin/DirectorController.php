@@ -47,6 +47,9 @@ class DirectorController extends Controller
             "email" => ["nullable", "email", "max:255"],
             "user_id" => ["nullable", "integer"],
             "fecha_inicio" => ["required", "date"],
+        ], [
+            'dui.regex' => 'El DUI está incompleto o no es válido. Ingresa 9 dígitos con el formato 00000000-0.',
+            'dui.max' => 'El DUI debe contener únicamente 9 dígitos con el formato 00000000-0.',
         ]);
 
         $teniaDirectorAnterior = Director::activo()->exists();

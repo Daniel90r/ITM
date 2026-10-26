@@ -4,8 +4,8 @@
         <h1 class="text-2xl font-bold mt-2">Reporte de {{ $tipos[$tipo] }}</h1>
     </x-slot:encabezado>
     @if($errors->any())<div role="alert" class="p-4 rounded-lg bg-red-50 text-red-700">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
-    <form method="GET" action="{{ route('admin.reportes.show','cursos') }}" class="reportes-filters mt-6" id="filtros-cursos">
-        <label>Curso<select name="curso_id"><option value="">Todos los cursos</option>@foreach($cursos as $curso)<option value="{{ $curso->id }}" @selected(($filtros['curso_id'] ?? '') == $curso->id)>{{ $curso->nombre }} · {{ $curso->nivel }} · {{ $curso->seccion }} · {{ $curso->anio_lectivo }}</option>@endforeach</select></label>
+    <form method="GET" action="{{ route('admin.reportes.show','cursos') }}" class="reportes-filters mt-6" id="filtros-cursos"><x-consulta-cursos-alcance :filtros="$filtros" />
+        <label>Curso<select name="curso_id"><x-consulta-cursos-opciones :cursos="$cursos" :filtros="$filtros" /></select></label>
         <label>Estado actual del curso<select name="estado"><option value="">Todos los estados</option>@foreach($estados as $valor=>$etiqueta)<option value="{{ $valor }}" @selected(($filtros['estado'] ?? '') === $valor)>{{ $etiqueta }}</option>@endforeach</select></label>
         <label>Año<input type="number" name="anio" value="{{ $filtros['anio'] }}" min="1900" max="2100" required></label>
         <div class="reportes-actions"><button type="submit">Aplicar filtros</button><a href="{{ route('admin.reportes.show','cursos') }}">Limpiar</a><x-reportes-descargar-pdf id="descarga-cursos" :href="route('admin.reportes.cursos.pdf',$filtros)" :preview-href="route('admin.reportes.visor', ['tipo'=>'cursos'] + $filtros)" /></div>

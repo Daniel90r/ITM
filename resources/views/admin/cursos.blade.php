@@ -149,9 +149,9 @@
                             action="{{ route('admin.cursos.finalizar', $curso) }}"
                             method="POST"
                             class="form-finalizar-curso"
-                            data-confirm="¿Está seguro de que desea finalizar este curso? Esta acción cerrará el curso para nuevas inscripciones."
-                            data-confirm-titulo="Finalizar curso"
-                            data-confirm-boton="Sí, finalizar"
+                            data-finalizar-confirm="El curso cambiará al estado Finalizado. ¿Deseas continuar?"
+                            data-confirm-titulo="¿Estás seguro de finalizar este curso?"
+                            data-confirm-boton="Sí, finalizar curso"
                             data-confirm-tipo="peligro"
                         >
                             @csrf
@@ -159,6 +159,7 @@
                             <button type="submit" class="btn-finalizar-curso">
                                 Finalizar curso
                             </button>
+                            <p data-finalizar-error role="alert" style="font-size:12px;color:#b91c1c;margin:6px 0 0;"></p>
                         </form>
                         @endif
                     </div>

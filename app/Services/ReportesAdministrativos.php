@@ -31,6 +31,7 @@ class ReportesAdministrativos
     private function inscripcionesAlumnos($q, array $f)
     {
         return $q->aprobada()
+            ->when(array_key_exists('incluir_historicos', $f), fn ($q) => app(CursosConsulta::class)->aplicar($q, $f))
             ->when($f['curso_id'] ?? null, fn ($q, $id) => $q->where('curso_id', $id))
             ->when($f['anio'] ?? null, function ($q, $anio) use ($f) {
                 $inicio = \Carbon\CarbonImmutable::create((int) $anio, (int) ($f['mes'] ?? 1), 1)->startOfDay();
@@ -78,6 +79,7 @@ class ReportesAdministrativos
     {
         $q = Curso::query()->withCount(['inscripciones as aprobadas_count' => fn ($q) => $q->aprobada()])
             ->when($f['curso_id'] ?? null, fn ($q, $id) => $q->where('id', $id));
+        app(CursosConsulta::class)->aplicar($q, $f, 'cursos.id');
         if (!empty($f['modalidad'])) {
             $inicio = \Carbon\CarbonImmutable::create((int)$f['anio'], $f['modalidad'] === 'mensual' ? (int)$f['mes'] : 1, 1)->startOfDay();
             $fin = $f['modalidad'] === 'mensual' ? $inicio->endOfMonth() : $inicio->endOfYear();
@@ -145,6 +147,7 @@ class ReportesAdministrativos
                 ->whereColumn('am.curso_id', 'c.id')->whereColumn('am.materia_id', 'm.id')))
             ->when($f['curso_id'] ?? null, fn ($q, $id) => $q->where('c.id', $id))
             ->when($f['materia_id'] ?? null, fn ($q, $id) => $q->where('m.id', $id));
+        app(CursosConsulta::class)->aplicar($q, $f, 'c.id');
         $total = (clone $q)->count();
         $filas = $q->select('n.id', 'a.codigo', 'a.nombre', 'a.apellido', 'c.nombre as curso', 'c.seccion',
             'c.anio_lectivo', 'm.nombre as materia', 'n.laboratorio', 'n.examen_teorico', 'n.practica', 'n.conducta', 'n.promedio')
@@ -162,6 +165,7 @@ class ReportesAdministrativos
             ->leftJoin('detalle_cursos as d', 'd.id', '=', 's.detalle_curso_id')
             ->leftJoin('materias as m', 'm.id', '=', 'd.materia_id');
         $q = app(FiltrosHistoricosAsistencia::class)->aplicar($q, $f, 's.');
+        app(CursosConsulta::class)->aplicar($q, $f, 's.curso_id');
         $conteos = (clone $q)->selectRaw('s.estado, COUNT(*) as cantidad')->groupBy('s.estado')->pluck('cantidad', 'estado');
         $filas = $q->select('s.id', 'a.codigo', 'a.nombre', 'a.apellido', 'c.nombre as curso', 'c.seccion', 'c.anio_lectivo',
             'm.nombre as materia', 's.fecha', 's.estado')->orderByDesc('s.fecha')->orderByDesc('s.id')->paginate(25)->appends($f);
@@ -174,6 +178,7 @@ class ReportesAdministrativos
     private function consultaMensualidades(array $f)
     {
         return DB::table('mensualidades as v')->join('alumnos as a', 'a.id', '=', 'v.alumno_id')
+            ->when(array_key_exists('incluir_historicos', $f), fn ($q) => app(CursosConsulta::class)->aplicar($q, $f, 'v.curso_id'))
             ->join('cursos as c', 'c.id', '=', 'v.curso_id')
             ->when($f['curso_id'] ?? null, fn ($q, $id) => $q->where('c.id', $id))
             ->when($f['estado'] ?? null, fn ($q, $v) => $q->where('v.estado', $v))
@@ -230,7 +235,9 @@ class ReportesAdministrativos
 
     private function consultaMaestros(array $f)
     {
-        $asignaciones = fn ($q) => $q->activas()->when($f['curso_id'] ?? null,
+        $asignaciones = fn ($q) => $q->activas()
+            ->when(array_key_exists('incluir_historicos', $f), fn ($q) => $q->whereHas('detalleCurso', fn ($d) => app(CursosConsulta::class)->aplicar($d, $f)))
+            ->when($f['curso_id'] ?? null,
             fn ($q, $id) => $q->whereHas('detalleCurso', fn ($q) => $q->where('curso_id', $id)));
         $q = Maestro::select('id', 'nombre', 'apellido', 'codigo', 'activo')
             ->when(isset($f['estado']), fn ($q) => $q->where('activo', $f['estado'] === 'activo'))

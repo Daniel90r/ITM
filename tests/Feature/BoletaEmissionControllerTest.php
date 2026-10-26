@@ -32,6 +32,7 @@ class BoletaEmissionControllerTest extends TestCase
         $this->admin = User::factory()->create(['role' => 'admin']);
         Storage::fake('local');
         Storage::fake('public');
+        Storage::fake('boletas_oficiales');
     }
 
     private function crearEscenarioValido(): array
@@ -53,7 +54,7 @@ class BoletaEmissionControllerTest extends TestCase
             'firma_path' => 'directores/firmas/director.png',
         ]);
 
-        Storage::disk('local')->put('directores/firmas/director.png', 'fake-signature-content');
+        Storage::disk('local')->put('directores/firmas/director.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $materia1 = Materia::factory()->create(['nombre' => 'Materia Regular A', 'es_opcional' => false, 'activa' => true]);
         $materia2 = Materia::factory()->create(['nombre' => 'Materia Regular B', 'es_opcional' => false, 'activa' => true]);
@@ -556,7 +557,7 @@ class BoletaEmissionControllerTest extends TestCase
             'activo'       => true,
             'firma_path'   => 'directores/firmas/director.png',
         ]);
-        Storage::disk('local')->put('directores/firmas/director.png', 'fake-signature-content');
+        Storage::disk('local')->put('directores/firmas/director.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $materia = Materia::factory()->create(['nombre' => 'Materia Regular A', 'es_opcional' => false, 'activa' => true]);
         $maestro = Maestro::factory()->create();
@@ -622,7 +623,7 @@ class BoletaEmissionControllerTest extends TestCase
             'activo'       => true,
             'firma_path'   => 'directores/firmas/director.png',
         ]);
-        Storage::disk('local')->put('directores/firmas/director.png', 'fake-signature-content');
+        Storage::disk('local')->put('directores/firmas/director.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $materia = Materia::factory()->create(['nombre' => 'Materia Regular A', 'es_opcional' => false, 'activa' => true]);
         $maestro = Maestro::factory()->create();
@@ -732,7 +733,7 @@ class BoletaEmissionControllerTest extends TestCase
             'activo' => true,
             'firma_path' => 'directores/firmas/director.png',
         ]);
-        Storage::disk('local')->put('directores/firmas/director.png', 'fake-signature-content');
+        Storage::disk('local')->put('directores/firmas/director.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         // Materia con promedio 6 -> Concepto R
         $materiaR = Materia::factory()->create(['nombre' => 'Materia R', 'es_opcional' => false, 'activa' => true]);
@@ -930,7 +931,7 @@ class BoletaEmissionControllerTest extends TestCase
             'activo' => true,
             'firma_path' => 'directores/firmas/director.png',
         ]);
-        Storage::disk('local')->put('directores/firmas/director.png', 'fake-signature-content');
+        Storage::disk('local')->put('directores/firmas/director.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $materiaRegular = Materia::factory()->create(['nombre' => 'Materia Regular A', 'es_opcional' => false, 'activa' => true]);
         $materiaOpcional = Materia::factory()->create(['nombre' => 'Arte', 'es_opcional' => true, 'activa' => true]);
@@ -1040,7 +1041,7 @@ class BoletaEmissionControllerTest extends TestCase
             'activo' => true,
             'firma_path' => 'directores/firmas/director.png',
         ]);
-        Storage::disk('local')->put('directores/firmas/director.png', 'fake-signature-content');
+        Storage::disk('local')->put('directores/firmas/director.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $materiaRegular = Materia::factory()->create(['nombre' => 'Materia Regular A', 'es_opcional' => false, 'activa' => true]);
         $ingles = Materia::factory()->create(['nombre' => 'Inglés', 'es_opcional' => true, 'codigo' => 'ING', 'activa' => true]);

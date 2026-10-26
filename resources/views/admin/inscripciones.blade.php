@@ -31,6 +31,26 @@
             </div>
             @endif
 
+            <form method="GET" action="{{ route('admin.inscripciones') }}" style="display:flex;flex-wrap:wrap;align-items:end;gap:12px;flex-shrink:0;"><x-consulta-cursos-alcance :filtros="$filtros" />
+                <div style="flex:1;min-width:180px;">
+                    <label for="inscritos-q" style="display:block;font-size:12px;margin-bottom:6px;">Alumno o código</label>
+                    <input id="inscritos-q" name="q" value="{{ $busqueda }}" maxlength="150" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+                </div>
+                <div style="flex:1;min-width:180px;">
+                    <label for="inscritos-curso" style="display:block;font-size:12px;margin-bottom:6px;">Curso</label>
+                    <select id="inscritos-curso" name="curso_id" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;"><x-consulta-cursos-opciones :cursos="$cursos" :filtros="$filtros" /></select>
+                </div>
+                <div style="min-width:160px;">
+                    <label for="inscritos-estado" style="display:block;font-size:12px;margin-bottom:6px;">Estado del alumno</label>
+                    <select id="inscritos-estado" name="estado_alumno" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+                        <option value="todos" @selected($estadoAlumno === 'todos')>Todos</option>
+                        <option value="activos" @selected($estadoAlumno === 'activos')>Activos</option>
+                        <option value="inactivos" @selected($estadoAlumno === 'inactivos')>Inactivos</option>
+                    </select>
+                </div>
+                <button type="submit" style="padding:10px 16px;border:1px solid #111827;border-radius:8px;background:#111827;color:white;">Aplicar filtros</button>
+                <a href="{{ route('admin.inscripciones') }}" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;color:#334155;background:white;">Limpiar</a>
+            </form>
             {{-- ═══ LISTADO DE ALUMNOS INSCRITOS (SOLO APROBADOS) ═══ --}}
             <div style="flex:1; min-height:0; display:flex; flex-direction:column; background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden;">
                 <div style="padding:16px 24px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; gap:8px; flex-shrink:0;">
@@ -47,6 +67,7 @@
                                 <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Curso</th>
                                 <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Turno</th>
                                 <th style="padding:11px 24px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Fecha de inscripción</th>
+                                <th style="padding:11px 24px; text-align:center; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Estado del alumno</th>
                                 <th style="padding:11px 24px; text-align:center; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em;">Acciones</th>
                             </tr>
                         </thead>
@@ -72,22 +93,24 @@
                                 <td style="padding:13px 24px; font-size:13px; color:#374151;">{{ $ins->curso->nivel }}</td>
                                 <td style="padding:13px 24px; font-size:13px; color:#6b7280;">{{ \Carbon\Carbon::parse($ins->fecha_inscripcion)->format('d/m/Y') }}</td>
                                 <td style="padding:13px 24px; text-align:center;">
-                                    <form method="POST" action="{{ route('admin.inscripciones.desactivar', $ins->id) }}"
-                                          data-confirm="¿Desactivar la inscripción de {{ $ins->alumno->nombre }}?"
-                                          data-confirm-titulo="Desactivar inscripción" data-confirm-boton="Sí, desactivar" data-confirm-tipo="peligro">
+                                    <span style="display:inline-flex;white-space:nowrap;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:{{ $ins->alumno->activo ? '#dcfce7' : '#f1f5f9' }};color:{{ $ins->alumno->activo ? '#166534' : '#475569' }};">{{ $ins->alumno->activo ? 'Activo' : 'Inactivo' }}</span>
+                                </td>
+                                <td style="padding:13px 24px;text-align:center;">
+                                    <form method="POST" action="{{ route('admin.personas.estado.update', ['tipo' => 'alumnos', 'id' => $ins->alumno_id]) }}" data-inscrito-estado data-accion="{{ $ins->alumno->activo ? 'desactivar' : 'activar' }}" data-nombre="{{ $ins->alumno->nombre_completo }}">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                            style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:12px; font-weight:600; color:#dc2626; cursor:pointer; padding:5px 14px;"
-                                            onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-                                            Desactivar
-                                        </button>
+                                        @method('PATCH')
+                                        <input type="hidden" name="activo" value="{{ $ins->alumno->activo ? 0 : 1 }}">
+                                        <input type="hidden" name="esperado" value="{{ $ins->alumno->activo ? 1 : 0 }}">
+                                        <input type="hidden" name="revision" value="{{ $ins->revision_estado }}">
+                                        <input type="hidden" name="motivo" value="">
+                                        <button type="submit" style="white-space:nowrap;padding:8px 12px;border:1px solid {{ $ins->alumno->activo ? '#fecaca' : '#bbf7d0' }};border-radius:8px;background:{{ $ins->alumno->activo ? '#fef2f2' : '#f0fdf4' }};color:{{ $ins->alumno->activo ? '#991b1b' : '#166534' }};">{{ $ins->alumno->activo ? 'Desactivar' : 'Activar' }}</button>
+                                        <p data-estado-error role="alert" style="font-size:12px;color:#b91c1c;"></p>
                                     </form>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" style="padding:40px; text-align:center; color:#9ca3af; font-size:13px;">No hay alumnos con inscripción aprobada.</td>
+                                <td colspan="7" style="padding:40px; text-align:center; color:#9ca3af; font-size:13px;">No hay alumnos con inscripción aprobada que coincidan con los filtros.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -115,4 +138,12 @@
     </div>
 </div>
 <x-logout-modal />
+@if($errors->any())
+    @push('scripts')
+        <script>document.addEventListener('DOMContentLoaded', () => window.mostrarAlerta?.({titulo: 'No se pudo cambiar el estado', mensaje: @json($errors->first()), tipo: 'peligro'}));</script>
+    @endpush
+@endif
+@push('scripts')
+    <script>{!! file_get_contents(resource_path('js/admin/inscritos-estado.js')) !!}</script>
+@endpush
 </x-app-layout>

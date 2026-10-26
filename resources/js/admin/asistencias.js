@@ -1,7 +1,10 @@
+import {initFiltrosAsistencias} from './asistencias-filtros.js';
+
 // Solo se solicitan los detalles al expandir un alumno o cambiar su página.
 export function initAsistencias(root) {
     if (!root || root.dataset.inicializado) return;
     root.dataset.inicializado = 'true';
+    initFiltrosAsistencias(root);
 
     async function cargar(panel, url) {
         if (panel.dataset.cargando === 'true') return;

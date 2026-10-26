@@ -153,10 +153,10 @@
             <p class="mp-muted">Los importes corresponden al ciclo completo y se mantienen al filtrar el listado.</p>
             <section class="mp-panel mp-filters" aria-labelledby="tituloFiltrosMensualidades">
                 <h2 id="tituloFiltrosMensualidades">Consultar mensualidades</h2>
-                <form id="mensualidadesFiltros" method="GET" action="{{ route('admin.mensualidades') }}">
+                <form id="mensualidadesFiltros" method="GET" action="{{ route('admin.mensualidades') }}"><x-consulta-cursos-alcance :filtros="$filtros" />
                     <div class="mp-filter-grid">
                         <div class="mp-field"><label for="buscarAlumno">Alumno</label><input class="mp-control" id="buscarAlumno" name="q" type="search" maxlength="100" value="{{ $filtros['q'] }}" placeholder="Nombre o código" oninput="filtrarMensualidades()"></div>
-                        <div class="mp-field"><label for="filtrarCurso">Curso</label><select class="mp-control" id="filtrarCurso" name="curso_id" onchange="this.form.requestSubmit()"><option value="">Todos los cursos</option>@foreach($cursos as $curso)<option value="{{ $curso->id }}" @selected(($filtros['curso_id'] ?? '') == $curso->id)>{{ $curso->nombre }} — {{ $curso->nivel }}</option>@endforeach</select></div>
+                        <div class="mp-field"><label for="filtrarCurso">Curso</label><select class="mp-control" id="filtrarCurso" name="curso_id" onchange="this.form.requestSubmit()"><x-consulta-cursos-opciones :cursos="$cursosFiltro" :filtros="$filtros" /></select></div>
                         <div class="mp-field"><label for="filtrarMes">Mes</label><select class="mp-control" id="filtrarMes" name="mes" onchange="this.form.requestSubmit()"><option value="">Todos los meses</option>@foreach($meses as $nombre)<option value="{{ $nombre }}" @selected(($filtros['mes'] ?? '') === $nombre)>{{ $nombre }}</option>@endforeach</select></div>
                         <div class="mp-field"><label for="filtrarEstado">Estado</label><select class="mp-control" id="filtrarEstado" name="estado" onchange="this.form.requestSubmit()"><option value="">Todos los estados</option>@foreach(['Pendiente','Pagado'] as $estado)<option value="{{ $estado }}" @selected(($filtros['estado'] ?? '') === $estado)>{{ $estado }}</option>@endforeach</select></div>
                     </div>

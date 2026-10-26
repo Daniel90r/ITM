@@ -10,10 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DetalleCurso extends Model
 {
     use HasFactory;
-    protected $fillable = ['curso_id', 'materia_id', 'maestro_id'];
+    protected $fillable = ['curso_id', 'materia_id', 'maestro_id', 'orden_academico'];
 
     protected $casts = [
         'maestro_id' => 'integer',
+        'orden_academico' => 'integer',
     ];
 
     public function curso(): BelongsTo
