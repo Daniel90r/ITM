@@ -4,9 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+// Portal público: oferta académica visible sin iniciar sesión.
+Route::get('/', \App\Http\Controllers\OfertaAcademicaController::class)->name('inicio');
 
 // Dashboard general: despacha a cada rol hacia su propio panel.
 //
